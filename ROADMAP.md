@@ -29,6 +29,6 @@
 - [x] Доменная модель и схема БД — ADR 0013, `docs/project/schema/`
 - [x] Контракт API (OpenAPI, spec-first) — ADR 0014, `apps/api/openapi/openapi.yaml`
 - [x] Событийная модель (события, порты, адаптеры) — ADR 0015
-- [ ] UI-флоу дашборда и панели оператора
+- [x] UI-флоу дашборда и панели оператора — `docs/project/ui-flows.md`, ADR 0016
 - [x] Структура монорепо — ADR 0005
 - [ ] Детальный план фаз B–E
