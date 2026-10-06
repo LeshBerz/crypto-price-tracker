@@ -27,7 +27,7 @@
 ## Фаза A 🔄
 - [x] ADR по Q1–Q12 (`docs/adr/`) — 12/12
 - [x] Доменная модель и схема БД — ADR 0013, `docs/project/schema/`
-- [ ] Контракт API (OpenAPI, spec-first)
+- [x] Контракт API (OpenAPI, spec-first) — ADR 0014, `apps/api/openapi/openapi.yaml`
 - [ ] Событийная модель (события, порты, адаптеры)
 - [ ] UI-флоу дашборда и панели оператора
 - [ ] Структура монорепо

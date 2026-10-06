@@ -1,0 +1,93 @@
+# 0014. Контракт API v1
+
+- **Статус:** Accepted (06.10.2026)
+- **Дата:** 06.10.2026
+- **Фаза A:** артефакт «Контракт API (OpenAPI, spec-first)»
+- **Требования:** F1–F8, C10, D-3, D5; бриф §3
+- **Контракт:** [`apps/api/openapi/openapi.yaml`](../../apps/api/openapi/openapi.yaml) · линт: [`apps/api/redocly.yaml`](../../apps/api/redocly.yaml)
+- **Поправки к принятым ADR:** [0002](0002-access-model.md) (scope `ops:read`), [0004](0004-c7-interpretation-and-dev-tooling.md) (TypeScript 5.9), [0008](0008-validation-and-openapi.md) (подмножество валидатора) — см. раздел «Поправки»
+
+## Контекст
+
+ADR 0008 сделал `openapi.yaml` источником истины: он управляет маршрутами, валидацией, типами и документацией. Значит, контракт пишется до кода и должен быть проверяемым уже сейчас. Здесь фиксируются эндпоинты и соглашения, а также всё, что всплыло при проверке спеки инструментами.
+
+## Эндпоинты
+
+| Метод и путь | `operationId` | Scope | Требование |
+|---|---|---|---|
+| `GET /health/live` | `getLiveness` | публичный | бриф §4 (observability) |
+| `GET /health/ready` | `getReadiness` | публичный | бриф §4 |
+| `GET /api/v1/cryptocurrencies` | `listCryptocurrencies` | `prices:read` | F2 |
+| `POST /api/v1/cryptocurrencies` | `createCryptocurrency` | `watchlist:write` | F2 |
+| `GET /api/v1/cryptocurrencies/{id}` | `getCryptocurrency` | `prices:read` | F2 |
+| `PATCH /api/v1/cryptocurrencies/{id}` | `updateCryptocurrency` | `watchlist:write` | F2 |
+| `DELETE /api/v1/cryptocurrencies/{id}` | `deleteCryptocurrency` | `watchlist:write` | F2 |
+| `GET /api/v1/prices` | `listLatestPrices` | `prices:read` | F3, D5 |
+| `GET /api/v1/cryptocurrencies/{id}/prices` | `listPriceHistory` | `prices:read` | F5 |
+| `GET /api/v1/cryptocurrencies/{id}/prices/aggregates` | `getPriceAggregates` | `prices:read` | ТЗ «агрегация», ADR 0007 |
+| `GET /api/v1/sync-runs` | `listSyncRuns` | `ops:read` | расширение (мониторинг) |
+| `POST /api/v1/sync-runs` | `triggerSyncRun` | `ops:write` | расширение (ручной запуск) |
+| `GET /api/v1/sync-runs/{id}` | `getSyncRun` | `ops:read` | расширение |
+| `GET /api/v1/system/cmc` | `getCmcStatus` | `ops:read` | расширение (состояние CMC и квоты) |
+| `GET /api/v1/stream` | `streamEvents` | `prices:read` | расширение (SSE) |
+| `GET /docs`, `GET /openapi.json` | — (вне спеки) | публичный | F8 |
+
+15 операций → по C8 минимум 30 тестов (позитивный + негативный на каждую). Это проверяет автоматическая матрица (ADR 0009).
+
+**Алерты в v1.0 не входят.** Их эндпоинты (каналы, правила, события, доставки) добавятся в спеку вместе с модулем алертов, по тому же spec-first циклу. Причина техническая: роутер монтирует операции по спеке (ADR 0008), и операция без хендлера — ошибка компиляции. В спеке есть только то, что реализовано.
+
+## Соглашения
+
+| Тема | Решение | Почему |
+|---|---|---|
+| Версионирование | префикс пути `/api/v1` | Просто, видно в логах и Swagger. Ломающее изменение → `/api/v2` |
+| Именование | JSON — camelCase, пути — kebab-case во множественном числе | Стандарт REST и JS-клиентов. БД — snake_case, маппинг в репозиториях |
+| Коллекции | всегда объект-обёртка `{ items, … }`, а не голый массив | Можно добавить `nextCursor`, `currency`, `lastSync`, не ломая клиентов |
+| Пагинация | **курсорная (keyset)**: `limit` (1…1000, по умолчанию 100) + непрозрачный `cursor` (base64url от `fetchedAt` + `id`), ответ — `nextCursor` или `null` | Offset на растущей истории даёт дубли и пропуски при вставках, а `OFFSET N` — это O(N). Keyset стабилен и идёт по индексу `(coin, fetched_at)` |
+| Watchlist | без пагинации, `maxItems: 100` | Лимит следует из квоты CMC: 1 кредит на 100 монет (ADR 0007). 101-я монета → 422 `watchlist-limit-reached` |
+| Цены | строки `Decimal` / `SignedDecimal` по паттерну, плюс `currency: "USD"` | ADR 0006 |
+| Время | `date-time` ISO 8601 UTC. Во входных параметрах зона обязательна | ADR 0007, 0008 |
+| Период | полуинтервал `[from, to)`, `to` по умолчанию — «сейчас» | Соседние периоды не пересекаются и не теряют точку на границе |
+| Ошибки | RFC 9457, `type` — стабильные URN `urn:cpt:problem:<slug>` (перечислены в `enum`) | Клиент завязывается на `type`, а не на текст. URN — валидный URI, не притворяется несуществующим доменом |
+| Ресурсы-конфликты | `409` + `conflictingId` (уже отслеживается; синхронизация уже идёт) | Клиент сразу знает, куда перейти |
+| Создание | `201` + `Location` | REST |
+| Ручная синхронизация | `202 Accepted` + `Location` на `/sync-runs/{id}` | Синхронизация длится секунды. Держать HTTP-ответ — антипаттерн из урока «Фоновые задачи» |
+| `X-Request-Id` | в каждом ответе. Входящий валидный (≤ 64 символа) переиспользуется | Корреляция логов через web → api (урок «Контроль качества») |
+| Права | `x-required-scopes` на каждой операции, публичные — `security: []` | В OpenAPI 3.0 у схемы `http bearer` нет scopes (они есть только у OAuth2). Расширение читает роутер (ADR 0008) |
+
+### Решения по отдельным эндпоинтам
+
+- **`GET /prices` отдаёт данные из БД, а не делает живой запрос в CMC (D5).** Свежесть прозрачна: `fetchedAt`, `isStale` (цена старше двух интервалов) и `lastSync` в ответе. Так graceful degradation при падении CMC видна клиенту, а не замазана (F7).
+- **`POST /cryptocurrencies` при недоступном CMC → `503` + `Retry-After`.** Без CMC символ не проверить, а добавлять непроверенное нельзя (C10).
+- **`/health/ready` не зависит от CMC.** Иначе падение внешнего API вывело бы из балансировки сервис, который умеет работать на сохранённых данных.
+- **SSE (`/stream`)**: события `price.updated`, `sync.finished`, `heartbeat` (25 с). При переподключении пропущенное не досылается: клиент перечитывает состояние через REST. Это честный и простой контракт для in-process шины (в `platform` — Redis Pub/Sub, тоже без гарантии доставки, ADR 0011).
+
+## Проверено инструментами
+
+| Проверка | Результат |
+|---|---|
+| `redocly lint` (recommended) | ✅ валидно. 2 точечных исключения: health-эндпоинты без 4xx (публичные, без входных данных) — `.redocly.lint-ignore.yaml` |
+| `openapi-typescript` 7.13 | ✅ типы сгенерированы: все 15 `operationId`, nullable-поля → `T \| null` |
+| typecheck использования типов (`tsc --strict`) | ✅ |
+| `nullable` + `$ref` | ⚠️ найдено: по OpenAPI 3.0.3 `nullable` действует, **только если `type` задан в той же схеме**. Обёртки `{ type, nullable: true, allOf: [$ref] }` исправлены во всех 9 местах |
+
+## Поправки к принятым ADR
+
+| ADR | Было | Стало | Почему |
+|---|---|---|---|
+| **0002** | scopes `prices:read`, `watchlist:write`, `ops:write` | **+ `ops:read`** (история синхронизаций, состояние CMC) | Читать мониторинг с правом *записи* `ops:write` — нарушение least privilege. Ключ оператора получает все четыре scope |
+| **0004** | TypeScript `~6.0` | **TypeScript `~5.9`** | `openapi-typescript` 7.13 (latest) требует `typescript ^5.x`, а с 6.0 `npm install` падает с `ERESOLVE`. Вся цепочка из ADR 0004 (нативный запуск, `tsc`, Jest 30 + ts-jest, `erasableSyntaxOnly`, `rewriteRelativeImportExtensions`) уже проверялась на 5.9.3. TS 6.0 — переходный релиз перед 7, ничего нужного нам он не добавляет |
+| **0008** | подмножество валидатора без `allOf`, `minProperties`, `default` | **+ `allOf` ровно из одного элемента** (идиома «`$ref` + nullable» в 3.0), **+ `minProperties`** (PATCH без полей → 400), **+ `default`** (только для query/path: подставляется до валидации) | Нужны контракту. `allOf` из ≥ 2 элементов по-прежнему fail-fast при старте |
+
+## Последствия
+
+- ➕ Контракт готов до кода: web, тесты и матрица C8 опираются на него с первого дня фазы B.
+- ➕ Контракт проверен линтером и кодогенерацией, а не только написан.
+- ➕ Темы для интервью: keyset- против offset-пагинации, 202 + Location для долгих операций, readiness без внешних зависимостей, `nullable` в 3.0.3, URN в RFC 9457.
+- ➖ 15 операций × (позитивный + негативный) — заметный объём тестов в фазе B. Закладываем в план.
+- ➖ Алертные эндпоинты появятся отдельной версией спеки (v1.1).
+- Попутно найдено: CLI `openapi-typescript` падает на абсолютном Windows-пути с кириллицей и пробелами. В npm-скриптах используем относительный путь.
+
+## Как защищать на интервью
+
+«Контракт написан до кода и проверен: Redocly lint плюс генерация типов. Пагинация курсорная: offset по растущей истории даёт дубли и стоит O(N). Ручная синхронизация возвращает 202 с Location, а не держит HTTP-запрос. Readiness не зависит от CMC: внешний сбой не должен выкидывать из балансировки сервис, который работает на сохранённых данных. Ошибки по RFC 9457 со стабильными URN. При проверке нашёл тонкость OpenAPI 3.0.3: `nullable` рядом с `$ref` не работает без явного `type`».
