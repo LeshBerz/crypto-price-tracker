@@ -13,6 +13,7 @@
 | [0005](0005-monorepo-structure.md) | Монорепо: npm workspaces, composition root для platform | Q6 | Accepted |
 | [0006](0006-price-precision.md) | Цены: точный TEXT + генерируемая REAL-колонка, строки в API | Q4 | Accepted |
 | [0007](0007-aggregates-and-rollups.md) | Агрегаты: сырые данные + часовая свёртка, пересчёт в транзакции синхронизации | Q5 | Accepted |
+| [0008](0008-validation-and-openapi.md) | Spec-first: OpenAPI 3.0 управляет типами, валидацией и маршрутами | Q9 | Accepted |
 
 ## Порядок закрытия остальных вопросов
 
