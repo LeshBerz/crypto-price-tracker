@@ -20,7 +20,7 @@
 | [0012](0012-web-charts-and-ui-kit.md) | Web: Lightweight Charts, shadcn/ui + Tailwind 4, TanStack Query | Q11 | Accepted |
 | [0013](0013-data-model.md) | Доменная модель и схема БД (STRICT, CHECK, миграции forward-only) | фаза A | Accepted |
 | [0014](0014-api-contract.md) | Контракт API v1 (15 операций) + поправки к 0002, 0004, 0008 | фаза A | Accepted |
-| [0015](0015-ports-events-and-lifecycle.md) | Порты, события (после COMMIT), синхронизация, graceful shutdown | фаза A | Proposed |
+| [0015](0015-ports-events-and-lifecycle.md) | Порты, события (после COMMIT), синхронизация, graceful shutdown | фаза A | Accepted |
 
 ## Порядок закрытия остальных вопросов
 
