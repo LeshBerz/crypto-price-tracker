@@ -9,3 +9,8 @@ data/
 .DS_Store
 .idea/
 .vscode/
+
+# локальные инструкции AI-ассистента — не попадают в репозиторий
+CLAUDE.md
+CLAUDE.local.md
+.claude/
