@@ -11,6 +11,7 @@
 | [0003](0003-sqlite-driver-and-node-version.md) | Драйвер SQLite: `node:sqlite` на Node 24 LTS | Q3 | Accepted |
 | [0004](0004-c7-interpretation-and-dev-tooling.md) | Трактовка C7: runtime строго по ТЗ, tooling в devDependencies | Q7 | Accepted |
 | [0005](0005-monorepo-structure.md) | Монорепо: npm workspaces, composition root для platform | Q6 | Accepted |
+| [0006](0006-price-precision.md) | Цены: точный TEXT + генерируемая REAL-колонка, строки в API | Q4 | Accepted |
 
 ## Порядок закрытия остальных вопросов
 
