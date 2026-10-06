@@ -10,6 +10,7 @@
 | [0002](0002-access-model.md) | Модель доступа: API key со scope + BFF в web | Q2 | Accepted |
 | [0003](0003-sqlite-driver-and-node-version.md) | Драйвер SQLite: `node:sqlite` на Node 24 LTS | Q3 | Accepted |
 | [0004](0004-c7-interpretation-and-dev-tooling.md) | Трактовка C7: runtime строго по ТЗ, tooling в devDependencies | Q7 | Accepted |
+| [0005](0005-monorepo-structure.md) | Монорепо: npm workspaces, composition root для platform | Q6 | Accepted |
 
 ## Порядок закрытия остальных вопросов
 
