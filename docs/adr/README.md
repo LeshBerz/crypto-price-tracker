@@ -18,6 +18,7 @@
 | [0010](0010-email-alert-channel.md) | Email-алерты: HTTP-API (Mailpit локально, Resend опционально), outbox в БД | Q10 | Accepted |
 | [0011](0011-platform-composition.md) | Platform: Postgres + TimescaleDB, Redis, RabbitMQ, worker — по компоненту на проблему масштабирования | Q8 | Accepted |
 | [0012](0012-web-charts-and-ui-kit.md) | Web: Lightweight Charts, shadcn/ui + Tailwind 4, TanStack Query | Q11 | Accepted |
+| [0013](0013-data-model.md) | Доменная модель и схема БД (STRICT, CHECK, миграции forward-only) | фаза A | Accepted |
 
 ## Порядок закрытия остальных вопросов
 

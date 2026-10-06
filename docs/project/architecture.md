@@ -40,27 +40,9 @@ sequenceDiagram
   T->>T: setTimeout(следующий запуск)
 ```
 
-## Схема БД (черновик)
+## Схема БД
 
-```mermaid
-erDiagram
-  cryptocurrencies ||--o{ price_history : has
-  cryptocurrencies {
-    INTEGER id PK
-    TEXT symbol UK "BTC, ETH"
-    TEXT name
-    TEXT last_updated_at "ISO 8601, nullable"
-    TEXT created_at
-  }
-  price_history {
-    INTEGER id PK
-    INTEGER cryptocurrency_id FK "ON DELETE CASCADE"
-    TEXT price "решение D4"
-    TEXT fetched_at "ISO 8601"
-  }
-```
-
-Индекс: `price_history (cryptocurrency_id, fetched_at)` — история всегда читается по монете и периоду.
+Утверждена в [ADR 0013](../adr/0013-data-model.md): ER-диаграмма, индексы, доменные правила, миграции. Проверенный DDL — [`schema/0001_core.sql`](schema/0001_core.sql) (ядро ТЗ) и [`schema/0002_alerts.sql`](schema/0002_alerts.sql) (алерты).
 
 ## Эндпоинты (черновик)
 
