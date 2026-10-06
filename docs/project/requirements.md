@@ -54,12 +54,12 @@
 | ID | Вопрос | Суть конфликта / выбора | Предварительно |
 |---|---|---|---|
 | D1 | **Драйвер SQLite** | C7 разрешает только перечисленные библиотеки, а драйвера SQLite в списке нет. Варианты: встроенный `node:sqlite` (Node 22.5+, без зависимостей), `better-sqlite3` / `sqlite3` (сторонние) | ✅ [ADR 0003](../adr/0003-sqlite-driver-and-node-version.md): `node:sqlite` на Node 24 LTS (`>=24.15`), конфликта с «18+» нет |
-| D2 | **Валидация** | zod/joi не в списке | Свои маленькие валидаторы-функции + проверка в OpenAPI |
+| D2 | **Валидация** | zod/joi не в списке | ✅ [ADR 0008](../adr/0008-validation-and-openapi.md): spec-first, свой валидатор подмножества JSON Schema по `openapi.yaml`, fail-fast |
 | D3 | **Загрузка `.env`** | dotenv не в списке | `process.loadEnvFile()` / `node --env-file` (Node 20.6+) |
 | D4 | **Хранение цены** | `REAL` (float) теряет точность — в финтехе это красный флаг. Варианты: `TEXT` с десятичной строкой, `INTEGER` в минимальных единицах | ✅ [ADR 0006](../adr/0006-price-precision.md): точный TEXT + генерируемая REAL-колонка, строки в API, свой `Decimal` на BigInt |
 | D5 | **Что значит «актуальная цена»** | Живой запрос в CMC на каждый GET или последняя цена из БД после фоновой синхронизации | Отдаём из БД + время обновления; живой запрос — опционально. Дёшево по квотам и работает при падении CMC |
 | D6 | **Логгер** | pino/winston не в списке | Свой JSON-логгер поверх `console` с уровнями и requestId |
-| D7 | **Swagger UI** | Нужен `swagger-ui-express` — считаем частью «Swagger» из стека | Spec-first: руками пишем `openapi.yaml`, UI на `/docs` |
+| D7 | **Swagger UI** | Нужен `swagger-ui-express` — считаем частью «Swagger» из стека | ✅ [ADR 0004](../adr/0004-c7-interpretation-and-dev-tooling.md), [0008](../adr/0008-validation-and-openapi.md): `swagger-ui-express` на `/docs`, спека — `/openapi.json` |
 | D8 | **Retry и rate limit** | Библиотек ретраев нет; у CMC лимиты на запросы и кредиты | Свой retry с exponential backoff + jitter; batch-запрос всех символов одним вызовом |
 | D9 | **БД в тестах** | Курс: внешние API мокаем, БД — нет | Реальная SQLite в памяти / во временном файле на каждый тест-файл |
 | D10 | **Планировщик** | `setInterval` может накладывать запуски при долгом запросе | Цепочка `setTimeout` после завершения + флаг `isRunning` |
