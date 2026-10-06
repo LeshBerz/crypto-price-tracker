@@ -19,8 +19,9 @@
 | [0011](0011-platform-composition.md) | Platform: Postgres + TimescaleDB, Redis, RabbitMQ, worker — по компоненту на проблему масштабирования | Q8 | Accepted |
 | [0012](0012-web-charts-and-ui-kit.md) | Web: Lightweight Charts, shadcn/ui + Tailwind 4, TanStack Query | Q11 | Accepted |
 | [0013](0013-data-model.md) | Доменная модель и схема БД (STRICT, CHECK, миграции forward-only) | фаза A | Accepted |
-| [0014](0014-api-contract.md) | Контракт API v1 (15 операций) + поправки к 0002, 0004, 0008 | фаза A | Accepted |
+| [0014](0014-api-contract.md) | Контракт API v1 (16 операций) + поправки к 0002, 0004, 0008 | фаза A | Accepted |
 | [0015](0015-ports-events-and-lifecycle.md) | Порты, события (после COMMIT), синхронизация, graceful shutdown | фаза A | Accepted |
+| [0016](0016-web-auth-and-bff-routes.md) | Web: таблица пользователей + серверные сессии (OWASP), allowlist BFF с тестом-сверкой, CSRF | фаза A | Accepted |
 
 ## Порядок закрытия остальных вопросов
 

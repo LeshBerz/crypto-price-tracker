@@ -204,6 +204,33 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalError' }
 
+  /api/v1/prices/sparklines:
+    get:
+      tags: [Prices]
+      operationId: listSparklines
+      summary: Мини-графики цен всех отслеживаемых криптовалют одним запросом
+      description: |
+        Цены закрытия бакетов из часовых свёрток (ADR 0007) — **один запрос на весь watchlist** вместо запроса агрегатов
+        на каждую монету (N+1). `24h` — 24 точки по 1 ч, `7d` — 42 точки по 4 ч. Монета без данных — пустой `points`.
+      x-required-scopes: ['prices:read']
+      parameters:
+        - name: window
+          in: query
+          required: false
+          schema: { type: string, enum: ['24h', '7d'], default: '24h' }
+      responses:
+        '200':
+          description: Мини-графики
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SparklineList' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
   /api/v1/cryptocurrencies/{id}/prices:
     parameters:
       - $ref: '#/components/parameters/CryptocurrencyId'
@@ -363,6 +390,7 @@ paths:
         |---|---|---|
         | `price.updated` | `{ cryptocurrencyId, symbol, price, currency, sourceUpdatedAt, fetchedAt }` | новая цена сохранена |
         | `sync.finished` | `SyncRun` | запуск синхронизации завершён |
+        | `watchlist.changed` | `{ cryptocurrencyId, change: 'added' \| 'updated' \| 'removed' }` | монета добавлена, изменена или удалена — клиент перечитывает список |
         | `heartbeat` | `{}` | каждые 25 с — держит соединение через прокси |
 
         Поле `id:` каждого события позволяет переподключиться с `Last-Event-ID` (пропущенные события не досылаются:
@@ -723,6 +751,35 @@ components:
           type: array
           maxItems: 1000
           items: { $ref: '#/components/schemas/PriceBucket' }
+    SparklinePoint:
+      type: object
+      additionalProperties: false
+      required: [bucketStart, close]
+      properties:
+        bucketStart: { $ref: '#/components/schemas/Timestamp' }
+        close: { $ref: '#/components/schemas/Decimal' }
+    Sparkline:
+      type: object
+      additionalProperties: false
+      required: [cryptocurrencyId, points]
+      properties:
+        cryptocurrencyId: { $ref: '#/components/schemas/Id' }
+        points:
+          type: array
+          maxItems: 42
+          items: { $ref: '#/components/schemas/SparklinePoint' }
+    SparklineList:
+      type: object
+      additionalProperties: false
+      required: [currency, window, interval, items]
+      properties:
+        currency: { $ref: '#/components/schemas/Currency' }
+        window: { type: string, enum: ['24h', '7d'] }
+        interval: { type: string, enum: ['1h', '4h'] }
+        items:
+          type: array
+          maxItems: 100
+          items: { $ref: '#/components/schemas/Sparkline' }
 
     SyncRunStatus:
       type: string

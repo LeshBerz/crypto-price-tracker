@@ -97,7 +97,7 @@ type DomainEvent<T extends string, P> = {
 | `watchlist.changed` | `{ cryptocurrencyId, change: 'added' \| 'updated' \| 'removed' }` | `WatchlistService` | SSE-хаб (дашборд перечитывает список) | Redis Pub/Sub; инвалидация кэша |
 | `alert.triggered` | `{ ruleId, cryptocurrencyId, price, observed, triggeredAt }` | v1.1 (модуль алертов) | SSE-хаб, outbox доставок (ADR 0010) | RabbitMQ → доставки с DLQ |
 
-В SSE (контракт ADR 0014) уходят `price.updated`, `sync.finished`, `heartbeat`. `watchlist.changed` добавляется в описание `/stream` вместе с реализацией.
+В SSE (контракт ADR 0014) уходят `price.updated`, `sync.finished`, `watchlist.changed`, `heartbeat` (`watchlist.changed` внесён в контракт 06.10 вместе с UI-флоу).
 
 ### Гарантии доставки
 
