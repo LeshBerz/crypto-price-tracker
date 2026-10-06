@@ -8,6 +8,7 @@
 |---|---|---|---|
 | [0001](0001-web-framework.md) | Фреймворк для `apps/web`: Next.js | Q1 | Accepted |
 | [0002](0002-access-model.md) | Модель доступа: API key со scope + BFF в web | Q2 | Accepted |
+| [0003](0003-sqlite-driver-and-node-version.md) | Драйвер SQLite: `node:sqlite` на Node 24 LTS | Q3 | Accepted |
 
 ## Порядок закрытия остальных вопросов
 
