@@ -16,6 +16,7 @@
 | [0008](0008-validation-and-openapi.md) | Spec-first: OpenAPI 3.0 управляет типами, валидацией и маршрутами | Q9 | Accepted |
 | [0009](0009-testing-strategy.md) | Тесты: настоящая SQLite, HTTP-стаб CMC, Clock, автоматическая матрица C8 | Q12 | Accepted |
 | [0010](0010-email-alert-channel.md) | Email-алерты: HTTP-API (Mailpit локально, Resend опционально), outbox в БД | Q10 | Accepted |
+| [0011](0011-platform-composition.md) | Platform: Postgres + TimescaleDB, Redis, RabbitMQ, worker — по компоненту на проблему масштабирования | Q8 | Accepted |
 
 ## Порядок закрытия остальных вопросов
 
