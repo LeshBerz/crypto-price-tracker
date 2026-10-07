@@ -1,0 +1,13 @@
+// Только для ts-jest: тесты компилируются в CommonJS (ADR 0004).
+// rewriteRelativeImportExtensions выключен: Jest сам резолвит './x.ts' и трансформирует файл,
+// а переписанный './x.js' он бы не нашёл.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "bundler",
+    "verbatimModuleSyntax": false,
+    "isolatedModules": false,
+    "rewriteRelativeImportExtensions": false
+  }
+}

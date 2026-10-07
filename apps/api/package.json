@@ -1,0 +1,45 @@
+{
+  "name": "@cpt/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Сдаваемая версия по ТЗ: Express + TypeScript + SQLite (raw SQL)",
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=.env src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "jest",
+    "test:cov": "jest --coverage",
+    "openapi:lint": "redocly lint openapi/openapi.yaml",
+    "codegen": "redocly bundle openapi/openapi.yaml --ext json -o openapi/.bundle/openapi.json && node scripts/codegen-spec.ts && openapi-typescript openapi/openapi.yaml -o src/generated/api-types.ts",
+    "codegen:check": "npm run openapi:lint && npm run codegen && node scripts/assert-clean.ts src/generated"
+  },
+  "scarfSettings": {
+    "enabled": false
+  },
+  "dependencies": {
+    "axios": "^1.20.0",
+    "express": "^5.2.1",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^2.59.0",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.19.1",
+    "@types/supertest": "^7.2.1",
+    "@types/swagger-ui-express": "^4.1.8",
+    "jest": "^30.5.2",
+    "openapi-typescript": "^7.13.0",
+    "supertest": "^7.3.1",
+    "ts-jest": "^29.4.14",
+    "typescript": "~5.9.3"
+  }
+}
