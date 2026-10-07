@@ -11,6 +11,8 @@ info:
     - Время — ISO 8601 UTC (`2026-10-06T12:00:00.000Z`). Во входных параметрах зона обязательна.
     - Ошибки — RFC 9457 Problem Details (`application/problem+json`).
     - Каждый ответ содержит заголовок `X-Request-Id`; входящий валидный `X-Request-Id` переиспользуется.
+    - Неизвестный query-параметр → 400 у любой операции. Неизвестный путь → 404 `not-found`. Известный путь с неподдерживаемым
+      методом → 405 `method-not-allowed` и заголовок `Allow` (RFC 9110). Эти ответы формирует роутер, а не операция.
 servers:
   - url: http://localhost:3000
     description: Локальный запуск (docker compose)
@@ -41,6 +43,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Liveness' }
+        '400': { $ref: '#/components/responses/ValidationError' }
 
   /health/ready:
     get:
@@ -59,6 +62,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Readiness' }
+        '400': { $ref: '#/components/responses/ValidationError' }
         '503':
           description: Не готов (например, БД недоступна)
           headers:
@@ -82,6 +86,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CryptocurrencyList' }
+        '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalError' }
@@ -200,6 +205,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/LatestPriceList' }
+        '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalError' }
@@ -329,6 +335,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SyncRun' }
+        '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
@@ -374,6 +381,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CmcStatus' }
+        '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalError' }
@@ -404,6 +412,7 @@ paths:
           content:
             text/event-stream:
               schema: { type: string }
+        '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
@@ -877,6 +886,7 @@ components:
             - urn:cpt:problem:unauthorized
             - urn:cpt:problem:forbidden
             - urn:cpt:problem:not-found
+            - urn:cpt:problem:method-not-allowed
             - urn:cpt:problem:already-tracked
             - urn:cpt:problem:sync-already-running
             - urn:cpt:problem:payload-too-large
