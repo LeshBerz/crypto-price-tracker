@@ -5,7 +5,7 @@
 - **Фаза A:** артефакт «Доменная модель и схема БД»
 - **Требования:** D-1, D-2, D-3, F2, F4, F5, C1, C2, C3; D10 (наложение запусков)
 - **Сводит решения:** [0002](0002-access-model.md) (ключи), [0003](0003-sqlite-driver-and-node-version.md) (драйвер), [0006](0006-price-precision.md) (точность), [0007](0007-aggregates-and-rollups.md) (свёртки, время), [0010](0010-email-alert-channel.md) (outbox)
-- **DDL (проверен):** [`schema/0001_core.sql`](../project/schema/0001_core.sql), [`schema/0002_alerts.sql`](../project/schema/0002_alerts.sql)
+- **DDL (проверен):** [`apps/api/migrations/0001_core.sql`](../../apps/api/migrations/0001_core.sql) (применяется раннером миграций), [`schema/0002_alerts.sql`](../project/schema/0002_alerts.sql)
 
 ## Контекст
 
