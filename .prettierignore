@@ -1,0 +1,8 @@
+# Документация и контракт пишутся руками: таблицы Markdown и flow-стиль YAML Prettier переформатировал бы целиком
+*.md
+apps/api/openapi/openapi.yaml
+package-lock.json
+**/src/generated/
+**/openapi/.bundle/
+**/dist/
+**/coverage/
