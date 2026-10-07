@@ -13,7 +13,7 @@ Node.js · TypeScript · Express · SQLite (raw SQL) · axios · Jest + Supertes
 |---|---|
 | [ROADMAP.md](ROADMAP.md) | План, этапы, прогресс |
 | [docs/project/requirements.md](docs/project/requirements.md) | Требования задания → чек-лист + открытые решения |
-| [docs/project/architecture.md](docs/project/architecture.md) | Архитектура, диаграммы, схема БД, эндпоинты |
+| [docs/project/architecture.md](docs/project/architecture.md) | Обзор архитектуры и карта ADR |
 | [docs/course/course-map.md](docs/course/course-map.md) | Конспект курса и карта «урок → требование → код» |
 | [docs/study/](docs/study/) | Разборы тем: цитата курса → простыми словами → код в проекте |
 | [docs/interview/questions.md](docs/interview/questions.md) | Банк вопросов к собеседованию |
