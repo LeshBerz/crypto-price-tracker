@@ -11,6 +11,8 @@ export default {
   collectCoverageFrom: ['src/**/*.ts', '!src/generated/**', '!src/server.ts'],
   coverageThreshold: {
     global: { lines: 90, branches: 85 },
+    // Критичный код — 100 % (ADR 0009)
+    './src/common/decimal.ts': { lines: 100, branches: 100, functions: 100, statements: 100 },
   },
   clearMocks: true,
 };
