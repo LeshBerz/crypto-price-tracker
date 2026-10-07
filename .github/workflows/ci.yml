@@ -1,0 +1,44 @@
+# CI (бриф §4, ADR 0009). Job api — сдаваемая версия; jobs web, platform, e2e добавятся в фазе E2.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REDOCLY_TELEMETRY: 'off'
+
+jobs:
+  api:
+    name: api — lint, typecheck, C7, контракт, тесты
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Lint и формат
+        run: npm run lint && npm run format:check
+      - name: Typecheck
+        run: npm run typecheck
+      - name: C7 — только библиотеки из ТЗ в рантайме api
+        run: npm run check-deps
+      - name: Контракт — lint и актуальность кодогенерации
+        run: npm run codegen:check
+      - name: Тесты корневых скриптов
+        run: npm run test:scripts
+      - name: Тесты api + coverage
+        run: npm run test:cov -w @cpt/api
+      - name: Прод-зависимости api — только из ТЗ
+        run: npm ls --omit=dev -w @cpt/api --depth=0
