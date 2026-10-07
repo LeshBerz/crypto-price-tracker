@@ -39,7 +39,7 @@ flowchart LR
 | Эндпоинты, соглашения (версии, пагинация, ошибки, 202 + Location) | [ADR 0014](../adr/0014-api-contract.md), контракт [`openapi.yaml`](../../apps/api/openapi/openapi.yaml) |
 | Spec-first: роутер, валидатор, типы и Swagger из одной спеки | [ADR 0008](../adr/0008-validation-and-openapi.md) |
 | Порты, доменные события, синхронизация, ретраи, graceful shutdown | [ADR 0015](../adr/0015-ports-events-and-lifecycle.md) |
-| Схема БД, индексы, миграции | [ADR 0013](../adr/0013-data-model.md), DDL — [`schema/`](schema/) |
+| Схема БД, индексы, миграции | [ADR 0013](../adr/0013-data-model.md), миграции api — [`apps/api/migrations/`](../../apps/api/migrations/), черновики следующих — [`schema/`](schema/) |
 | Точность цен и агрегаты | [ADR 0006](../adr/0006-price-precision.md), [0007](../adr/0007-aggregates-and-rollups.md) |
 | Доступ: API key со scope, BFF | [ADR 0002](../adr/0002-access-model.md), [0016](../adr/0016-web-auth-and-bff-routes.md) |
 | Ограничение C7, инструменты, Node 24 | [ADR 0003](../adr/0003-sqlite-driver-and-node-version.md), [0004](../adr/0004-c7-interpretation-and-dev-tooling.md) |
