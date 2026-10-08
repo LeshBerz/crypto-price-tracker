@@ -20,7 +20,7 @@ export type RequestInput = {
   body: unknown;
 };
 export type RawRequest = {
-  params: Readonly<Record<string, string | undefined>>;
+  params: Readonly<Record<string, unknown>>;
   query: Readonly<Record<string, unknown>>;
   body: unknown;
   /** Есть ли у запроса тело (Content-Length > 0 или chunked) — отличает «тела нет» от «тело пустое» */
@@ -373,7 +373,9 @@ export function checkResponse(op: CompiledOperation, response: ResponseUnderTest
   const validate = spec.content.get(media);
   if (validate) {
     const issues: ValidationIssue[] = [];
-    validate(response.body, '', issues);
+    // JSON-ответ сверяем распарсенным, остальные (text/event-stream) — как текст
+    const isJson = media === 'application/json' || media.endsWith('+json');
+    validate(isJson ? response.body : response.text, '', issues);
     report(issues);
   }
   return problems;

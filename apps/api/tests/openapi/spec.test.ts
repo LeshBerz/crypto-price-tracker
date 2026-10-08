@@ -376,6 +376,20 @@ describe('checkResponse (основа toMatchContract)', () => {
     ]);
   });
 
+  it('не-JSON ответ со схемой сверяется как текст (text/event-stream), а не как распарсенное тело', () => {
+    const doc = fixture();
+    const health = ((doc.paths as Json)['/health'] as Json).get as Json;
+    health.responses = {
+      '200': { description: 'ok', content: { 'text/plain': { schema: { type: 'string', maxLength: 2 } } } },
+    };
+    const op = compileSpec(doc).operation('health');
+    const headers = { 'content-type': 'text/plain; charset=utf-8' };
+    expect(checkResponse(op, { status: 200, headers, body: {}, text: 'ok' })).toEqual([]);
+    expect(checkResponse(op, { status: 200, headers, body: {}, text: 'too long' })).toEqual([
+      '/ must NOT have more than 2 characters',
+    ]);
+  });
+
   it('media type без схемы — проверяется только Content-Type', () => {
     const health = compileSpec(fixture()).operation('health');
     expect(
