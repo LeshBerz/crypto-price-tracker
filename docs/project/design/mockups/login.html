@@ -1,0 +1,1287 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Вход — Crypto Price Tracker (макет)</title>
+    <script>
+      /* тема до первой отрисовки — без вспышки */ (function () {
+        var p = 'system';
+        try {
+          p = localStorage.getItem('cpt-theme') || 'system';
+        } catch (e) {}
+        var d = p === 'dark' || (p === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = d ? 'dark' : 'light';
+      })();
+    </script>
+    <style>
+      /* ===== Токены (имена как в shadcn/ui; в apps/web переедут в @theme Tailwind 4) ===== */
+      :root {
+        color-scheme: light;
+        --background: #ffffff;
+        --surface: #f6f7f9;
+        --card: #ffffff;
+        --foreground: #0f172a;
+        --muted-foreground: #526075;
+        --border: #e3e7ee;
+        --input: #7b8799;
+        --primary: #1d4ed8;
+        --primary-foreground: #ffffff;
+        --ring: #1d4ed8;
+        --up: #047857;
+        --up-bg: #e7f6ef;
+        --down: #b91c1c;
+        --down-bg: #fdeceb;
+        --stale: #5b6577;
+        --warn-fg: #8a3c00;
+        --warn-bg: #fff7e6;
+        --warn-border: #f2c27a;
+        --info-fg: #1e3a8a;
+        --info-bg: #eef4ff;
+        --info-border: #b9cdf7;
+        --error-bg: #fef2f2;
+        --error-border: #f3b4b4;
+        --skeleton: #e9edf3;
+        --shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 3px rgb(15 23 42 / 0.08);
+        --radius: 10px;
+        --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+      }
+      :root[data-theme='dark'] {
+        color-scheme: dark;
+        --background: #0b0f17;
+        --surface: #0f141e;
+        --card: #111723;
+        --foreground: #e6e9ef;
+        --muted-foreground: #9aa4b5;
+        --border: #232c3b;
+        --input: #6b7689;
+        --primary: #7aa7ff;
+        --primary-foreground: #0b0f17;
+        --ring: #7aa7ff;
+        --up: #34d399;
+        --up-bg: #0d2a20;
+        --down: #f87171;
+        --down-bg: #301417;
+        --stale: #8b95a7;
+        --warn-fg: #fbbf5a;
+        --warn-bg: #2a1f0b;
+        --warn-border: #6b4a12;
+        --info-fg: #a9c4ff;
+        --info-bg: #0f1d38;
+        --info-border: #24406f;
+        --error-bg: #2a1214;
+        --error-border: #6b2a2e;
+        --skeleton: #1b2331;
+        --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+      }
+
+      /* ===== База ===== */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .input::placeholder {
+        text-transform: none;
+        color: var(--muted-foreground);
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--foreground);
+        font: 15px/1.5 var(--font);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      a {
+        color: var(--primary);
+        text-underline-offset: 2px;
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: 1.25;
+        margin: 0;
+      }
+      h1 {
+        font-size: 1.375rem;
+      }
+      h2 {
+        font-size: 1.0625rem;
+      }
+      h3 {
+        font-size: 0.9375rem;
+      }
+      p {
+        margin: 0;
+      }
+      code,
+      .mono {
+        font-family: var(--mono);
+        font-size: 0.875em;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .muted {
+        color: var(--muted-foreground);
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      .skip-link {
+        position: absolute;
+        left: 8px;
+        top: -40px;
+        background: var(--card);
+        padding: 8px 12px;
+        border-radius: 6px;
+        z-index: 50;
+      }
+      .skip-link:focus {
+        top: 8px;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 16px;
+      }
+      main {
+        flex: 1;
+        padding: 20px 0 32px;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .spacer {
+        flex: 1;
+      }
+
+      /* ===== Шапка ===== */
+      .app-header {
+        border-bottom: 1px solid var(--border);
+        background: var(--card);
+      }
+      .app-header .container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        min-height: 56px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        color: var(--foreground);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .logo-mark {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        background: var(--primary);
+        color: var(--primary-foreground);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .nav {
+        display: flex;
+        gap: 2px;
+        flex-wrap: wrap;
+      }
+      .nav a {
+        color: var(--muted-foreground);
+        text-decoration: none;
+        padding: 6px 10px;
+        border-radius: 7px;
+        font-size: 0.9rem;
+      }
+      .nav a:hover {
+        color: var(--foreground);
+        background: var(--surface);
+      }
+      .nav a[aria-current='page'] {
+        color: var(--foreground);
+        background: var(--surface);
+        font-weight: 600;
+      }
+      .nav .sep {
+        width: 1px;
+        background: var(--border);
+        margin: 6px 4px;
+      }
+      .header-tools {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+      .rt {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8125rem;
+        color: var(--muted-foreground);
+        white-space: nowrap;
+      }
+      .rt-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--up);
+      }
+      .rt[data-state='offline'] .rt-dot {
+        background: transparent;
+        border: 2px solid var(--stale);
+      }
+      .user-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      @media (max-width: 720px) {
+        .app-header .nav {
+          order: 3;
+          width: 100%;
+        }
+        .user-name,
+        .user-btn .badge {
+          display: none;
+        }
+      }
+      @media (max-width: 420px) {
+        .rt #rt-text {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+        }
+        .header-tools {
+          gap: 4px;
+        }
+        .header-tools .seg button {
+          min-width: 32px;
+          padding: 0 6px;
+        }
+      }
+
+      /* ===== Кнопки и поля ===== */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 0 14px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--foreground);
+        font: inherit;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .btn:hover {
+        background: var(--surface);
+      }
+      .btn-primary {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .btn-primary:hover {
+        background: var(--primary);
+        filter: brightness(1.08);
+      }
+      .btn-danger {
+        background: var(--down);
+        border-color: var(--down);
+        color: #fff;
+      }
+      :root[data-theme='dark'] .btn-danger {
+        color: #0b0f17;
+      }
+      .btn-ghost {
+        border-color: transparent;
+        background: transparent;
+      }
+      .btn-sm {
+        min-height: 30px;
+        padding: 0 10px;
+        font-size: 0.8125rem;
+      }
+      .btn[disabled],
+      .btn[aria-disabled='true'] {
+        opacity: 0.55;
+        cursor: not-allowed;
+        filter: none;
+      }
+      .icon-btn {
+        min-width: 36px;
+        padding: 0 8px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .label {
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+      .hint {
+        font-size: 0.8125rem;
+        color: var(--muted-foreground);
+      }
+      .input {
+        min-height: 38px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 1px solid var(--input);
+        background: var(--background);
+        color: var(--foreground);
+        font: inherit;
+        width: 100%;
+      }
+      .input[aria-invalid='true'] {
+        border-color: var(--down);
+      }
+      .field-error {
+        color: var(--down);
+        font-size: 0.8125rem;
+        display: flex;
+        gap: 6px;
+        align-items: flex-start;
+      }
+
+      /* Сегментированный переключатель */
+      .seg {
+        display: inline-flex;
+        padding: 3px;
+        gap: 2px;
+        border-radius: 9px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        flex-wrap: wrap;
+      }
+      .seg button {
+        min-height: 30px;
+        min-width: 40px;
+        padding: 0 10px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted-foreground);
+        font: inherit;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .seg button[aria-pressed='true'] {
+        background: var(--card);
+        color: var(--foreground);
+        box-shadow: var(--shadow);
+      }
+      .seg button[aria-disabled='true'] {
+        opacity: 0.45;
+        cursor: not-allowed;
+        text-decoration: line-through;
+        text-decoration-thickness: 1px;
+      }
+
+      /* ===== Карточки, бейджи, баннеры ===== */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+      .card-pad {
+        padding: 16px;
+      }
+      .card-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 22px;
+        padding: 0 8px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid var(--border);
+        color: var(--muted-foreground);
+        background: var(--surface);
+        white-space: nowrap;
+      }
+      .badge-ok {
+        color: var(--up);
+        background: var(--up-bg);
+        border-color: transparent;
+      }
+      .badge-err {
+        color: var(--down);
+        background: var(--down-bg);
+        border-color: transparent;
+      }
+      .badge-warn {
+        color: var(--warn-fg);
+        background: var(--warn-bg);
+        border-color: var(--warn-border);
+      }
+      .badge-info {
+        color: var(--info-fg);
+        background: var(--info-bg);
+        border-color: var(--info-border);
+      }
+
+      .banner {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 12px 14px;
+        border-radius: var(--radius);
+        border: 1px solid;
+      }
+      .banner-warn {
+        background: var(--warn-bg);
+        color: var(--warn-fg);
+        border-color: var(--warn-border);
+      }
+      .banner-info {
+        background: var(--info-bg);
+        color: var(--info-fg);
+        border-color: var(--info-border);
+      }
+      .banner-error {
+        background: var(--error-bg);
+        color: var(--down);
+        border-color: var(--error-border);
+      }
+      .banner .b-icon {
+        font-size: 1.1rem;
+        line-height: 1.3;
+      }
+      .banner .b-body {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+      .banner strong {
+        font-weight: 700;
+      }
+      .banner a {
+        color: inherit;
+        font-weight: 600;
+      }
+
+      /* ===== Числа: цена, проценты ===== */
+      .price {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        font-weight: 600;
+      }
+      .price .lz {
+        color: var(--muted-foreground);
+        font-weight: 400;
+      }
+      .price.is-stale {
+        color: var(--stale);
+      }
+      .chg {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        font-weight: 600;
+      }
+      .chg.up {
+        color: var(--up);
+      }
+      .chg.down {
+        color: var(--down);
+      }
+      .chg.flat,
+      .chg.none {
+        color: var(--muted-foreground);
+      }
+      .stale-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.75rem;
+        color: var(--warn-fg);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .pause-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.75rem;
+        color: var(--muted-foreground);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      /* Подсветка изменившейся цены: только ячейка, ≤ 1 с, без анимации при reduced motion */
+      @keyframes tick-up {
+        from {
+          background: var(--up-bg);
+        }
+        to {
+          background: transparent;
+        }
+      }
+      @keyframes tick-down {
+        from {
+          background: var(--down-bg);
+        }
+        to {
+          background: transparent;
+        }
+      }
+      .tick-up {
+        animation: tick-up 1s ease-out;
+      }
+      .tick-down {
+        animation: tick-down 1s ease-out;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .tick-up,
+        .tick-down {
+          animation: none;
+        }
+        .spinner {
+          animation: none !important;
+        }
+      }
+
+      /* ===== Таблицы ===== */
+      .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+      }
+      table.data {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+      }
+      table.data th {
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+      table.data td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+      }
+      table.data tr:last-child td {
+        border-bottom: 0;
+      }
+      table.data tbody tr:hover {
+        background: var(--surface);
+      }
+      table.data .r {
+        text-align: right;
+      }
+      .coin-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+      .coin-ico {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 800;
+        color: #fff;
+        flex: none;
+      }
+      .coin-sym {
+        font-weight: 700;
+        color: var(--foreground);
+        text-decoration: none;
+      }
+      .coin-sym:hover {
+        text-decoration: underline;
+      }
+      .coin-name {
+        color: var(--muted-foreground);
+        font-size: 0.8125rem;
+      }
+
+      /* Скелетоны */
+      .sk {
+        display: inline-block;
+        height: 12px;
+        border-radius: 6px;
+        background: var(--skeleton);
+      }
+
+      /* ===== Тосты ===== */
+      .toasts {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 40;
+        max-width: min(380px, calc(100vw - 32px));
+      }
+      .toast {
+        background: var(--card);
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        font-size: 0.875rem;
+        display: flex;
+        gap: 10px;
+      }
+
+      /* ===== Диалог ===== */
+      dialog {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0;
+        background: var(--card);
+        color: var(--foreground);
+        width: min(460px, calc(100vw - 32px));
+        box-shadow: 0 20px 50px rgb(0 0 0 / 0.3);
+      }
+      dialog::backdrop {
+        background: rgb(2 6 23 / 0.55);
+      }
+      .dialog-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      /* ===== Спиннер ===== */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .spinner {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        animation: spin 0.8s linear infinite;
+        display: inline-block;
+        vertical-align: -2px;
+      }
+
+      /* ===== Панель макета (не часть продукта) ===== */
+      .mock-bar {
+        border: 1px dashed var(--input);
+        border-radius: var(--radius);
+        padding: 10px 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        align-items: center;
+        font-size: 0.8125rem;
+        background: var(--surface);
+      }
+      .mock-bar .mb-title {
+        font-weight: 700;
+        color: var(--muted-foreground);
+        text-transform: uppercase;
+        font-size: 0.6875rem;
+        letter-spacing: 0.06em;
+      }
+      .mock-bar label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        max-width: 100%;
+      }
+      .mock-bar select {
+        min-width: 0;
+        min-height: 30px;
+        border-radius: 6px;
+        border: 1px solid var(--input);
+        background: var(--background);
+        color: var(--foreground);
+        font: inherit;
+        padding: 0 6px;
+        max-width: 100%;
+      }
+
+      /* ===== Футер ===== */
+      .app-footer {
+        border-top: 1px solid var(--border);
+        padding: 14px 0;
+        font-size: 0.8125rem;
+        color: var(--muted-foreground);
+      }
+      .app-footer .container {
+        display: flex;
+        gap: 8px 16px;
+        flex-wrap: wrap;
+      }
+    </style>
+    <style>
+      .login-top {
+        display: flex;
+        justify-content: flex-end;
+        padding: 12px 16px;
+      }
+      .login-wrap {
+        flex: 1;
+        display: grid;
+        place-items: start center;
+        padding: 6vh 16px 32px;
+      }
+      .login-card {
+        width: min(400px, 100%);
+        padding: 28px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        text-align: center;
+      }
+      .brand .logo-mark {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        font-size: 15px;
+      }
+      .pw {
+        position: relative;
+      }
+      .pw .input {
+        padding-right: 92px;
+      }
+      .pw .btn {
+        position: absolute;
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        min-height: 30px;
+      }
+      .mock-wrap {
+        width: min(400px, 100%);
+        margin: 0 auto 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-top" id="top"></div>
+    <div class="login-wrap">
+      <div class="stack" style="width: 100%; align-items: center">
+        <div class="mock-bar mock-wrap" aria-label="Панель макета (не часть интерфейса)">
+          <span class="mb-title">Макет</span>
+          <label
+            >Сценарий
+            <select id="scenario">
+              <option value="normal">Обычный вход</option>
+              <option value="invalid">Неверный логин или пароль</option>
+              <option value="throttled">Слишком много попыток</option>
+              <option value="expired">Сессия завершена (?reason=expired)</option>
+            </select></label
+          >
+        </div>
+
+        <main id="main" class="card login-card">
+          <div class="brand">
+            <span class="logo-mark" aria-hidden="true">CPT</span>
+            <h1>Вход в Crypto Price Tracker</h1>
+            <p class="hint">Цены криптовалют из CoinMarketCap. Доступ — по учётной записи от оператора.</p>
+          </div>
+          <div id="notice" role="status" aria-live="polite"></div>
+          <form id="form" class="stack" style="gap: 14px" novalidate>
+            <div class="field">
+              <label class="label" for="login">Логин</label>
+              <input
+                class="input"
+                id="login"
+                name="username"
+                autocomplete="username"
+                autocapitalize="none"
+                spellcheck="false"
+                required
+              />
+            </div>
+            <div class="field">
+              <label class="label" for="password">Пароль</label>
+              <div class="pw">
+                <input
+                  class="input"
+                  id="password"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                  aria-describedby="form-err"
+                />
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm"
+                  id="toggle"
+                  aria-pressed="false"
+                  aria-controls="password"
+                >
+                  Показать
+                </button>
+              </div>
+            </div>
+            <div id="form-err" class="field-error" role="alert"></div>
+            <button class="btn btn-primary" id="submit" type="submit" style="min-height: 40px">Войти</button>
+          </form>
+          <p class="hint" style="text-align: center">
+            Нет доступа или забыли пароль — обратитесь к оператору: самостоятельной регистрации нет.
+          </p>
+        </main>
+      </div>
+    </div>
+    <script>
+      /* Общие функции макетов. В apps/web это станет lib/format.ts, components/theme-toggle.tsx и т. п. */
+      const CPT = (() => {
+        /** «Сейчас» в макетах зафиксировано, чтобы относительное время было воспроизводимым. */
+        const NOW = Date.parse('2026-10-08T11:07:30.000Z');
+
+        /* ---------- Тема: светлая / тёмная / как в системе ---------- */
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        function readPref() {
+          try {
+            return localStorage.getItem('cpt-theme') || 'system';
+          } catch {
+            return 'system';
+          }
+        }
+        function writePref(v) {
+          try {
+            localStorage.setItem('cpt-theme', v);
+          } catch {
+            /* приватный режим — не страшно */
+          }
+        }
+        function applyTheme(pref) {
+          const theme = pref === 'system' ? (mq.matches ? 'dark' : 'light') : pref;
+          document.documentElement.dataset.theme = theme;
+          document
+            .querySelectorAll('[data-theme-pref]')
+            .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themePref === pref)));
+          document.dispatchEvent(new CustomEvent('cpt:theme', { detail: theme }));
+        }
+        mq.addEventListener('change', () => {
+          if (readPref() === 'system') applyTheme('system');
+        });
+        function themeToggleHTML() {
+          const opts = [
+            ['light', '☀', 'Светлая тема'],
+            ['dark', '☾', 'Тёмная тема'],
+            ['system', 'Авто', 'Как в системе'],
+          ];
+          return `<div class="seg" role="group" aria-label="Тема">${opts
+            .map(
+              ([v, t, l]) =>
+                `<button type="button" data-theme-pref="${v}" aria-pressed="false" aria-label="${l}" title="${l}">${t}</button>`,
+            )
+            .join('')}</div>`;
+        }
+        function bindThemeToggle(root = document) {
+          root.querySelectorAll('[data-theme-pref]').forEach((b) =>
+            b.addEventListener('click', () => {
+              writePref(b.dataset.themePref);
+              applyTheme(b.dataset.themePref);
+            }),
+          );
+          applyTheme(readPref());
+        }
+
+        /* ---------- Цены: строка → Intl.NumberFormat без Number() (ADR 0006, 0012) ---------- */
+        const usd2 = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        const usdSig = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          maximumSignificantDigits: 6,
+        });
+        /** Decimal из контракта: ^(0|[1-9][0-9]*)(\.[0-9]*[1-9])?$ — значит, «< 1» ⇔ строка начинается с «0». */
+        const belowOne = (s) => s.startsWith('0');
+        function formatPrice(s) {
+          return belowOne(s) ? usdSig.format(s) : usd2.format(s);
+        }
+        function priceHTML(s, { stale = false, cls = '' } = {}) {
+          const f = formatPrice(s);
+          const m = f.match(/^\$0\.(0{3,})(\d+)$/);
+          const body = m ? `$0.<span class="lz">${m[1]}</span>${m[2]}` : f;
+          return `<span class="price ${stale ? 'is-stale' : ''} ${cls}" title="${s} USD">${body}</span>`;
+        }
+        /** Подпись шкалы графика: значащие цифры, а не фиксированные знаки (ADR 0012). */
+        const axisSig = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 5 });
+        const axis2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        function axisLabel(n) {
+          return n < 1 ? axisSig.format(n) : axis2.format(n);
+        }
+
+        /* ---------- Проценты: знак всегда, стрелка, цвет ---------- */
+        const pct = new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+          signDisplay: 'exceptZero',
+        });
+        function changeHTML(s, { suffix = '' } = {}) {
+          if (s == null) return `<span class="chg none" title="Истории меньше суток">—</span>`;
+          const t = pct.format(s).replace('-', '−');
+          const dir = t.startsWith('+') ? 'up' : t.startsWith('−') ? 'down' : 'flat';
+          const arrow = dir === 'up' ? '▲ ' : dir === 'down' ? '▼ ' : '';
+          return `<span class="chg ${dir}" title="${s} %"><span aria-hidden="true">${arrow}</span>${t}%${suffix}</span>`;
+        }
+
+        /* ---------- Время: пояс браузера, в подсказке — ISO UTC ---------- */
+        const hm = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const hms = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dt = new Intl.DateTimeFormat('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        const dts = new Intl.DateTimeFormat('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        const fmt = {
+          hm: (i) => hm.format(Date.parse(i)),
+          hms: (i) => hms.format(Date.parse(i)),
+          dt: (i) => dt.format(Date.parse(i)),
+          dts: (i) => dts.format(Date.parse(i)),
+        };
+        function relative(iso) {
+          const s = Math.max(0, (NOW - Date.parse(iso)) / 1000);
+          if (s < 60) return 'только что';
+          const m = Math.floor(s / 60);
+          if (m < 60) return `${m} мин назад`;
+          const h = Math.floor(m / 60);
+          if (h < 24) return `${h} ч назад`;
+          return `${Math.floor(h / 24)} дн назад`;
+        }
+        function timeHTML(iso, mode = 'rel') {
+          const text = mode === 'rel' ? relative(iso) : fmt[mode](iso);
+          return `<time datetime="${iso}" title="${iso} (UTC)">${text}</time>`;
+        }
+        const iso = (ms) => new Date(ms).toISOString();
+
+        /* ---------- Мини-график: свой SVG (ADR 0012) ---------- */
+        function sparkHTML(points, { w = 104, h = 30, label = '' } = {}) {
+          if (!points || points.length < 2) return `<span class="muted" title="Данных пока нет">—</span>`;
+          const v = points.map((p) => Number(p.close)); // Number() допустим только для отрисовки
+          const min = Math.min(...v),
+            max = Math.max(...v),
+            span = max - min || 1;
+          const d = v
+            .map(
+              (y, i) =>
+                `${i ? 'L' : 'M'}${((i / (v.length - 1)) * (w - 2) + 1).toFixed(1)},${(h - 3 - ((y - min) / span) * (h - 6)).toFixed(1)}`,
+            )
+            .join('');
+          // Почти без изменений (< 0,1 %) — нейтральный цвет: не красим «шум» стейблкоина
+          const rel = Math.abs(v[v.length - 1] - v[0]) / v[0];
+          const dir = rel < 0.001 ? 'muted-foreground' : v[v.length - 1] >= v[0] ? 'up' : 'down';
+          return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}"><path d="${d}" fill="none" stroke="var(--${dir})" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+        }
+
+        /* ---------- Детерминированные моки ---------- */
+        function rng(seed) {
+          return () => {
+            seed |= 0;
+            seed = (seed + 0x6d2b79f5) | 0;
+            let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        /** Число → Decimal-строка контракта (без экспоненты и хвостовых нулей). Только для генерации моков. */
+        function toDecimal(n, sig = 10) {
+          let s = n.toPrecision(sig);
+          if (/e/i.test(s)) s = n.toFixed(20);
+          if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '');
+          return s;
+        }
+
+        /* ---------- Шапка и футер ---------- */
+        function headerHTML({ active = 'dashboard', role = 'operator', rt = 'online' } = {}) {
+          const op = role === 'operator';
+          const link = (id, href, text) =>
+            `<a href="${href}" ${active === id ? 'aria-current="page"' : ''}>${text}</a>`;
+          return `<a class="skip-link" href="#main">К содержимому</a>
+<header class="app-header"><div class="container">
+  <a class="logo" href="dashboard.html"><span class="logo-mark" aria-hidden="true">CPT</span><span>Crypto Price Tracker</span></a>
+  <nav class="nav" aria-label="Основная навигация">
+    ${link('dashboard', 'dashboard.html', 'Дашборд')}
+    ${
+      op
+        ? `<span class="sep" aria-hidden="true"></span>
+    ${link('watchlist', 'operator.html#watchlist', 'Watchlist')}
+    ${link('sync', 'operator.html#sync', 'Синхронизация')}
+    ${link('system', 'operator.html#system', 'Система')}
+    <a href="#" title="Экран пользователей в макеты не входит" aria-disabled="true">Пользователи</a>`
+        : ''
+    }
+  </nav>
+  <div class="header-tools">
+    <span class="rt" id="rt" data-state="${rt}"><span class="rt-dot" aria-hidden="true"></span><span id="rt-text">${rt === 'online' ? 'Онлайн' : 'Переподключение…'}</span></span>
+    ${themeToggleHTML()}
+    <details class="user-menu" style="position:relative">
+      <summary class="btn btn-ghost user-btn" aria-label="Меню пользователя"><span class="avatar" aria-hidden="true">A</span><span class="user-name">alexey</span><span class="badge">${op ? 'Operator' : 'Viewer'}</span></summary>
+      <div class="card" style="position:absolute;right:0;top:42px;min-width:180px;padding:6px;z-index:30;display:flex;flex-direction:column">
+        <a class="btn btn-ghost" style="justify-content:flex-start" href="#">Профиль и сессии</a>
+        <a class="btn btn-ghost" style="justify-content:flex-start" href="login.html">Выйти</a>
+      </div>
+    </details>
+  </div>
+</div></header>`;
+        }
+        function footerHTML() {
+          return `<footer class="app-footer"><div class="container">
+  <span>Графики: TradingView Lightweight Charts™ — <a href="https://www.tradingview.com/" rel="noopener">tradingview.com</a></span>
+  <span class="spacer"></span>
+  <span>Макет · данные — моки по <code>openapi.yaml</code> · цены в USD</span>
+</div></footer>`;
+        }
+        function setRealtime(state) {
+          const el = document.getElementById('rt');
+          if (!el) return;
+          el.dataset.state = state;
+          document.getElementById('rt-text').textContent = state === 'online' ? 'Онлайн' : 'Переподключение…';
+        }
+
+        /* ---------- Тосты: aria-live="polite" (WCAG 4.1.3) ---------- */
+        function toast(html, kind = 'info') {
+          let box = document.getElementById('toasts');
+          if (!box) {
+            box = document.createElement('div');
+            box.id = 'toasts';
+            box.className = 'toasts';
+            box.setAttribute('role', 'status');
+            box.setAttribute('aria-live', 'polite');
+            document.body.append(box);
+          }
+          const t = document.createElement('div');
+          t.className = 'toast';
+          const icon = { ok: '✓', err: '✕', info: 'ℹ', warn: '⚠' }[kind];
+          t.innerHTML = `<span aria-hidden="true" style="color:var(--${kind === 'ok' ? 'up' : kind === 'err' ? 'down' : kind === 'warn' ? 'warn-fg' : 'info-fg'})">${icon}</span><div>${html}</div>`;
+          box.append(t);
+          setTimeout(() => t.remove(), 6000);
+        }
+
+        /** Перезапуск CSS-анимации подсветки цены. */
+        function flash(el, dir) {
+          el.classList.remove('tick-up', 'tick-down');
+          void el.offsetWidth;
+          el.classList.add(dir === 'up' ? 'tick-up' : 'tick-down');
+        }
+
+        const esc = (s) =>
+          String(s).replace(
+            /[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+          );
+
+        return {
+          NOW,
+          iso,
+          applyTheme,
+          bindThemeToggle,
+          themeToggleHTML,
+          formatPrice,
+          priceHTML,
+          axisLabel,
+          changeHTML,
+          fmt,
+          relative,
+          timeHTML,
+          sparkHTML,
+          rng,
+          toDecimal,
+          headerHTML,
+          footerHTML,
+          setRealtime,
+          toast,
+          flash,
+          esc,
+        };
+      })();
+    </script>
+    <script>
+      document.getElementById('top').innerHTML = CPT.themeToggleHTML();
+      CPT.bindThemeToggle(document.getElementById('top'));
+      const $ = (id) => document.getElementById(id);
+      let timer = null;
+
+      $('toggle').addEventListener('click', () => {
+        const show = $('password').type === 'password';
+        $('password').type = show ? 'text' : 'password';
+        $('toggle').textContent = show ? 'Скрыть' : 'Показать';
+        $('toggle').setAttribute('aria-pressed', String(show));
+      });
+
+      function setScenario(s) {
+        clearInterval(timer);
+        $('notice').innerHTML = '';
+        $('form-err').innerHTML = '';
+        $('submit').disabled = false;
+        $('submit').textContent = 'Войти';
+        ['login', 'password'].forEach((id) => $(id).removeAttribute('aria-invalid'));
+        if (s === 'expired') {
+          $('notice').innerHTML =
+            `<div class="banner banner-info"><span class="b-icon" aria-hidden="true">ℹ</span><div class="b-body"><strong>Сессия завершена</strong><span>Войдите снова. Так бывает после выхода на другом устройстве, смены пароля или по истечении времени.</span></div></div>`;
+        }
+      }
+
+      $('form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const s = $('scenario').value;
+        if (!$('login').value.trim() || !$('password').value) {
+          $('form-err').innerHTML = '<span aria-hidden="true">✕</span><span>Введите логин и пароль</span>';
+          (!$('login').value.trim() ? $('login') : $('password')).focus();
+          return;
+        }
+        $('submit').disabled = true;
+        $('submit').innerHTML = '<span class="spinner" aria-hidden="true"></span> Входим…';
+        setTimeout(() => {
+          // scrypt ≈ 285 мс на сервере (ADR 0016) — короткое ожидание нормально
+          $('submit').disabled = false;
+          $('submit').textContent = 'Войти';
+          if (s === 'invalid') {
+            // Одна ошибка на всё: не раскрываем, существует ли логин (ADR 0016)
+            $('form-err').innerHTML = '<span aria-hidden="true">✕</span><span>Неверный логин или пароль</span>';
+            $('password').setAttribute('aria-invalid', 'true');
+            $('password').value = '';
+            $('password').focus();
+          } else if (s === 'throttled') {
+            let left = 32;
+            $('form-err').innerHTML =
+              `<span aria-hidden="true">⏱</span><span>Слишком много попыток. Повторите через <span id="left">${left}</span> с.</span>`;
+            $('submit').disabled = true;
+            $('submit').textContent = `Войти (через ${left} с)`;
+            timer = setInterval(() => {
+              left -= 1;
+              $('submit').textContent = `Войти (через ${left} с)`;
+              if ($('left')) $('left').textContent = left;
+              if (left <= 0) {
+                clearInterval(timer);
+                $('submit').disabled = false;
+                $('submit').textContent = 'Войти';
+                $('form-err').innerHTML = '';
+              }
+            }, 1000);
+          } else {
+            location.href = 'dashboard.html';
+          }
+        }, 500);
+      });
+
+      $('scenario').addEventListener('change', (e) => setScenario(e.target.value));
+      const reason = new URLSearchParams(location.search).get('reason');
+      const scen =
+        new URLSearchParams(location.search).get('scenario') || (reason === 'expired' ? 'expired' : 'normal');
+      $('scenario').value = scen;
+      setScenario(scen);
+    </script>
+  </body>
+</html>
