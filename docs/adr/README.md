@@ -23,6 +23,7 @@
 | [0015](0015-ports-events-and-lifecycle.md) | Порты, события (после COMMIT), синхронизация, graceful shutdown | фаза A | Accepted |
 | [0016](0016-web-auth-and-bff-routes.md) | Web: таблица пользователей + серверные сессии (OWASP), allowlist BFF с тестом-сверкой, CSRF | фаза A | Accepted |
 | [0017](0017-web-ui-data-gaps.md) | Web: расписание синхронизации в `getCmcStatus`, пауза монеты на дашборде через `listCryptocurrencies` | фаза C | Proposed |
+| [0018](0018-web-onboarding-tour-and-motion.md) | Web: свой гид-тренер на примитивах shadcn (запасной — react-joyride), анимации на CSS, иконки lucide-react | фаза C | Proposed |
 
 ## Порядок закрытия остальных вопросов
 
