@@ -14,6 +14,7 @@
         document.documentElement.dataset.theme = d ? 'dark' : 'light';
       })();
     </script>
+    <link rel="icon" id="favicon" href="data:," />
     <style>
       /* ===== Токены (имена как в shadcn/ui; в apps/web переедут в @theme Tailwind 4) ===== */
       :root {
@@ -28,6 +29,7 @@
         --primary: #1d4ed8;
         --primary-foreground: #ffffff;
         --ring: #1d4ed8;
+        --primary-soft: #e8efff;
         --up: #047857;
         --up-bg: #e7f6ef;
         --down: #b91c1c;
@@ -59,6 +61,7 @@
         --primary: #7aa7ff;
         --primary-foreground: #0b0f17;
         --ring: #7aa7ff;
+        --primary-soft: #1a2a4a;
         --up: #34d399;
         --up-bg: #0d2a20;
         --down: #f87171;
@@ -212,17 +215,6 @@
         text-decoration: none;
         white-space: nowrap;
       }
-      .logo-mark {
-        width: 26px;
-        height: 26px;
-        border-radius: 7px;
-        background: var(--primary);
-        color: var(--primary-foreground);
-        display: grid;
-        place-items: center;
-        font-size: 12px;
-        font-weight: 800;
-      }
       .nav {
         display: flex;
         gap: 2px;
@@ -238,11 +230,6 @@
       .nav a:hover {
         color: var(--foreground);
         background: var(--surface);
-      }
-      .nav a[aria-current='page'] {
-        color: var(--foreground);
-        background: var(--surface);
-        font-weight: 600;
       }
       .nav .sep {
         width: 1px;
@@ -615,7 +602,8 @@
         .tick-down {
           animation: none;
         }
-        .spinner {
+        .spinner,
+        .spin {
           animation: none !important;
         }
       }
@@ -661,17 +649,6 @@
         gap: 10px;
         min-width: 0;
       }
-      .coin-ico {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        font-size: 11px;
-        font-weight: 800;
-        color: #fff;
-        flex: none;
-      }
       .coin-sym {
         font-weight: 700;
         color: var(--foreground);
@@ -703,16 +680,6 @@
         gap: 8px;
         z-index: 40;
         max-width: min(380px, calc(100vw - 32px));
-      }
-      .toast {
-        background: var(--card);
-        border: 1px solid var(--border);
-        box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
-        border-radius: var(--radius);
-        padding: 12px 14px;
-        font-size: 0.875rem;
-        display: flex;
-        gap: 10px;
       }
 
       /* ===== Диалог ===== */
@@ -746,6 +713,9 @@
         to {
           transform: rotate(360deg);
         }
+      }
+      .spin {
+        animation: spin 0.8s linear infinite;
       }
       .spinner {
         width: 14px;
@@ -808,6 +778,685 @@
         gap: 8px 16px;
         flex-wrap: wrap;
       }
+
+      /* =====================================================================
+   Итерация 2: иконки, лого, навигация, футер, линза точности, гид
+   ===================================================================== */
+      .i {
+        width: 1.05em;
+        height: 1.05em;
+        flex: none;
+        vertical-align: -0.16em;
+      }
+      .i-sm {
+        width: 0.85em;
+        height: 0.85em;
+      }
+      .btn .i,
+      .link-btn .i {
+        width: 16px;
+        height: 16px;
+      }
+      @media (max-width: 420px) {
+        .hide-xs {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+        }
+      }
+
+      /* Лого: знак + словесная часть; клик — на дашборд */
+      .logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 4px 8px 4px 4px;
+        margin-left: -4px;
+        border-radius: 10px;
+        color: var(--foreground);
+        text-decoration: none;
+      }
+      .logo .logo-mark {
+        flex: none;
+        transition: transform 0.25s cubic-bezier(0.3, 0.7, 0.2, 1);
+      }
+      .logo:hover .logo-mark {
+        transform: rotate(-8deg) scale(1.06);
+      }
+      .logo:hover .wm-1 {
+        text-decoration: underline;
+        text-decoration-color: var(--primary);
+        text-decoration-thickness: 2px;
+        text-underline-offset: 4px;
+      }
+      .logo:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+      }
+      .wordmark {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.05;
+      }
+      .wm-1 {
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        font-size: 0.95rem;
+      }
+      .wm-2 {
+        font-size: 0.6875rem;
+        color: var(--muted-foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        font-weight: 700;
+      }
+
+      /* Навигация: общий индикатор */
+      .nav {
+        position: relative;
+        align-items: center;
+      }
+      .nav a {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: color 0.2s;
+      }
+      .nav a[aria-current='page'] {
+        color: var(--foreground);
+        font-weight: 600;
+      }
+      .nav a[aria-disabled='true'] {
+        opacity: 0.7;
+      }
+      .nav-ind {
+        position: absolute;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0;
+        border-radius: 8px;
+        transition:
+          left 0.38s cubic-bezier(0.3, 0.7, 0.2, 1),
+          top 0.38s cubic-bezier(0.3, 0.7, 0.2, 1),
+          width 0.38s cubic-bezier(0.3, 0.7, 0.2, 1),
+          height 0.38s cubic-bezier(0.3, 0.7, 0.2, 1),
+          opacity 0.2s;
+      }
+      /* A. Маркер снизу (рекомендация) */
+      html[data-nav='underline'] .nav-ind::after {
+        content: '';
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: -11px;
+        height: 3px;
+        border-radius: 3px 3px 0 0;
+        background: var(--primary);
+      }
+      html[data-nav='underline'] .nav a:hover {
+        color: var(--foreground);
+        background: transparent;
+      }
+      /* B. Пилюля */
+      html[data-nav='pill'] .nav-ind {
+        background: var(--primary-soft);
+        border-radius: 999px;
+      }
+      html[data-nav='pill'] .nav a {
+        border-radius: 999px;
+      }
+      html[data-nav='pill'] .nav a:hover {
+        background: transparent;
+      }
+      html[data-nav='pill'] .nav a[aria-current='page'] {
+        color: var(--primary);
+      }
+      /* C. Боковая панель (только на широких экранах; уже 1024 px — как вариант A) */
+      @media (min-width: 1024px) {
+        html[data-nav='side'] .app-header .nav {
+          position: fixed;
+          left: 0;
+          top: 57px;
+          bottom: 0;
+          width: 220px;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 2px;
+          padding: 14px 10px;
+          background: var(--card);
+          border-right: 1px solid var(--border);
+          order: 0;
+          z-index: 20;
+        }
+        html[data-nav='side'] .app-header .nav a {
+          padding: 9px 12px;
+        }
+        html[data-nav='side'] .app-header .nav a:hover {
+          background: transparent;
+        }
+        html[data-nav='side'] .nav-ind {
+          background: var(--primary-soft);
+        }
+        html[data-nav='side'] .nav-ind::before {
+          content: '';
+          position: absolute;
+          left: -10px;
+          top: 6px;
+          bottom: 6px;
+          width: 3px;
+          border-radius: 0 3px 3px 0;
+          background: var(--primary);
+        }
+        html[data-nav='side'] .nav a[aria-current='page'] {
+          color: var(--primary);
+        }
+        html[data-nav='side'] main,
+        html[data-nav='side'] .app-footer {
+          padding-left: 220px;
+        }
+        html[data-nav='side'] .nav .sep {
+          display: none;
+        }
+      }
+      @media (max-width: 1023px) {
+        html[data-nav='side'] .nav-ind::after {
+          content: '';
+          position: absolute;
+          left: 10px;
+          right: 10px;
+          bottom: -11px;
+          height: 3px;
+          border-radius: 3px 3px 0 0;
+          background: var(--primary);
+        }
+      }
+      @media (max-width: 720px) {
+        html[data-nav] .nav-ind::after {
+          bottom: -3px;
+        }
+      }
+
+      .seg-icons button {
+        display: inline-grid;
+        place-items: center;
+        min-width: 34px;
+      }
+      .seg-icons .i {
+        width: 16px;
+        height: 16px;
+      }
+      .rt {
+        gap: 5px;
+      }
+      .rt .i {
+        width: 15px;
+        height: 15px;
+        color: var(--up);
+      }
+      .rt[data-state='offline'] .i {
+        color: var(--warn-fg);
+      }
+      .user-menu {
+        position: relative;
+      }
+      .user-menu summary {
+        list-style: none;
+      }
+      .user-menu summary::-webkit-details-marker {
+        display: none;
+      }
+      .menu-pop {
+        position: absolute;
+        right: 0;
+        top: 42px;
+        min-width: 200px;
+        padding: 6px;
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+      }
+      .menu-pop .btn {
+        justify-content: flex-start;
+      }
+
+      /* Монета без логотипа: тон от cmcId */
+      .coin-ico {
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        flex: none;
+        background: hsl(var(--hue) 70% 93%);
+        color: hsl(var(--hue) 55% 32%);
+      }
+      :root[data-theme='dark'] .coin-ico {
+        background: hsl(var(--hue) 35% 20%);
+        color: hsl(var(--hue) 70% 78%);
+      }
+      .coin-ico .i {
+        width: 55%;
+        height: 55%;
+      }
+
+      .chg {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .chg .i {
+        width: 0.95em;
+        height: 0.95em;
+        stroke-width: 2.5;
+      }
+      .stale-tag .i,
+      .pause-tag .i {
+        width: 13px;
+        height: 13px;
+      }
+      .badge .i {
+        width: 13px;
+        height: 13px;
+      }
+      .banner .b-icon {
+        display: inline-flex;
+        padding-top: 2px;
+      }
+      .banner .b-icon .i {
+        width: 18px;
+        height: 18px;
+      }
+      .toast {
+        background: var(--card);
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        font-size: 0.875rem;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+      .toast > .i {
+        width: 18px;
+        height: 18px;
+        margin-top: 1px;
+      }
+      .toast-ok > .i {
+        color: var(--up);
+      }
+      .toast-err > .i {
+        color: var(--down);
+      }
+      .toast-info > .i {
+        color: var(--info-fg);
+      }
+      .toast-warn > .i {
+        color: var(--warn-fg);
+      }
+      kbd {
+        font-family: var(--mono);
+        font-size: 0.8125rem;
+        padding: 1px 6px;
+        border: 1px solid var(--input);
+        border-bottom-width: 2px;
+        border-radius: 5px;
+        background: var(--surface);
+      }
+      table.hk td {
+        border: 0;
+        padding: 6px 8px;
+      }
+
+      /* Футер: компактный */
+      .app-footer {
+        padding: 10px 0;
+      }
+      .app-footer .container {
+        align-items: center;
+        gap: 6px 16px;
+      }
+      .app-footer a {
+        color: var(--muted-foreground);
+        text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+      }
+      .app-footer a:hover {
+        color: var(--foreground);
+      }
+      .app-footer .container > a,
+      .link-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .link-btn {
+        background: none;
+        border: 0;
+        padding: 2px 0;
+        font: inherit;
+        color: var(--muted-foreground);
+        cursor: pointer;
+        text-decoration: underline;
+        text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+        text-underline-offset: 2px;
+      }
+      .link-btn:hover {
+        color: var(--foreground);
+      }
+      .f-status {
+        font-weight: 600;
+        text-decoration: none !important;
+      }
+      .f-status[data-kind='ok'] .i {
+        color: var(--up);
+      }
+      .f-status[data-kind='warn'] {
+        color: var(--warn-fg) !important;
+      }
+      .f-status[data-kind='err'] {
+        color: var(--down) !important;
+      }
+      .f-sep {
+        width: 1px;
+        height: 14px;
+        background: var(--border);
+      }
+
+      /* ===== Линза точности — фирменная деталь ===== */
+      .price-lens {
+        background: none;
+        border: 0;
+        padding: 1px 3px;
+        margin: -1px -3px;
+        font: inherit;
+        color: inherit;
+        cursor: zoom-in;
+        border-radius: 5px;
+        text-decoration: underline dotted transparent;
+        text-underline-offset: 4px;
+        transition:
+          background 0.15s,
+          text-decoration-color 0.15s;
+      }
+      .price-lens:hover {
+        text-decoration-color: var(--muted-foreground);
+        background: var(--surface);
+      }
+      .price-lens[aria-expanded='true'] {
+        background: var(--primary-soft);
+      }
+      .lens {
+        position: absolute;
+        z-index: 70;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 16px 40px rgb(0 0 0 / 0.22);
+        padding: 12px 14px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        opacity: 0;
+        transform: translateY(-4px) scale(0.98);
+        transform-origin: top center;
+        transition:
+          opacity 0.18s ease-out,
+          transform 0.22s cubic-bezier(0.3, 0.7, 0.2, 1);
+      }
+      .lens.open {
+        opacity: 1;
+        transform: none;
+      }
+      .lens-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .lens-title {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        font-weight: 700;
+        font-size: 0.875rem;
+      }
+      .lens-title .i {
+        color: var(--primary);
+      }
+      .lens-head .btn {
+        margin-left: auto;
+      }
+      .lens-digits {
+        font-family: var(--mono);
+        font-size: 1.25rem;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+        line-height: 1.35;
+        padding: 8px 10px;
+        background: var(--surface);
+        border-radius: 8px;
+      }
+      .lens-digits .d {
+        display: inline-block;
+      }
+      .lens-digits .lzd {
+        color: var(--muted-foreground);
+        font-weight: 500;
+      }
+      .lens-digits .hid {
+        color: var(--primary);
+        background: var(--primary-soft);
+        border-radius: 2px;
+      }
+      .lens.open .lens-digits .hid {
+        animation: lens-reveal 0.45s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+        animation-delay: calc(120ms + var(--d));
+      }
+      @keyframes lens-reveal {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+          filter: blur(2px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+          filter: none;
+        }
+      }
+      .lens-dl {
+        font-size: 0.8125rem;
+      }
+
+      /* ===== Гид-тренер ===== */
+      .tour-root {
+        position: fixed;
+        inset: 0;
+        z-index: 90;
+      }
+      .tour-veil {
+        position: fixed;
+        inset: 0;
+      }
+      .tour-spot {
+        position: fixed;
+        border-radius: 12px;
+        pointer-events: none;
+        box-shadow:
+          0 0 0 3px var(--ring),
+          0 0 0 200vmax rgb(2 6 23 / 0.58);
+        transition:
+          left 0.45s cubic-bezier(0.3, 0.7, 0.2, 1),
+          top 0.45s cubic-bezier(0.3, 0.7, 0.2, 1),
+          width 0.45s cubic-bezier(0.3, 0.7, 0.2, 1),
+          height 0.45s cubic-bezier(0.3, 0.7, 0.2, 1);
+      }
+      .tour-spot.appear {
+        animation: spot-in 0.4s ease-out;
+      }
+      @keyframes spot-in {
+        from {
+          box-shadow:
+            0 0 0 3px transparent,
+            0 0 0 200vmax rgb(2 6 23 / 0);
+        }
+      }
+      .tour-root[data-has-target='0'] .tour-spot {
+        box-shadow: 0 0 0 200vmax rgb(2 6 23 / 0.58);
+      }
+      .tour-card {
+        position: fixed;
+        z-index: 91;
+        background: var(--card);
+        color: var(--foreground);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 24px 60px rgb(0 0 0 / 0.35);
+        padding: 14px 16px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: calc(100vh - 24px);
+        overflow: auto;
+        transition:
+          left 0.4s cubic-bezier(0.3, 0.7, 0.2, 1),
+          top 0.4s cubic-bezier(0.3, 0.7, 0.2, 1),
+          opacity 0.18s ease-out,
+          transform 0.2s ease-out;
+      }
+      .tour-card.leaving {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      .tour-card.docked {
+        left: 12px !important;
+        right: 12px;
+        bottom: 12px;
+        top: auto !important;
+        width: auto !important;
+        max-height: 55vh;
+      }
+      .tour-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .tour-step {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--muted-foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .tour-progress {
+        height: 4px;
+        border-radius: 4px;
+        background: var(--surface);
+        overflow: hidden;
+      }
+      .tour-progress span {
+        display: block;
+        height: 100%;
+        background: var(--primary);
+        border-radius: 4px;
+        transition: width 0.4s cubic-bezier(0.3, 0.7, 0.2, 1);
+      }
+      .tour-title {
+        font-size: 1.0625rem;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .tour-title .i {
+        color: var(--primary);
+        width: 20px;
+        height: 20px;
+      }
+      .tour-body {
+        font-size: 0.9rem;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .tour-body p {
+        margin: 0;
+      }
+      .tour-api,
+      .tour-todo {
+        display: flex;
+        gap: 6px;
+        align-items: flex-start;
+        font-size: 0.8125rem;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--muted-foreground);
+      }
+      .tour-api .i,
+      .tour-todo .i {
+        width: 15px;
+        height: 15px;
+        margin-top: 2px;
+        color: var(--primary);
+      }
+      .tour-api code {
+        color: var(--foreground);
+      }
+      .tour-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 4px;
+      }
+      .tour-auto {
+        height: 3px;
+        background: var(--surface);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .tour-auto span {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: var(--muted-foreground);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .nav-ind,
+        .tour-spot,
+        .tour-card,
+        .tour-progress span,
+        .lens,
+        .logo .logo-mark,
+        .tour-auto span {
+          transition: none !important;
+        }
+        .tour-spot.appear,
+        .lens.open .lens-digits .hid {
+          animation: none !important;
+        }
+      }
+
+      /* Общие для всех экранов: список «термин — значение» (линза, оператор) */
+      .dl {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        gap: 6px 14px;
+        margin: 0;
+        font-size: 0.875rem;
+      }
+      .dl dt {
+        color: var(--muted-foreground);
+      }
+      .dl dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      .app-header .nav a {
+        padding: 6px 9px;
+      }
     </style>
     <style>
       .coin-head {
@@ -821,10 +1470,15 @@
         align-items: center;
         gap: 12px;
       }
-      .coin-title .coin-ico {
-        width: 40px;
-        height: 40px;
-        font-size: 13px;
+      .back {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .nf-ico {
+        width: 36px;
+        height: 36px;
+        color: var(--muted-foreground);
       }
       .big-price {
         font-size: 2rem;
@@ -959,7 +1613,26 @@
               <option value="notfound">404 — монета не отслеживается</option>
             </select>
           </label>
-          <button class="btn btn-sm" id="sim">Симулировать <code>price.updated</code></button>
+          <button class="btn btn-sm" id="sim">
+            <svg
+              class="i"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="M16.247 7.761a6 6 0 0 1 0 8.478" />
+              <path d="M19.075 4.933a10 10 0 0 1 0 14.134" />
+              <path d="M4.925 19.067a10 10 0 0 1 0-14.134" />
+              <path d="M7.753 16.239a6 6 0 0 1 0-8.478" />
+              <circle cx="12" cy="12" r="2" /></svg
+            >Симулировать <code>price.updated</code>
+          </button>
         </div>
 
         <div id="page" class="stack"></div>
@@ -967,58 +1640,195 @@
     </main>
     <div id="footer"></div>
     <script>
-      /* Общие функции макетов. В apps/web это станет lib/format.ts, components/theme-toggle.tsx и т. п. */
+      /* Иконки Lucide: lucide-static 1.53.0, ISC License — https://lucide.dev/license */
+      const LUCIDE = {
+        activity:
+          '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />',
+        'arrow-down': '<path d="M12 5v14" /><path d="m19 12-7 7-7-7" />',
+        'arrow-left': '<path d="m12 19-7-7 7-7" /><path d="M19 12H5" />',
+        'arrow-up': '<path d="m5 12 7-7 7 7" /><path d="M12 19V5" />',
+        'arrow-up-down':
+          '<path d="m21 16-4 4-4-4" /><path d="M17 20V4" /><path d="m3 8 4-4 4 4" /><path d="M7 4v16" />',
+        'arrow-up-right': '<path d="M7 7h10v10" /><path d="M7 17 17 7" />',
+        'book-open':
+          '<path d="M12 5v16" /><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" />',
+        'chart-candlestick':
+          '<path d="M9 5v4" /><rect width="4" height="6" x="7" y="9" rx="1" /><path d="M9 15v2" /><path d="M17 3v2" /><rect width="4" height="8" x="15" y="5" rx="1" /><path d="M17 13v3" /><path d="M3 3v16a2 2 0 0 0 2 2h16" />',
+        'chart-spline':
+          '<path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M7 16c.5-2 1.5-7 4-7 2 0 2 3 4 3 2.5 0 4.5-5 5-7" />',
+        check: '<path d="M20 6 9 17l-5-5" />',
+        'chevron-down': '<path d="m6 9 6 6 6-6" />',
+        'chevron-left': '<path d="m15 18-6-6 6-6" />',
+        'chevron-right': '<path d="m9 18 6-6-6-6" />',
+        'circle-check': '<circle cx="12" cy="12" r="10" /><path d="m16 9-5.5 5.5L8 12" />',
+        'circle-dashed':
+          '<path d="M10.1 2.182a10 10 0 0 1 3.8 0" /><path d="M13.9 21.818a10 10 0 0 1-3.8 0" /><path d="M17.609 3.721a10 10 0 0 1 2.69 2.7" /><path d="M2.182 13.9a10 10 0 0 1 0-3.8" /><path d="M20.279 17.609a10 10 0 0 1-2.7 2.69" /><path d="M21.818 10.1a10 10 0 0 1 0 3.8" /><path d="M3.721 6.391a10 10 0 0 1 2.7-2.69" /><path d="M6.391 20.279a10 10 0 0 1-2.69-2.7" />',
+        'circle-pause':
+          '<circle cx="12" cy="12" r="10" /><line x1="10" x2="10" y1="15" y2="9" /><line x1="14" x2="14" y1="15" y2="9" />',
+        'circle-plus': '<circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" />',
+        'circle-x': '<circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" />',
+        clock: '<circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />',
+        coins:
+          '<path d="M13.744 17.736a6 6 0 1 1-7.48-7.48" /><path d="M15 6h1v4" /><path d="m6.134 14.768.866-.5 2 3.464" /><circle cx="16" cy="8" r="6" />',
+        compass:
+          '<circle cx="12" cy="12" r="10" /><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z" />',
+        copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />',
+        crosshair:
+          '<circle cx="12" cy="12" r="10" /><line x1="22" x2="18" y1="12" y2="12" /><line x1="6" x2="2" y1="12" y2="12" /><line x1="12" x2="12" y1="6" y2="2" /><line x1="12" x2="12" y1="22" y2="18" />',
+        database:
+          '<ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" />',
+        'external-link':
+          '<path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />',
+        eye: '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" />',
+        'eye-off':
+          '<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" />',
+        gauge: '<path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" />',
+        'graduation-cap':
+          '<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z" /><path d="M22 10v6" /><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5" />',
+        'heart-pulse':
+          '<path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" /><path d="M3.22 13H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27" />',
+        info: '<circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" />',
+        keyboard:
+          '<path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" />',
+        'layout-dashboard':
+          '<rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" />',
+        lightbulb:
+          '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" /><path d="M9 18h6" /><path d="M10 22h4" />',
+        list: '<path d="M3 5h.01" /><path d="M3 12h.01" /><path d="M3 19h.01" /><path d="M8 5h13" /><path d="M8 12h13" /><path d="M8 19h13" />',
+        'list-plus':
+          '<path d="M16 5H3" /><path d="M11 12H3" /><path d="M16 19H3" /><path d="M18 9v6" /><path d="M21 12h-6" />',
+        'loader-circle': '<path d="M21 12a9 9 0 1 1-6.219-8.56" />',
+        lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />',
+        'log-out':
+          '<path d="m16 17 5-5-5-5" /><path d="M21 12H9" /><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />',
+        minus: '<path d="M5 12h14" />',
+        monitor:
+          '<rect width="20" height="14" x="2" y="3" rx="2" /><line x1="8" x2="16" y1="21" y2="21" /><line x1="12" x2="12" y1="17" y2="21" />',
+        moon: '<path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" />',
+        'mouse-pointer-click':
+          '<path d="M14 4.1 12 6" /><path d="m5.1 8-2.9-.8" /><path d="m6 12-1.9 2" /><path d="M7.2 2.2 8 5.1" /><path d="M9.037 9.69a.498.498 0 0 1 .653-.653l11 4.5a.5.5 0 0 1-.074.949l-4.349 1.041a1 1 0 0 0-.74.739l-1.04 4.35a.5.5 0 0 1-.95.074z" />',
+        pause: '<rect x="14" y="3" width="5" height="18" rx="1" /><rect x="5" y="3" width="5" height="18" rx="1" />',
+        pencil:
+          '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" />',
+        play: '<path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />',
+        plus: '<path d="M5 12h14" /><path d="M12 5v14" />',
+        presentation:
+          '<path d="M2 3h20" /><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" /><path d="m7 21 5-5 5 5" />',
+        radio:
+          '<path d="M16.247 7.761a6 6 0 0 1 0 8.478" /><path d="M19.075 4.933a10 10 0 0 1 0 14.134" /><path d="M4.925 19.067a10 10 0 0 1 0-14.134" /><path d="M7.753 16.239a6 6 0 0 1 0-8.478" /><circle cx="12" cy="12" r="2" />',
+        'refresh-cw':
+          '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" />',
+        server:
+          '<rect width="20" height="8" x="2" y="2" rx="2" ry="2" /><rect width="20" height="8" x="2" y="14" rx="2" ry="2" /><line x1="6" x2="6.01" y1="6" y2="6" /><line x1="6" x2="6.01" y1="18" y2="18" />',
+        'shield-check':
+          '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" />',
+        square: '<rect width="18" height="18" x="3" y="3" rx="2" />',
+        sun: '<circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" />',
+        timer:
+          '<line x1="10" x2="14" y1="2" y2="2" /><line x1="12" x2="15" y1="14" y2="11" /><circle cx="12" cy="14" r="8" />',
+        'trash-2':
+          '<path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />',
+        'triangle-alert':
+          '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" />',
+        user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />',
+        users:
+          '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><path d="M16 3.128a4 4 0 0 1 0 7.744" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><circle cx="9" cy="7" r="4" />',
+        wifi: '<path d="M12 20h.01" /><path d="M2 8.82a15 15 0 0 1 20 0" /><path d="M5 12.859a10 10 0 0 1 14 0" /><path d="M8.5 16.429a5 5 0 0 1 7 0" />',
+        'wifi-off':
+          '<path d="M12 20h.01" /><path d="M8.5 16.429a5 5 0 0 1 7 0" /><path d="M5 12.859a10 10 0 0 1 5.17-2.69" /><path d="M19 12.859a10 10 0 0 0-2.007-1.523" /><path d="M2 8.82a15 15 0 0 1 4.177-2.643" /><path d="M22 8.82a15 15 0 0 0-11.288-3.764" /><path d="m2 2 20 20" />',
+        x: '<path d="M18 6 6 18" /><path d="m6 6 12 12" />',
+        'zoom-in':
+          '<circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /><line x1="11" x2="11" y1="8" y2="14" /><line x1="8" x2="14" y1="11" y2="11" />',
+      };
+      /* Общие функции макетов. В apps/web: lib/format.ts, components/{logo,app-header,app-footer,price-lens,theme-toggle}.tsx */
       const CPT = (() => {
         /** «Сейчас» в макетах зафиксировано, чтобы относительное время было воспроизводимым. */
         const NOW = Date.parse('2026-10-08T11:07:30.000Z');
+        const API_VERSION = '1.0.0'; // info.version из openapi.yaml
+        const SWAGGER_URL = 'http://localhost:3000/docs'; // swagger-ui-express в apps/api (app.ts)
+        const qp = new URLSearchParams(location.search);
+        const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        /* ---------- Хранилище: только удобства конкретного зрителя, всё в try/catch ---------- */
+        const store = {
+          get(k, d = null) {
+            try {
+              const v = localStorage.getItem(k);
+              return v === null ? d : v;
+            } catch {
+              return d;
+            }
+          },
+          set(k, v) {
+            try {
+              localStorage.setItem(k, v);
+            } catch {
+              /* приватный режим — не страшно */
+            }
+          },
+          del(k) {
+            try {
+              localStorage.removeItem(k);
+            } catch {
+              /* */
+            }
+          },
+        };
+        const session = {
+          get(k) {
+            try {
+              return sessionStorage.getItem(k);
+            } catch {
+              return null;
+            }
+          },
+          set(k, v) {
+            try {
+              sessionStorage.setItem(k, v);
+            } catch {
+              /* */
+            }
+          },
+        };
+
+        /* ---------- Иконки Lucide (inline SVG) ---------- */
+        function icon(name, { cls = '', label = '' } = {}) {
+          const a11y = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true" focusable="false"';
+          return `<svg class="i ${cls}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${LUCIDE[name]}</svg>`;
+        }
 
         /* ---------- Тема: светлая / тёмная / как в системе ---------- */
-        const mq = window.matchMedia('(prefers-color-scheme: dark)');
-        function readPref() {
-          try {
-            return localStorage.getItem('cpt-theme') || 'system';
-          } catch {
-            return 'system';
-          }
-        }
-        function writePref(v) {
-          try {
-            localStorage.setItem('cpt-theme', v);
-          } catch {
-            /* приватный режим — не страшно */
-          }
-        }
+        const mq = matchMedia('(prefers-color-scheme: dark)');
+        const readPref = () => store.get('cpt-theme', 'system');
+        const THEMES = { light: ['sun', 'светлая'], dark: ['moon', 'тёмная'], system: ['monitor', 'как в системе'] };
+        const ORDER = ['light', 'dark', 'system'];
         function applyTheme(pref) {
           const theme = pref === 'system' ? (mq.matches ? 'dark' : 'light') : pref;
           document.documentElement.dataset.theme = theme;
-          document
-            .querySelectorAll('[data-theme-pref]')
-            .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themePref === pref)));
+          document.querySelectorAll('[data-theme-cycle]').forEach((b) => {
+            const [ic, name] = THEMES[pref];
+            b.innerHTML = icon(ic);
+            b.setAttribute('aria-label', `Тема: ${name}. Нажмите, чтобы сменить`);
+            b.title = `Тема: ${name} (T)`;
+          });
           document.dispatchEvent(new CustomEvent('cpt:theme', { detail: theme }));
         }
         mq.addEventListener('change', () => {
           if (readPref() === 'system') applyTheme('system');
         });
+        /** Одна кнопка-цикл «светлая → тёмная → как в системе»: компактно для шапки, состояние — в aria-label. */
         function themeToggleHTML() {
-          const opts = [
-            ['light', '☀', 'Светлая тема'],
-            ['dark', '☾', 'Тёмная тема'],
-            ['system', 'Авто', 'Как в системе'],
-          ];
-          return `<div class="seg" role="group" aria-label="Тема">${opts
-            .map(
-              ([v, t, l]) =>
-                `<button type="button" data-theme-pref="${v}" aria-pressed="false" aria-label="${l}" title="${l}">${t}</button>`,
-            )
-            .join('')}</div>`;
+          return `<button type="button" class="btn btn-ghost btn-sm icon-btn" data-theme-cycle aria-keyshortcuts="t"></button>`;
+        }
+        function setTheme(pref) {
+          store.set('cpt-theme', pref);
+          applyTheme(pref);
+        }
+        function cycleTheme() {
+          setTheme(ORDER[(ORDER.indexOf(readPref()) + 1) % 3]);
         }
         function bindThemeToggle(root = document) {
-          root.querySelectorAll('[data-theme-pref]').forEach((b) =>
-            b.addEventListener('click', () => {
-              writePref(b.dataset.themePref);
-              applyTheme(b.dataset.themePref);
-            }),
-          );
+          root.querySelectorAll('[data-theme-cycle]').forEach((b) => b.addEventListener('click', cycleTheme));
           applyTheme(readPref());
         }
 
@@ -1039,11 +1849,20 @@
         function formatPrice(s) {
           return belowOne(s) ? usdSig.format(s) : usd2.format(s);
         }
-        function priceHTML(s, { stale = false, cls = '' } = {}) {
+        function priceBody(s) {
           const f = formatPrice(s);
           const m = f.match(/^\$0\.(0{3,})(\d+)$/);
-          const body = m ? `$0.<span class="lz">${m[1]}</span>${m[2]}` : f;
-          return `<span class="price ${stale ? 'is-stale' : ''} ${cls}" title="${s} USD">${body}</span>`;
+          return m ? `$0.<span class="lz">${m[1]}</span>${m[2]}` : f;
+        }
+        /**
+         * Цена. По умолчанию — кнопка «линзы точности» (фирменная деталь): по нажатию показывает строку из API целиком.
+         * meta: { sym, src (sourceUpdatedAt), fetched (fetchedAt) } — для подписи в линзе.
+         */
+        function priceHTML(s, { stale = false, cls = '', lens = true, sym = '', src = '', fetched = '' } = {}) {
+          const body = priceBody(s);
+          if (!lens) return `<span class="price ${stale ? 'is-stale' : ''} ${cls}">${body}</span>`;
+          return `<button type="button" class="price price-lens ${stale ? 'is-stale' : ''} ${cls}" data-price="${s}" data-sym="${sym}" data-src="${src}" data-fetched="${fetched}"
+      aria-haspopup="dialog" aria-label="${formatPrice(s)}${stale ? ', устарела' : ''}. Показать точное значение">${body}</button>`;
         }
         /** Подпись шкалы графика: значащие цифры, а не фиксированные знаки (ADR 0012). */
         const axisSig = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 5 });
@@ -1052,18 +1871,19 @@
           return n < 1 ? axisSig.format(n) : axis2.format(n);
         }
 
-        /* ---------- Проценты: знак всегда, стрелка, цвет ---------- */
+        /* ---------- Проценты: знак всегда, стрелка-иконка, цвет ---------- */
         const pct = new Intl.NumberFormat('en-US', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
           signDisplay: 'exceptZero',
         });
         function changeHTML(s, { suffix = '' } = {}) {
-          if (s == null) return `<span class="chg none" title="Истории меньше суток">—</span>`;
+          if (s == null)
+            return `<span class="chg none" title="Истории меньше суток">—<span class="sr-only">нет данных: истории меньше суток</span></span>`;
           const t = pct.format(s).replace('-', '−');
           const dir = t.startsWith('+') ? 'up' : t.startsWith('−') ? 'down' : 'flat';
-          const arrow = dir === 'up' ? '▲ ' : dir === 'down' ? '▼ ' : '';
-          return `<span class="chg ${dir}" title="${s} %"><span aria-hidden="true">${arrow}</span>${t}%${suffix}</span>`;
+          const ic = dir === 'up' ? icon('arrow-up') : dir === 'down' ? icon('arrow-down') : icon('minus');
+          return `<span class="chg ${dir}" title="${s} %">${ic}${t}%${suffix}</span>`;
         }
 
         /* ---------- Время: пояс браузера, в подсказке — ISO UTC ---------- */
@@ -1122,6 +1942,12 @@
           return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}"><path d="${d}" fill="none" stroke="var(--${dir})" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
         }
 
+        /** Монета без логотипа: логотипов нет в контракте (CMC отдаёт их только через /info — открытый вопрос). Тон — от cmcId. */
+        function coinIcon(c, size = 28) {
+          const hue = (c.cmcId * 47) % 360;
+          return `<span class="coin-ico" style="--hue:${hue};width:${size}px;height:${size}px" aria-hidden="true">${icon('coins')}</span>`;
+        }
+
         /* ---------- Детерминированные моки ---------- */
         function rng(seed) {
           return () => {
@@ -1140,51 +1966,153 @@
           return s;
         }
 
-        /* ---------- Шапка и футер ---------- */
+        /* ---------- Логотип: 3 варианта знака ---------- */
+        const LOGOS = {
+          // A. «Точка» (рекомендация): линия цены заканчивается жирной точкой — точное последнее значение
+          dot: {
+            name: 'A · «Точка»',
+            mark: `<path d="M5 16.5 9 12l3.2 2.6L16 9.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18.6" cy="7.6" r="2.7" fill="currentColor"/>`,
+          },
+          // B. «Пульс»: незамкнутое кольцо отсчёта до синхронизации и точка в центре
+          pulse: {
+            name: 'B · «Пульс»',
+            mark: `<path d="M12 4.5a7.5 7.5 0 1 0 7.5 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/><circle cx="19.5" cy="5.6" r="1.6" fill="currentColor"/>`,
+          },
+          // C. «Свеча»: OHLC-свеча — наши данные (ADR 0007) в одной фигуре
+          candle: {
+            name: 'C · «Свеча»',
+            mark: `<path d="M9 4v16M15 7v11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="6.6" y="8" width="4.8" height="8" rx="1.2" fill="currentColor"/><rect x="12.6" y="9.5" width="4.8" height="5" rx="1.2" fill="none" stroke="currentColor" stroke-width="2"/>`,
+          },
+        };
+        const logoVariant = () => (LOGOS[store.get('cpt-logo')] ? store.get('cpt-logo') : 'dot');
+        function logoMarkSVG(v = logoVariant(), size = 28) {
+          return `<svg class="logo-mark" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="24" height="24" rx="7" fill="var(--primary)"/><g style="color:var(--primary-foreground)">${LOGOS[v].mark}</g></svg>`;
+        }
+        function setFavicon(v = logoVariant()) {
+          // Фавикон не знает темы страницы, поэтому фиксированные цвета: синяя плашка видна и на светлой, и на тёмной вкладке
+          const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#1d4ed8"/><g style="color:#fff">${LOGOS[v].mark}</g></svg>`;
+          const el = document.getElementById('favicon');
+          if (el) el.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+        }
+        function logoHTML() {
+          return `<a class="logo" href="dashboard.html" aria-label="Crypto Price Tracker — на дашборд">${logoMarkSVG()}
+      <span class="wordmark" aria-hidden="true"><span class="wm-1">Crypto Price</span><span class="wm-2">Tracker</span></span></a>`;
+        }
+
+        /* ---------- Навигация: 3 варианта выделения активного пункта ---------- */
+        const NAVS = { underline: 'Маркер снизу (рекомендация)', pill: 'Пилюля', side: 'Боковая панель' };
+        const navVariant = () => (NAVS[store.get('cpt-nav')] ? store.get('cpt-nav') : 'underline');
+
         function headerHTML({ active = 'dashboard', role = 'operator', rt = 'online' } = {}) {
           const op = role === 'operator';
-          const link = (id, href, text) =>
-            `<a href="${href}" ${active === id ? 'aria-current="page"' : ''}>${text}</a>`;
+          const link = (id, href, text, ic, key) =>
+            `<a href="${href}" data-nav="${id}" ${active === id ? 'aria-current="page"' : ''} ${key ? `aria-keyshortcuts="${key}"` : ''}>${icon(ic)}<span>${text}</span></a>`;
           return `<a class="skip-link" href="#main">К содержимому</a>
 <header class="app-header"><div class="container">
-  <a class="logo" href="dashboard.html"><span class="logo-mark" aria-hidden="true">CPT</span><span>Crypto Price Tracker</span></a>
-  <nav class="nav" aria-label="Основная навигация">
-    ${link('dashboard', 'dashboard.html', 'Дашборд')}
+  ${logoHTML()}
+  <nav class="nav" aria-label="Основная навигация"><span class="nav-ind" aria-hidden="true"></span>
+    ${link('dashboard', 'dashboard.html', 'Дашборд', 'layout-dashboard', '1')}
     ${
       op
-        ? `<span class="sep" aria-hidden="true"></span>
-    ${link('watchlist', 'operator.html#watchlist', 'Watchlist')}
-    ${link('sync', 'operator.html#sync', 'Синхронизация')}
-    ${link('system', 'operator.html#system', 'Система')}
-    <a href="#" title="Экран пользователей в макеты не входит" aria-disabled="true">Пользователи</a>`
+        ? `${link('watchlist', 'operator.html#watchlist', 'Watchlist', 'list', '2')}
+    ${link('sync', 'operator.html#sync', 'Синхронизация', 'refresh-cw', '3')}
+    ${link('system', 'operator.html#system', 'Система', 'server', '4')}
+    <a href="#" data-nav="users" title="Экран пользователей в макеты не входит" aria-disabled="true">${icon('users')}<span>Пользователи</span></a>`
         : ''
     }
   </nav>
   <div class="header-tools">
-    <span class="rt" id="rt" data-state="${rt}"><span class="rt-dot" aria-hidden="true"></span><span id="rt-text">${rt === 'online' ? 'Онлайн' : 'Переподключение…'}</span></span>
+    <span class="rt" id="rt" data-state="${rt}">${rt === 'online' ? icon('radio') : icon('wifi-off')}<span id="rt-text">${rt === 'online' ? 'Онлайн' : 'Переподключение…'}</span></span>
+    <button type="button" class="btn btn-ghost btn-sm" data-tour-start aria-keyshortcuts="g" title="Гид по экрану (G)">${icon('graduation-cap')}<span class="hide-xs">Гид</span></button>
     ${themeToggleHTML()}
-    <details class="user-menu" style="position:relative">
-      <summary class="btn btn-ghost user-btn" aria-label="Меню пользователя"><span class="avatar" aria-hidden="true">A</span><span class="user-name">alexey</span><span class="badge">${op ? 'Operator' : 'Viewer'}</span></summary>
-      <div class="card" style="position:absolute;right:0;top:42px;min-width:180px;padding:6px;z-index:30;display:flex;flex-direction:column">
-        <a class="btn btn-ghost" style="justify-content:flex-start" href="#">Профиль и сессии</a>
-        <a class="btn btn-ghost" style="justify-content:flex-start" href="login.html">Выйти</a>
+    <details class="user-menu">
+      <summary class="btn btn-ghost user-btn" aria-label="Меню пользователя">${icon('user')}<span class="user-name">alexey</span><span class="badge">${op ? 'Operator' : 'Viewer'}</span>${icon('chevron-down', { cls: 'i-sm' })}</summary>
+      <div class="card menu-pop">
+        <a class="btn btn-ghost" href="#">${icon('user')}Профиль и сессии</a>
+        <a class="btn btn-ghost" href="login.html?tour=0">${icon('log-out')}Выйти</a>
       </div>
     </details>
   </div>
 </div></header>`;
         }
+
+        /** Индикатор активного пункта: «перетекает» от прошлого пункта (sessionStorage) и за курсором/фокусом. */
+        function placeIndicator(nav, target, animate = true) {
+          const ind = nav.querySelector('.nav-ind');
+          if (!ind || !target) {
+            if (ind) ind.style.opacity = '0';
+            return;
+          }
+          const nr = nav.getBoundingClientRect(),
+            r = target.getBoundingClientRect();
+          if (!animate) ind.style.transition = 'none';
+          Object.assign(ind.style, {
+            opacity: '1',
+            left: `${r.left - nr.left}px`,
+            top: `${r.top - nr.top}px`,
+            width: `${r.width}px`,
+            height: `${r.height}px`,
+          });
+          if (!animate) {
+            void ind.offsetWidth;
+            ind.style.transition = '';
+          }
+        }
+        function bindNav() {
+          const nav = document.querySelector('.app-header .nav');
+          if (!nav) return;
+          document.documentElement.dataset.nav = navVariant();
+          const active = nav.querySelector('[aria-current="page"]');
+          const from = session.get('cpt-nav-from');
+          const prev = from && nav.querySelector(`[data-nav="${from}"]`);
+          placeIndicator(nav, prev || active, false);
+          requestAnimationFrame(() => placeIndicator(nav, active));
+          nav.querySelectorAll('a').forEach((a) => {
+            a.addEventListener('mouseenter', () => placeIndicator(nav, a));
+            a.addEventListener('focus', () => placeIndicator(nav, a));
+            a.addEventListener('click', () => session.set('cpt-nav-from', active?.dataset.nav ?? ''));
+          });
+          nav.addEventListener('mouseleave', () => placeIndicator(nav, active));
+          nav.addEventListener('focusout', (e) => {
+            if (!nav.contains(e.relatedTarget)) placeIndicator(nav, active);
+          });
+          addEventListener('resize', () => placeIndicator(nav, active, false));
+        }
+
+        /* ---------- Футер: версия контракта, статус системы, источник данных, Swagger, клавиши, гид ---------- */
         function footerHTML() {
           return `<footer class="app-footer"><div class="container">
-  <span>Графики: TradingView Lightweight Charts™ — <a href="https://www.tradingview.com/" rel="noopener">tradingview.com</a></span>
+  <a class="f-status" id="f-status" href="operator.html#system" data-kind="ok">${icon('circle-check')}<span id="f-status-text">Система работает</span></a>
+  <span class="f-sep" aria-hidden="true"></span>
+  <span>Данные: <a href="https://coinmarketcap.com/" rel="noopener">CoinMarketCap</a> · USD</span>
+  <span>Графики: <a href="https://www.tradingview.com/" rel="noopener">TradingView Lightweight Charts™</a></span>
+  <a href="${SWAGGER_URL}" rel="noopener" title="Swagger UI контракта (apps/api, /docs)">${icon('book-open')}API v${API_VERSION}</a>
   <span class="spacer"></span>
-  <span>Макет · данные — моки по <code>openapi.yaml</code> · цены в USD</span>
+  <button type="button" class="link-btn" data-hotkeys aria-keyshortcuts="?">${icon('keyboard')}Клавиши</button>
+  <button type="button" class="link-btn" data-tour-restart>${icon('graduation-cap')}Пройти гид заново</button>
 </div></footer>`;
         }
+        /**
+         * Статус в футере. Operator: /health/ready + getCmcStatus. Viewer: ops:read нет — статус выводится из
+         * lastSync.status и isStale ответа listLatestPrices; ссылка на «Систему» у Viewer не показывается.
+         */
+        function setFooterStatus(kind, text, { role = 'operator' } = {}) {
+          const el = document.getElementById('f-status');
+          if (!el) return;
+          el.dataset.kind = kind;
+          const ic = { ok: 'circle-check', warn: 'triangle-alert', err: 'circle-x' }[kind];
+          el.innerHTML = `${icon(ic)}<span id="f-status-text">${text}</span>`;
+          if (role !== 'operator') {
+            el.removeAttribute('href');
+            el.setAttribute('role', 'status');
+          } else el.setAttribute('href', 'operator.html#system');
+        }
+
         function setRealtime(state) {
           const el = document.getElementById('rt');
           if (!el) return;
           el.dataset.state = state;
-          document.getElementById('rt-text').textContent = state === 'online' ? 'Онлайн' : 'Переподключение…';
+          el.innerHTML = `${state === 'online' ? icon('radio') : icon('wifi-off')}<span id="rt-text">${state === 'online' ? 'Онлайн' : 'Переподключение…'}</span>`;
         }
 
         /* ---------- Тосты: aria-live="polite" (WCAG 4.1.3) ---------- */
@@ -1199,9 +2127,8 @@
             document.body.append(box);
           }
           const t = document.createElement('div');
-          t.className = 'toast';
-          const icon = { ok: '✓', err: '✕', info: 'ℹ', warn: '⚠' }[kind];
-          t.innerHTML = `<span aria-hidden="true" style="color:var(--${kind === 'ok' ? 'up' : kind === 'err' ? 'down' : kind === 'warn' ? 'warn-fg' : 'info-fg'})">${icon}</span><div>${html}</div>`;
+          t.className = `toast toast-${kind}`;
+          t.innerHTML = `${icon({ ok: 'circle-check', err: 'circle-x', info: 'info', warn: 'triangle-alert' }[kind])}<div>${html}</div>`;
           box.append(t);
           setTimeout(() => t.remove(), 6000);
         }
@@ -1212,16 +2139,245 @@
           void el.offsetWidth;
           el.classList.add(dir === 'up' ? 'tick-up' : 'tick-down');
         }
-
         const esc = (s) =>
           String(s).replace(
             /[&<>"']/g,
             (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
           );
 
+        /* ---------- «Линза точности» — фирменная деталь ---------- */
+        function groupDigits(s) {
+          const [int, frac = ''] = s.split('.');
+          const gi = int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+          const gf = frac.replace(/(\d{3})(?=\d)/g, '$1 ');
+          return { int: gi, frac: gf };
+        }
+        /** Сколько значащих цифр в строке и сколько из них видно в таблице. */
+        function digitsInfo(s) {
+          const sig = s.replace('.', '').replace(/^0+/, '').length;
+          const shown = belowOne(s) ? Math.min(6, sig) : Math.min(sig, s.split('.')[0].length + 2);
+          return { sig, shown };
+        }
+        let lensReturn = null;
+        function openLens(btn) {
+          closeLens();
+          const s = btn.dataset.price,
+            sym = btn.dataset.sym,
+            { int, frac } = groupDigits(s),
+            { sig, shown } = digitsInfo(s);
+          const shownStr = formatPrice(s);
+          // Раскладываем все цифры дробной части: видимые в таблице — обычные, «спрятанные» округлением — подсвечены
+          const fracDigits = [...frac];
+          let seenSig = s.split('.')[0].replace(/^0+/, '').length,
+            html = '';
+          let delay = 0;
+          for (const ch of fracDigits) {
+            if (ch === ' ') {
+              html += '<span class="g"> </span>';
+              continue;
+            }
+            const significant = seenSig > 0 || ch !== '0';
+            if (significant) seenSig++;
+            const hidden = belowOne(s) ? seenSig > 6 : html.replace(/<[^>]+>/g, '').replace(/ /g, '').length >= 2;
+            html += `<span class="d ${hidden ? 'hid' : ''} ${!significant ? 'lzd' : ''}" style="--d:${delay}ms">${ch}</span>`;
+            if (hidden) delay += 35;
+          }
+          const pop = document.createElement('div');
+          pop.className = 'lens';
+          pop.id = 'lens';
+          pop.setAttribute('role', 'dialog');
+          pop.setAttribute('aria-modal', 'false');
+          pop.setAttribute('aria-labelledby', 'lens-title');
+          pop.innerHTML = `<div class="lens-head"><span id="lens-title" class="lens-title">${icon('crosshair')}Точная цена${sym ? ` ${sym}` : ''}</span>
+        <button type="button" class="icon-btn btn btn-ghost btn-sm" data-lens-close aria-label="Закрыть">${icon('x')}</button></div>
+      <div class="lens-digits" aria-label="${s} долларов США"><span aria-hidden="true">$${int}${frac ? `<span class="pt">.</span>${html}` : ''}</span></div>
+      <dl class="dl lens-dl">
+        <dt>В интерфейсе</dt><dd class="num">${shownStr}</dd>
+        <dt>Значащих цифр</dt><dd>${sig} — показано ${shown}${sig > shown ? `, ещё <strong>${sig - shown}</strong> скрыто округлением` : ''}</dd>
+        ${btn.dataset.src ? `<dt>Котировка CMC</dt><dd>${timeHTML(btn.dataset.src, 'hms')} <span class="muted">sourceUpdatedAt</span></dd>` : ''}
+        ${btn.dataset.fetched ? `<dt>Получено сервисом</dt><dd>${timeHTML(btn.dataset.fetched, 'hms')} <span class="muted">fetchedAt</span></dd>` : ''}
+      </dl>
+      <p class="hint">Строка из API без преобразования в число: ни одна цифра CoinMarketCap не потеряна (ADR 0006).</p>
+      <div class="row"><button type="button" class="btn btn-sm" data-lens-copy>${icon('copy')}Скопировать точное значение</button></div>`;
+          document.body.append(pop);
+          const r = btn.getBoundingClientRect(),
+            W = document.documentElement.clientWidth;
+          const pw = Math.min(360, W - 24);
+          pop.style.width = `${pw}px`;
+          let left = Math.min(Math.max(12, r.left + r.width / 2 - pw / 2), W - pw - 12);
+          let top = r.bottom + 8 + scrollY;
+          pop.style.left = `${left + scrollX}px`;
+          pop.style.top = `${top}px`;
+          const ph = pop.getBoundingClientRect().height;
+          if (r.bottom + 8 + ph > innerHeight && r.top - 8 - ph > 0) pop.style.top = `${r.top - 8 - ph + scrollY}px`;
+          requestAnimationFrame(() => pop.classList.add('open'));
+          btn.setAttribute('aria-expanded', 'true');
+          lensReturn = btn;
+          pop.querySelector('[data-lens-close]').addEventListener('click', () => closeLens(true));
+          pop.querySelector('[data-lens-copy]').addEventListener('click', () => {
+            navigator.clipboard?.writeText(s).catch(() => {});
+            toast(`Скопировано: <code>${s}</code>`, 'ok');
+          });
+          pop.querySelector('[data-lens-copy]').focus();
+        }
+        function closeLens(refocus = false) {
+          const p = document.getElementById('lens');
+          if (!p) return;
+          p.remove();
+          if (lensReturn) {
+            lensReturn.setAttribute('aria-expanded', 'false');
+            if (refocus) lensReturn.focus();
+          }
+        }
+
+        /* ---------- Горячие клавиши (WCAG 2.1.4: можно отключить) ---------- */
+        const hotkeysOn = () => store.get('cpt-hotkeys', 'on') === 'on';
+        function openHotkeys() {
+          let d = document.getElementById('hotkeys-dlg');
+          if (!d) {
+            d = document.createElement('dialog');
+            d.id = 'hotkeys-dlg';
+            d.setAttribute('aria-labelledby', 'hk-title');
+            d.innerHTML = `<div class="dialog-body"><h2 id="hk-title" class="row">${icon('keyboard')}Горячие клавиши</h2>
+        <table class="data hk"><tbody>
+          <tr><td><kbd>?</kbd></td><td>Эта справка</td></tr>
+          <tr><td><kbd>G</kbd></td><td>Гид по текущему экрану</td></tr>
+          <tr><td><kbd>T</kbd></td><td>Сменить тему</td></tr>
+          <tr><td><kbd>1</kbd>…<kbd>4</kbd></td><td>Дашборд, Watchlist, Синхронизация, Система (Operator)</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Закрыть окно, линзу или гид</td></tr>
+          <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Шаги гида; бакеты на графике (в фокусе)</td></tr>
+        </tbody></table>
+        <label class="row"><input type="checkbox" id="hk-on"> Однобуквенные клавиши включены</label>
+        <p class="hint">Отключите, если они мешают скринридеру или голосовому вводу (WCAG 2.1.4).</p>
+        <div class="dialog-actions"><button class="btn" data-close>Закрыть</button></div></div>`;
+            document.body.append(d);
+            d.querySelector('[data-close]').addEventListener('click', () => d.close());
+            d.querySelector('#hk-on').addEventListener('change', (e) =>
+              store.set('cpt-hotkeys', e.target.checked ? 'on' : 'off'),
+            );
+          }
+          d.querySelector('#hk-on').checked = hotkeysOn();
+          d.showModal();
+        }
+        function bindHotkeys() {
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLens(true);
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            const t = e.target;
+            if (
+              t.closest?.('input, textarea, select, [contenteditable], dialog[open]') ||
+              document.querySelector('.tour-card')
+            )
+              return;
+            if (e.key === '?') {
+              e.preventDefault();
+              openHotkeys();
+              return;
+            }
+            if (!hotkeysOn()) return;
+            const k = e.key.toLowerCase();
+            if (k === 'g' || k === 'п') {
+              e.preventDefault();
+              window.CPT_TOUR?.start({ manual: true });
+            }
+            if (k === 't' || k === 'е') {
+              cycleTheme();
+              toast(`Тема: ${THEMES[readPref()][1]}`, 'info');
+            }
+            const go = {
+              1: 'dashboard.html',
+              2: 'operator.html#watchlist',
+              3: 'operator.html#sync',
+              4: 'operator.html#system',
+            }[e.key];
+            if (go && (e.key === '1' || document.querySelector('[data-nav="watchlist"]'))) location.href = go;
+          });
+          document.addEventListener('click', (e) => {
+            const lens = e.target.closest('.price-lens');
+            if (lens) {
+              e.preventDefault();
+              if (lensReturn === lens && document.getElementById('lens')) closeLens(true);
+              else openLens(lens);
+              return;
+            }
+            if (!e.target.closest('#lens')) closeLens();
+            if (e.target.closest('[data-hotkeys]')) openHotkeys();
+            if (e.target.closest('[data-tour-start]')) window.CPT_TOUR?.start({ manual: true });
+            if (e.target.closest('[data-tour-restart]')) {
+              window.CPT_TOUR?.reset();
+              window.CPT_TOUR?.start({ manual: true });
+            }
+          });
+        }
+
+        /* ---------- Панель макета: общие переключатели ---------- */
+        function mountMockControls() {
+          const bar = document.querySelector('.mock-bar');
+          if (!bar || bar.querySelector('[data-mock-common]')) return;
+          const wrap = document.createElement('span');
+          wrap.className = 'mock-common';
+          wrap.dataset.mockCommon = '';
+          wrap.innerHTML = `<label>Лого <select id="mock-logo">${Object.entries(LOGOS)
+            .map(([k, v]) => `<option value="${k}">${v.name}${k === 'dot' ? ' (рек.)' : ''}</option>`)
+            .join('')}</select></label>
+      <label>Навигация <select id="mock-nav">${Object.entries(NAVS)
+        .map(([k, v]) => `<option value="${k}">${v}</option>`)
+        .join('')}</select></label>
+      <button type="button" class="btn btn-sm" id="mock-tour">${icon('graduation-cap')}Гид</button>
+      <button type="button" class="btn btn-sm" id="mock-present">${icon('presentation')}Режим презентации</button>
+      <button type="button" class="btn btn-sm" id="mock-reset" title="Гид снова запустится при первом входе">Сбросить «пройдено»</button>`;
+          bar.append(wrap);
+          const lg = wrap.querySelector('#mock-logo'),
+            nv = wrap.querySelector('#mock-nav');
+          lg.value = logoVariant();
+          nv.value = navVariant();
+          lg.addEventListener('change', () => {
+            store.set('cpt-logo', lg.value);
+            document.querySelectorAll('.logo').forEach((a) => {
+              a.outerHTML = logoHTML();
+            });
+            setFavicon();
+          });
+          nv.addEventListener('change', () => {
+            store.set('cpt-nav', nv.value);
+            document.documentElement.dataset.nav = nv.value;
+            const nav = document.querySelector('.app-header .nav');
+            placeIndicator(nav, nav?.querySelector('[aria-current="page"]'), false);
+          });
+          wrap.querySelector('#mock-tour').addEventListener('click', () => window.CPT_TOUR?.start({ manual: true }));
+          wrap.querySelector('#mock-present').addEventListener('click', () => window.CPT_TOUR?.present());
+          wrap.querySelector('#mock-reset').addEventListener('click', () => {
+            window.CPT_TOUR?.reset();
+            toast('Отметки «гид пройден» сброшены', 'ok');
+          });
+        }
+
+        /** Шапка + футер + общие обработчики. Повторный вызов (смена роли) перерисовывает только шапку. */
+        let inited = false;
+        function mountChrome({ active = 'dashboard', role = 'operator', rt = 'online', header = true } = {}) {
+          if (header) {
+            document.getElementById('header').innerHTML = headerHTML({ active, role, rt });
+            bindThemeToggle(document.getElementById('header'));
+            bindNav();
+          } else applyTheme(readPref());
+          if (!inited) {
+            inited = true;
+            const f = document.getElementById('footer');
+            if (f) f.innerHTML = footerHTML();
+            document.documentElement.dataset.nav = navVariant();
+            setFavicon();
+            bindHotkeys();
+            mountMockControls();
+          }
+        }
+
         return {
           NOW,
+          qp,
+          reduced,
+          store,
           iso,
+          icon,
           applyTheme,
           bindThemeToggle,
           themeToggleHTML,
@@ -1233,14 +2389,369 @@
           relative,
           timeHTML,
           sparkHTML,
+          coinIcon,
           rng,
           toDecimal,
-          headerHTML,
-          footerHTML,
+          logoMarkSVG,
+          logoHTML,
+          LOGOS,
+          mountChrome,
+          setFooterStatus,
           setRealtime,
           toast,
           flash,
           esc,
+          openLens,
+          closeLens,
+          openHotkeys,
+        };
+      })();
+
+      /* Гид-тренер: прожектор + карточка. Чистый JS без библиотек (в apps/web — см. ADR 0018).
+   Доступность: role="dialog" + aria-modal, ловушка фокуса, ←/→/Esc, aria-live, prefers-reduced-motion. */
+      window.CPT_TOUR = (() => {
+        const SEQ = ['login.html', 'dashboard.html', 'coin.html', 'operator.html']; // порядок режима презентации
+        let pageKey = '',
+          role = 'operator',
+          getSteps = () => [],
+          list = [],
+          i = 0,
+          root = null,
+          presenting = false,
+          paused = false,
+          timer = null,
+          returnFocus = null,
+          busy = false,
+          pending = 0;
+        const fast = CPT.qp.get('speed') === 'fast';
+        const wait = (ms) => new Promise((r) => setTimeout(r, CPT.reduced() ? 0 : ms));
+        const doneKey = () => `cpt-tour-${pageKey}-${role}`;
+
+        function register(key, fn) {
+          pageKey = key;
+          getSteps = fn;
+        }
+        function setRole(r) {
+          role = r;
+        }
+        function reset() {
+          ['login', 'dashboard', 'coin', 'operator'].forEach((p) =>
+            ['viewer', 'operator'].forEach((r) => CPT.store.del(`cpt-tour-${p}-${r}`)),
+          );
+        }
+        function autoStart() {
+          if (CPT.qp.get('present') === '1') {
+            setTimeout(() => start({ present: true }), 500);
+            return;
+          }
+          if (CPT.qp.get('tour') === '0' || CPT.store.get(doneKey())) return;
+          setTimeout(() => {
+            if (!root) start({});
+          }, 800);
+        }
+        function present() {
+          // Презентация всегда начинается с первого экрана и идёт под ролью Operator (там больше всего шагов)
+          const first = SEQ[0];
+          if (location.pathname.endsWith(first)) start({ present: true });
+          else location.href = `${first}?present=1${fast ? '&speed=fast' : ''}`;
+        }
+
+        /** Первый видимый элемент по селектору (на телефоне таблица скрыта — берём карточку). */
+        function visible(sel) {
+          if (!sel) return null;
+          return (
+            [...document.querySelectorAll(sel)].find(
+              (e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden',
+            ) ?? null
+          );
+        }
+
+        function build() {
+          root = document.createElement('div');
+          root.className = 'tour-root';
+          root.innerHTML = `<div class="tour-veil"></div><div class="tour-spot" aria-hidden="true"></div>
+      <div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-body">
+        <div class="tour-top"><span class="tour-step" id="tour-step"></span><span class="spacer"></span>
+          <button type="button" class="btn btn-ghost btn-sm icon-btn" data-t="skip" aria-label="Закрыть гид">${CPT.icon('x')}</button></div>
+        <div class="tour-progress" aria-hidden="true"><span></span></div>
+        <h2 class="tour-title" id="tour-title"></h2>
+        <div class="tour-body" id="tour-body"></div>
+        <div class="tour-actions"></div>
+      </div>
+      <div class="sr-only" aria-live="polite" id="tour-live"></div>`;
+          document.body.append(root);
+          root.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-t]');
+            if (!b) return;
+            const a = b.dataset.t;
+            if (a === 'next') next();
+            else if (a === 'prev') prev();
+            else if (a === 'skip') finish(false);
+            else if (a === 'pause') {
+              paused = !paused;
+              renderActions();
+              if (!paused) schedule();
+              else clearTimeout(timer);
+            } else if (a === 'stop') {
+              presenting = false;
+              finish(false);
+            }
+          });
+          document.addEventListener('keydown', onKey, true);
+          addEventListener('resize', reposition);
+          addEventListener('scroll', reposition, { passive: true });
+        }
+
+        function onKey(e) {
+          if (!root) return;
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            presenting = false;
+            finish(false);
+            return;
+          }
+          if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            next();
+            return;
+          }
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            prev();
+            return;
+          }
+          if (e.key === 'Tab') {
+            // ловушка фокуса внутри карточки
+            const f = [...root.querySelectorAll('.tour-card button')].filter((b) => !b.disabled);
+            if (!f.length) return;
+            const first = f[0],
+              last = f[f.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            } else if (!root.contains(document.activeElement)) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+
+        async function start({ present: pres = false, manual = false } = {}) {
+          if (root || busy) return;
+          list = getSteps(role).filter((s) => !s.roles || s.roles.includes(role));
+          pending = 0;
+          if (!list.length) return;
+          presenting = pres;
+          paused = false;
+          i = 0;
+          returnFocus = document.activeElement;
+          CPT.closeLens?.();
+          document.querySelectorAll('dialog[open]').forEach((d) => d.close());
+          build();
+          await show(0, true);
+        }
+
+        async function show(n, first = false) {
+          if (busy) return;
+          busy = true;
+          clearTimeout(timer);
+          i = Math.max(0, Math.min(n, list.length - 1));
+          const step = list[i];
+          const card = root.querySelector('.tour-card'),
+            spot = root.querySelector('.tour-spot');
+          if (!first) {
+            card.classList.add('leaving');
+            await wait(160);
+          }
+          if (step.before) {
+            await step.before();
+            await wait(120);
+          }
+          const target = visible(step.el);
+          if (target) {
+            target.scrollIntoView({ block: 'center', behavior: CPT.reduced() ? 'auto' : 'smooth' });
+            await wait(first ? 120 : 380);
+          }
+          card.querySelector('#tour-step').textContent = `Шаг ${i + 1} из ${list.length}`;
+          card.querySelector('.tour-progress span').style.width = `${((i + 1) / list.length) * 100}%`;
+          card.querySelector('#tour-title').innerHTML = `${CPT.icon(step.icon || 'compass')}${step.title}`;
+          card.querySelector('#tour-body').innerHTML =
+            `${step.body}${step.api ? `<p class="tour-api">${CPT.icon('database')}<span>Данные: ${step.api}</span></p>` : ''}${step.todo ? `<p class="tour-todo">${CPT.icon('lightbulb')}<span>${step.todo}</span></p>` : ''}`;
+          renderActions();
+          root.dataset.hasTarget = target ? '1' : '0';
+          reposition();
+          if (first) {
+            spot.classList.add('appear');
+          }
+          card.classList.remove('leaving');
+          root.querySelector('#tour-live').textContent = `Шаг ${i + 1} из ${list.length}. ${step.title}`;
+          (root.querySelector('[data-t="next"]') || root.querySelector('[data-t="stop"]'))?.focus({
+            preventScroll: true,
+          });
+          busy = false;
+          // Нажатия во время анимации не теряются: копим и проигрываем по одному
+          if (pending) {
+            const d = Math.sign(pending);
+            pending -= d;
+            if (d > 0) next();
+            else prev();
+            return;
+          }
+          if (presenting) schedule();
+        }
+
+        function renderActions() {
+          const a = root.querySelector('.tour-actions');
+          const last = i === list.length - 1;
+          const nextLabel = last ? (presenting && nextPage() ? 'Следующий экран' : 'Готово') : 'Далее';
+          a.innerHTML = `${
+            presenting
+              ? `<button type="button" class="btn btn-ghost btn-sm" data-t="stop">${CPT.icon('square')}Стоп</button>
+         <button type="button" class="btn btn-sm" data-t="pause" aria-pressed="${paused}">${paused ? `${CPT.icon('play')}Продолжить` : `${CPT.icon('pause')}Пауза`}</button>`
+              : `<button type="button" class="btn btn-ghost btn-sm" data-t="skip">Пропустить</button>`
+          }
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-sm" data-t="prev" ${i === 0 ? 'disabled' : ''} aria-keyshortcuts="ArrowLeft">${CPT.icon('chevron-left')}Назад</button>
+      <button type="button" class="btn btn-primary btn-sm" data-t="next" aria-keyshortcuts="ArrowRight">${nextLabel}${last ? '' : CPT.icon('chevron-right')}</button>`;
+          root.querySelector('.tour-card').classList.toggle('presenting', presenting);
+          const bar = root.querySelector('.tour-auto');
+          if (bar) bar.remove();
+          if (presenting) {
+            const auto = document.createElement('div');
+            auto.className = 'tour-auto';
+            auto.setAttribute('aria-hidden', 'true');
+            auto.innerHTML = '<span></span>';
+            root.querySelector('.tour-card').append(auto);
+          }
+        }
+
+        /** Автопроигрывание: длительность шага зависит от объёма текста. */
+        function schedule() {
+          clearTimeout(timer);
+          if (!presenting || paused) return;
+          const text = root.querySelector('#tour-body').textContent.length;
+          const ms = fast ? 500 : Math.min(9000, 3200 + text * 28);
+          const bar = root.querySelector('.tour-auto span');
+          if (bar) {
+            bar.style.transition = 'none';
+            bar.style.width = '0%';
+            void bar.offsetWidth;
+            bar.style.transition = `width ${ms}ms linear`;
+            bar.style.width = '100%';
+          }
+          timer = setTimeout(() => next(), ms);
+        }
+
+        function reposition() {
+          if (!root) return;
+          const step = list[i],
+            target = visible(step?.el);
+          const spot = root.querySelector('.tour-spot'),
+            card = root.querySelector('.tour-card');
+          const W = document.documentElement.clientWidth,
+            H = innerHeight,
+            pad = 6;
+          const mobile = W < 640;
+          card.classList.toggle('docked', mobile);
+          if (target) {
+            const r = target.getBoundingClientRect();
+            Object.assign(spot.style, {
+              left: `${r.left - pad}px`,
+              top: `${r.top - pad}px`,
+              width: `${r.width + pad * 2}px`,
+              height: `${r.height + pad * 2}px`,
+              opacity: '1',
+            });
+            if (mobile) return;
+            const cw = Math.min(380, W - 24),
+              ch = card.offsetHeight;
+            card.style.width = `${cw}px`;
+            let top = r.bottom + pad + 12;
+            if (top + ch > H - 12) top = r.top - pad - 12 - ch;
+            if (top < 12) top = Math.max(12, Math.min(H - ch - 12, r.top)); // не влезает ни сверху, ни снизу — рядом
+            let left = Math.min(Math.max(12, r.left), W - cw - 12);
+            if (top < r.bottom && top + ch > r.top && r.right + cw + 24 < W) left = r.right + 18; // сбоку, если перекрывает
+            card.style.left = `${left}px`;
+            card.style.top = `${top}px`;
+          } else {
+            Object.assign(spot.style, {
+              left: `${W / 2}px`,
+              top: `${H / 2}px`,
+              width: '0px',
+              height: '0px',
+              opacity: '1',
+            });
+            if (mobile) return;
+            const cw = Math.min(420, W - 24);
+            card.style.width = `${cw}px`;
+            card.style.left = `${(W - cw) / 2}px`;
+            card.style.top = `${Math.max(12, (H - card.offsetHeight) / 2)}px`;
+          }
+        }
+
+        const nextPage = () => {
+          const cur = SEQ.findIndex((p) => location.pathname.endsWith(p));
+          return cur >= 0 && cur < SEQ.length - 1 ? SEQ[cur + 1] : null;
+        };
+        function next() {
+          if (busy) {
+            pending += 1;
+            return;
+          }
+          if (i < list.length - 1) show(i + 1);
+          else finish(true);
+        }
+        function prev() {
+          if (busy) {
+            pending -= 1;
+            return;
+          }
+          if (i > 0) show(i - 1);
+        }
+
+        function finish(completed) {
+          clearTimeout(timer);
+          if (!root) return;
+          CPT.store.set(doneKey(), completed ? 'done' : 'skipped');
+          document.removeEventListener('keydown', onKey, true);
+          removeEventListener('resize', reposition);
+          removeEventListener('scroll', reposition);
+          list.forEach((s) => s.after?.());
+          root.remove();
+          root = null;
+          if (presenting && completed) {
+            const np = nextPage();
+            if (np) {
+              location.href = `${np}?present=1${fast ? '&speed=fast' : ''}`;
+              return;
+            }
+            CPT.toast('Демо завершено. Спасибо! Гид можно пройти заново из футера.', 'ok');
+            document.documentElement.dataset.presentDone = '1';
+          } else if (!completed) CPT.toast('Гид можно открыть кнопкой «Гид» в шапке или клавишей G', 'info');
+          presenting = false;
+          returnFocus?.focus?.({ preventScroll: true });
+        }
+
+        return {
+          register,
+          setRole,
+          autoStart,
+          start,
+          present,
+          reset,
+          get active() {
+            return !!root;
+          },
+          get index() {
+            return i;
+          },
+          get total() {
+            return list.length;
+          },
         };
       })();
     </script>
@@ -1427,7 +2938,7 @@
         const page = document.getElementById('page');
         if (state.scen === 'notfound') {
           page.innerHTML = `<div class="card card-pad" style="text-align:center;padding:48px 16px" role="alert">
-      <div style="font-size:28px" aria-hidden="true">∅</div><h1 style="margin:8px 0">Монета не отслеживается</h1>
+      ${CPT.icon('coins', { cls: 'nf-ico' })}<h1 style="margin:8px 0">Монета не отслеживается</h1>
       <p class="muted">Возможно, оператор удалил её из watchlist вместе с историей цен.</p>
       <p style="margin-top:14px"><a class="btn" href="dashboard.html">← К дашборду</a></p></div>`;
           return;
@@ -1441,18 +2952,18 @@
         };
         const issueNow = comboIssue(state.interval, state.period);
         page.innerHTML = `
-  <nav aria-label="Навигация"><a href="dashboard.html">← Дашборд</a></nav>
+  <nav aria-label="Навигация"><a class="back" href="dashboard.html">${CPT.icon('arrow-left')}Дашборд</a></nav>
   <div class="coin-head">
-    <div class="coin-title"><span class="coin-ico" style="background:${coin.color}" aria-hidden="true">${coin.symbol.slice(0, 3)}</span>
+    <div class="coin-title">${CPT.coinIcon(coin, 40)}
       <div><h1>${coin.symbol} <span class="muted" style="font-weight:500">· ${coin.name}</span></h1>
       <span class="hint">CMC #${coin.cmcId} · отслеживается с ${new Date(coin.createdAt).toLocaleDateString('ru-RU')}</span></div></div>
     <div class="stack" style="gap:2px">
-      <div class="row" style="gap:12px"><span class="big-price" id="big-price">${CPT.priceHTML(latest.price, { stale: latest.isStale })}</span>${CPT.changeHTML(latest.change24hPercent, { suffix: ' <span class="muted" style="font-weight:400">за 24 ч</span>' })}</div>
-      <span class="hint" id="fresh">${latest.isStale ? '<span class="stale-tag">⚠ устарела</span> · ' : ''}Обновлено ${CPT.timeHTML(latest.fetchedAt)} · котировка CMC ${CPT.timeHTML(latest.sourceUpdatedAt, 'hms')}</span>
+      <div class="row" style="gap:12px"><span class="big-price" id="big-price">${CPT.priceHTML(latest.price, { stale: latest.isStale, sym: coin.symbol, src: latest.sourceUpdatedAt, fetched: latest.fetchedAt })}</span>${CPT.changeHTML(latest.change24hPercent, { suffix: ' <span class="muted" style="font-weight:400">за 24 ч</span>' })}</div>
+      <span class="hint" id="fresh">${latest.isStale ? `<span class="stale-tag">${CPT.icon('triangle-alert')}устарела</span> · ` : ''}Обновлено ${CPT.timeHTML(latest.fetchedAt)} · котировка CMC ${CPT.timeHTML(latest.sourceUpdatedAt, 'hms')}</span>
     </div>
   </div>
-  ${latest.isStale ? `<div class="banner banner-warn" role="status"><span class="b-icon" aria-hidden="true">⚠</span><div class="b-body"><strong>Цена устарела</strong><span>CoinMarketCap недоступен, последнее обновление — ${CPT.fmt.hm(latest.fetchedAt)}. График и история показывают сохранённые данные.</span></div></div>` : ''}
-  ${state.scen === 'few' ? `<div class="banner banner-info" role="status"><span class="b-icon" aria-hidden="true">ℹ</span><div class="b-body"><strong>Данных пока мало</strong><span>История копится с момента добавления монеты: CMC Basic не отдаёт прошлые цены. Сейчас — ${agg.summary?.points ?? 0} точек за последние 6 ч.</span></div></div>` : ''}
+  ${latest.isStale ? `<div class="banner banner-warn" role="status"><span class="b-icon">${CPT.icon('triangle-alert')}</span><div class="b-body"><strong>Цена устарела</strong><span>CoinMarketCap недоступен, последнее обновление — ${CPT.fmt.hm(latest.fetchedAt)}. График и история показывают сохранённые данные.</span></div></div>` : ''}
+  ${state.scen === 'few' ? `<div class="banner banner-info" role="status"><span class="b-icon">${CPT.icon('info')}</span><div class="b-body"><strong>Данных пока мало</strong><span>История копится с момента добавления монеты: CMC Basic не отдаёт прошлые цены. Сейчас — ${agg.summary?.points ?? 0} точек за последние 6 ч.</span></div></div>` : ''}
 
   <section class="card" aria-labelledby="chart-title">
     <div class="card-head" style="gap:10px 18px">
@@ -1505,11 +3016,11 @@
     ${
       agg.summary
         ? `<div class="stats">
-      ${stat('Открытие', CPT.priceHTML(agg.summary.open))}
-      ${stat('Закрытие', CPT.priceHTML(agg.summary.close))}
-      ${stat('Минимум', CPT.priceHTML(agg.summary.min))}
-      ${stat('Максимум', CPT.priceHTML(agg.summary.max))}
-      ${stat('Среднее <span title="Статистика: 10 значащих цифр (ADR 0007)">ⓘ</span>', CPT.priceHTML(agg.summary.avg))}
+      ${stat('Открытие', CPT.priceHTML(agg.summary.open, { sym: coin.symbol }))}
+      ${stat('Закрытие', CPT.priceHTML(agg.summary.close, { sym: coin.symbol }))}
+      ${stat('Минимум', CPT.priceHTML(agg.summary.min, { sym: coin.symbol }))}
+      ${stat('Максимум', CPT.priceHTML(agg.summary.max, { sym: coin.symbol }))}
+      ${stat(`Среднее <span title="Статистика: 10 значащих цифр (ADR 0007)">${CPT.icon('info')}<span class="sr-only">статистика, 10 значащих цифр</span></span>`, CPT.priceHTML(agg.summary.avg, { sym: coin.symbol }))}
       ${stat('Изменение', CPT.changeHTML(agg.summary.changePercent))}
       ${stat('Точек', `<span class="num">${agg.summary.points.toLocaleString('ru-RU')}</span>`)}
     </div>`
@@ -1521,7 +3032,7 @@
     <div class="card-head"><h2 id="hist-title">История цен</h2><span class="hint">сырые точки, от новых к старым</span></div>
     <div class="table-wrap"><table class="data">
       <thead><tr><th scope="col">Получено</th><th scope="col" class="r">Цена, USD</th><th scope="col" class="r hide-sm">Котировка CMC</th></tr></thead>
-      <tbody>${hist.items.map((p) => `<tr><td class="num">${CPT.timeHTML(p.fetchedAt, 'dts')}</td><td class="r">${CPT.priceHTML(p.price)}</td><td class="r num hide-sm">${CPT.timeHTML(p.sourceUpdatedAt, 'hms')}</td></tr>`).join('')}</tbody>
+      <tbody>${hist.items.map((p) => `<tr><td class="num">${CPT.timeHTML(p.fetchedAt, 'dts')}</td><td class="r">${CPT.priceHTML(p.price, { sym: coin.symbol, src: p.sourceUpdatedAt, fetched: p.fetchedAt })}</td><td class="r num hide-sm">${CPT.timeHTML(p.sourceUpdatedAt, 'hms')}</td></tr>`).join('')}</tbody>
     </table></div>
     <div class="row" style="padding:12px 16px">${hist.nextCursor ? `<button class="btn" id="more">Загрузить ещё</button><span class="hint">nextCursor → следующая страница</span>` : `<span class="hint">Это все точки</span>`}</div>
   </section>`;
@@ -1682,7 +3193,7 @@
           ? `<time datetime="${st}" title="${st} (UTC)">${state.interval === '1w' ? 'нед. с ' : ''}${new Date(st).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' })} UTC</time>`
           : CPT.timeHTML(st, 'dt');
         legend.innerHTML = `<span class="num">${when}</span>
-    <span><b>O</b>${CPT.priceHTML(s.open)}</span><span><b>H</b>${CPT.priceHTML(s.max)}</span><span><b>L</b>${CPT.priceHTML(s.min)}</span><span><b>C</b>${CPT.priceHTML(s.close)}</span>
+    <span><b>O</b>${CPT.priceHTML(s.open, { lens: false })}</span><span><b>H</b>${CPT.priceHTML(s.max, { lens: false })}</span><span><b>L</b>${CPT.priceHTML(s.min, { lens: false })}</span><span><b>C</b>${CPT.priceHTML(s.close, { lens: false })}</span>
     ${CPT.changeHTML(s.changePercent)}<span class="muted">${s.points} точ.</span>`;
       }
 
@@ -1704,7 +3215,11 @@
         lastH.l = Math.min(lastH.l, v);
         agg = aggregates(hours, state.interval, state.period);
         const el = document.getElementById('big-price');
-        el.innerHTML = CPT.priceHTML(coin.price);
+        el.innerHTML = CPT.priceHTML(coin.price, {
+          sym: coin.symbol,
+          src: CPT.iso(CPT.NOW - 41_000),
+          fetched: CPT.iso(CPT.NOW),
+        });
         CPT.flash(el, k >= 1 ? 'up' : 'down');
         drawChart();
       });
@@ -1723,11 +3238,62 @@
         load();
         render();
       });
-      document.getElementById('header').innerHTML = CPT.headerHTML({ active: 'dashboard', role: 'operator' });
-      CPT.bindThemeToggle(document.getElementById('header'));
-      document.getElementById('footer').innerHTML = CPT.footerHTML();
+      CPT.mountChrome({ active: 'dashboard', role: 'operator' });
+
+      /* ---------- Гид по карточке монеты: 7 шагов, одинаково для обеих ролей ---------- */
+      CPT_TOUR.register('coin', () => [
+        {
+          el: '.coin-head',
+          icon: 'coins',
+          title: 'Карточка монеты',
+          body: '<p>Символ, название, номер в CoinMarketCap и текущая цена с изменением за сутки. Цену можно нажать — линза покажет все знаки.</p>',
+          api: '<code>getCryptocurrency</code> → <code>latestPrice</code>',
+        },
+        {
+          el: '#fresh',
+          icon: 'clock',
+          title: 'Два времени у одной цены',
+          body: '<p>«Котировка CMC» — когда цену посчитал CoinMarketCap. «Обновлено» — когда её получил наш сервис. Разница обычно меньше минуты.</p>',
+          api: '<code>sourceUpdatedAt</code>, <code>fetchedAt</code>',
+        },
+        {
+          el: '.controls',
+          icon: 'chart-candlestick',
+          title: 'Вид, интервал и период',
+          body: '<p>Свечи или линия, интервал свечи от часа до недели и период до года. Слишком подробные сочетания неактивны: например, «1 ч × 1 год» — это 8 760 свечей при лимите 1 000.</p>',
+          api: '<code>getPriceAggregates?interval&from</code> (ADR 0007)',
+        },
+        {
+          el: '#chart',
+          icon: 'chart-spline',
+          title: 'График',
+          body: '<p>Наведите курсор или поставьте фокус на график и листайте стрелками <kbd>←</kbd> <kbd>→</kbd> — сверху появятся открытие, максимум, минимум и закрытие. Пропуски — часы без данных: мы их не дорисовываем.</p>',
+          api: '<code>buckets[].stats</code>: open, max, min, close, points',
+        },
+        {
+          el: '.tv-attr',
+          icon: 'book-open',
+          title: 'Атрибуция TradingView',
+          body: '<p>График рисует библиотека TradingView Lightweight Charts. Её лицензия требует указать автора — поэтому значок на графике и ссылка в футере.</p>',
+        },
+        {
+          el: '.stats',
+          icon: 'gauge',
+          title: 'Сводка за период',
+          body: '<p>Открытие, закрытие, минимум и максимум — реальные наблюдённые цены. Среднее — статистика, округлена до 10 значащих цифр.</p>',
+          api: '<code>getPriceAggregates</code> → <code>summary</code>',
+        },
+        {
+          el: '#hist-title',
+          icon: 'list',
+          title: 'История цен',
+          body: '<p>Все сохранённые точки — от новых к старым. «Загрузить ещё» подгружает следующую страницу.</p>',
+          api: '<code>listPriceHistory?limit&cursor</code> → <code>nextCursor</code>',
+        },
+      ]);
       load();
       render();
+      CPT_TOUR.autoStart();
     </script>
   </body>
 </html>
