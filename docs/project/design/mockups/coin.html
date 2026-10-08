@@ -1,0 +1,1733 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Карточка монеты — Crypto Price Tracker (макет)</title>
+    <script>
+      /* тема до первой отрисовки — без вспышки */ (function () {
+        var p = 'system';
+        try {
+          p = localStorage.getItem('cpt-theme') || 'system';
+        } catch (e) {}
+        var d = p === 'dark' || (p === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = d ? 'dark' : 'light';
+      })();
+    </script>
+    <style>
+      /* ===== Токены (имена как в shadcn/ui; в apps/web переедут в @theme Tailwind 4) ===== */
+      :root {
+        color-scheme: light;
+        --background: #ffffff;
+        --surface: #f6f7f9;
+        --card: #ffffff;
+        --foreground: #0f172a;
+        --muted-foreground: #526075;
+        --border: #e3e7ee;
+        --input: #7b8799;
+        --primary: #1d4ed8;
+        --primary-foreground: #ffffff;
+        --ring: #1d4ed8;
+        --up: #047857;
+        --up-bg: #e7f6ef;
+        --down: #b91c1c;
+        --down-bg: #fdeceb;
+        --stale: #5b6577;
+        --warn-fg: #8a3c00;
+        --warn-bg: #fff7e6;
+        --warn-border: #f2c27a;
+        --info-fg: #1e3a8a;
+        --info-bg: #eef4ff;
+        --info-border: #b9cdf7;
+        --error-bg: #fef2f2;
+        --error-border: #f3b4b4;
+        --skeleton: #e9edf3;
+        --shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 3px rgb(15 23 42 / 0.08);
+        --radius: 10px;
+        --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+      }
+      :root[data-theme='dark'] {
+        color-scheme: dark;
+        --background: #0b0f17;
+        --surface: #0f141e;
+        --card: #111723;
+        --foreground: #e6e9ef;
+        --muted-foreground: #9aa4b5;
+        --border: #232c3b;
+        --input: #6b7689;
+        --primary: #7aa7ff;
+        --primary-foreground: #0b0f17;
+        --ring: #7aa7ff;
+        --up: #34d399;
+        --up-bg: #0d2a20;
+        --down: #f87171;
+        --down-bg: #301417;
+        --stale: #8b95a7;
+        --warn-fg: #fbbf5a;
+        --warn-bg: #2a1f0b;
+        --warn-border: #6b4a12;
+        --info-fg: #a9c4ff;
+        --info-bg: #0f1d38;
+        --info-border: #24406f;
+        --error-bg: #2a1214;
+        --error-border: #6b2a2e;
+        --skeleton: #1b2331;
+        --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+      }
+
+      /* ===== База ===== */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .input::placeholder {
+        text-transform: none;
+        color: var(--muted-foreground);
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--foreground);
+        font: 15px/1.5 var(--font);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      a {
+        color: var(--primary);
+        text-underline-offset: 2px;
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: 1.25;
+        margin: 0;
+      }
+      h1 {
+        font-size: 1.375rem;
+      }
+      h2 {
+        font-size: 1.0625rem;
+      }
+      h3 {
+        font-size: 0.9375rem;
+      }
+      p {
+        margin: 0;
+      }
+      code,
+      .mono {
+        font-family: var(--mono);
+        font-size: 0.875em;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .muted {
+        color: var(--muted-foreground);
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      .skip-link {
+        position: absolute;
+        left: 8px;
+        top: -40px;
+        background: var(--card);
+        padding: 8px 12px;
+        border-radius: 6px;
+        z-index: 50;
+      }
+      .skip-link:focus {
+        top: 8px;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 16px;
+      }
+      main {
+        flex: 1;
+        padding: 20px 0 32px;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .spacer {
+        flex: 1;
+      }
+
+      /* ===== Шапка ===== */
+      .app-header {
+        border-bottom: 1px solid var(--border);
+        background: var(--card);
+      }
+      .app-header .container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        min-height: 56px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        color: var(--foreground);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .logo-mark {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        background: var(--primary);
+        color: var(--primary-foreground);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .nav {
+        display: flex;
+        gap: 2px;
+        flex-wrap: wrap;
+      }
+      .nav a {
+        color: var(--muted-foreground);
+        text-decoration: none;
+        padding: 6px 10px;
+        border-radius: 7px;
+        font-size: 0.9rem;
+      }
+      .nav a:hover {
+        color: var(--foreground);
+        background: var(--surface);
+      }
+      .nav a[aria-current='page'] {
+        color: var(--foreground);
+        background: var(--surface);
+        font-weight: 600;
+      }
+      .nav .sep {
+        width: 1px;
+        background: var(--border);
+        margin: 6px 4px;
+      }
+      .header-tools {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+      .rt {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8125rem;
+        color: var(--muted-foreground);
+        white-space: nowrap;
+      }
+      .rt-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--up);
+      }
+      .rt[data-state='offline'] .rt-dot {
+        background: transparent;
+        border: 2px solid var(--stale);
+      }
+      .user-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      @media (max-width: 720px) {
+        .app-header .nav {
+          order: 3;
+          width: 100%;
+        }
+        .user-name,
+        .user-btn .badge {
+          display: none;
+        }
+      }
+      @media (max-width: 420px) {
+        .rt #rt-text {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+        }
+        .header-tools {
+          gap: 4px;
+        }
+        .header-tools .seg button {
+          min-width: 32px;
+          padding: 0 6px;
+        }
+      }
+
+      /* ===== Кнопки и поля ===== */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 0 14px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--foreground);
+        font: inherit;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .btn:hover {
+        background: var(--surface);
+      }
+      .btn-primary {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .btn-primary:hover {
+        background: var(--primary);
+        filter: brightness(1.08);
+      }
+      .btn-danger {
+        background: var(--down);
+        border-color: var(--down);
+        color: #fff;
+      }
+      :root[data-theme='dark'] .btn-danger {
+        color: #0b0f17;
+      }
+      .btn-ghost {
+        border-color: transparent;
+        background: transparent;
+      }
+      .btn-sm {
+        min-height: 30px;
+        padding: 0 10px;
+        font-size: 0.8125rem;
+      }
+      .btn[disabled],
+      .btn[aria-disabled='true'] {
+        opacity: 0.55;
+        cursor: not-allowed;
+        filter: none;
+      }
+      .icon-btn {
+        min-width: 36px;
+        padding: 0 8px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .label {
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+      .hint {
+        font-size: 0.8125rem;
+        color: var(--muted-foreground);
+      }
+      .input {
+        min-height: 38px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 1px solid var(--input);
+        background: var(--background);
+        color: var(--foreground);
+        font: inherit;
+        width: 100%;
+      }
+      .input[aria-invalid='true'] {
+        border-color: var(--down);
+      }
+      .field-error {
+        color: var(--down);
+        font-size: 0.8125rem;
+        display: flex;
+        gap: 6px;
+        align-items: flex-start;
+      }
+
+      /* Сегментированный переключатель */
+      .seg {
+        display: inline-flex;
+        padding: 3px;
+        gap: 2px;
+        border-radius: 9px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        flex-wrap: wrap;
+      }
+      .seg button {
+        min-height: 30px;
+        min-width: 40px;
+        padding: 0 10px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted-foreground);
+        font: inherit;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .seg button[aria-pressed='true'] {
+        background: var(--card);
+        color: var(--foreground);
+        box-shadow: var(--shadow);
+      }
+      .seg button[aria-disabled='true'] {
+        opacity: 0.45;
+        cursor: not-allowed;
+        text-decoration: line-through;
+        text-decoration-thickness: 1px;
+      }
+
+      /* ===== Карточки, бейджи, баннеры ===== */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+      .card-pad {
+        padding: 16px;
+      }
+      .card-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 22px;
+        padding: 0 8px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid var(--border);
+        color: var(--muted-foreground);
+        background: var(--surface);
+        white-space: nowrap;
+      }
+      .badge-ok {
+        color: var(--up);
+        background: var(--up-bg);
+        border-color: transparent;
+      }
+      .badge-err {
+        color: var(--down);
+        background: var(--down-bg);
+        border-color: transparent;
+      }
+      .badge-warn {
+        color: var(--warn-fg);
+        background: var(--warn-bg);
+        border-color: var(--warn-border);
+      }
+      .badge-info {
+        color: var(--info-fg);
+        background: var(--info-bg);
+        border-color: var(--info-border);
+      }
+
+      .banner {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 12px 14px;
+        border-radius: var(--radius);
+        border: 1px solid;
+      }
+      .banner-warn {
+        background: var(--warn-bg);
+        color: var(--warn-fg);
+        border-color: var(--warn-border);
+      }
+      .banner-info {
+        background: var(--info-bg);
+        color: var(--info-fg);
+        border-color: var(--info-border);
+      }
+      .banner-error {
+        background: var(--error-bg);
+        color: var(--down);
+        border-color: var(--error-border);
+      }
+      .banner .b-icon {
+        font-size: 1.1rem;
+        line-height: 1.3;
+      }
+      .banner .b-body {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+      .banner strong {
+        font-weight: 700;
+      }
+      .banner a {
+        color: inherit;
+        font-weight: 600;
+      }
+
+      /* ===== Числа: цена, проценты ===== */
+      .price {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        font-weight: 600;
+      }
+      .price .lz {
+        color: var(--muted-foreground);
+        font-weight: 400;
+      }
+      .price.is-stale {
+        color: var(--stale);
+      }
+      .chg {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        font-weight: 600;
+      }
+      .chg.up {
+        color: var(--up);
+      }
+      .chg.down {
+        color: var(--down);
+      }
+      .chg.flat,
+      .chg.none {
+        color: var(--muted-foreground);
+      }
+      .stale-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.75rem;
+        color: var(--warn-fg);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .pause-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.75rem;
+        color: var(--muted-foreground);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      /* Подсветка изменившейся цены: только ячейка, ≤ 1 с, без анимации при reduced motion */
+      @keyframes tick-up {
+        from {
+          background: var(--up-bg);
+        }
+        to {
+          background: transparent;
+        }
+      }
+      @keyframes tick-down {
+        from {
+          background: var(--down-bg);
+        }
+        to {
+          background: transparent;
+        }
+      }
+      .tick-up {
+        animation: tick-up 1s ease-out;
+      }
+      .tick-down {
+        animation: tick-down 1s ease-out;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .tick-up,
+        .tick-down {
+          animation: none;
+        }
+        .spinner {
+          animation: none !important;
+        }
+      }
+
+      /* ===== Таблицы ===== */
+      .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+      }
+      table.data {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+      }
+      table.data th {
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+      table.data td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+      }
+      table.data tr:last-child td {
+        border-bottom: 0;
+      }
+      table.data tbody tr:hover {
+        background: var(--surface);
+      }
+      table.data .r {
+        text-align: right;
+      }
+      .coin-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+      .coin-ico {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 800;
+        color: #fff;
+        flex: none;
+      }
+      .coin-sym {
+        font-weight: 700;
+        color: var(--foreground);
+        text-decoration: none;
+      }
+      .coin-sym:hover {
+        text-decoration: underline;
+      }
+      .coin-name {
+        color: var(--muted-foreground);
+        font-size: 0.8125rem;
+      }
+
+      /* Скелетоны */
+      .sk {
+        display: inline-block;
+        height: 12px;
+        border-radius: 6px;
+        background: var(--skeleton);
+      }
+
+      /* ===== Тосты ===== */
+      .toasts {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 40;
+        max-width: min(380px, calc(100vw - 32px));
+      }
+      .toast {
+        background: var(--card);
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        font-size: 0.875rem;
+        display: flex;
+        gap: 10px;
+      }
+
+      /* ===== Диалог ===== */
+      dialog {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0;
+        background: var(--card);
+        color: var(--foreground);
+        width: min(460px, calc(100vw - 32px));
+        box-shadow: 0 20px 50px rgb(0 0 0 / 0.3);
+      }
+      dialog::backdrop {
+        background: rgb(2 6 23 / 0.55);
+      }
+      .dialog-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      /* ===== Спиннер ===== */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .spinner {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        animation: spin 0.8s linear infinite;
+        display: inline-block;
+        vertical-align: -2px;
+      }
+
+      /* ===== Панель макета (не часть продукта) ===== */
+      .mock-bar {
+        border: 1px dashed var(--input);
+        border-radius: var(--radius);
+        padding: 10px 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        align-items: center;
+        font-size: 0.8125rem;
+        background: var(--surface);
+      }
+      .mock-bar .mb-title {
+        font-weight: 700;
+        color: var(--muted-foreground);
+        text-transform: uppercase;
+        font-size: 0.6875rem;
+        letter-spacing: 0.06em;
+      }
+      .mock-bar label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        max-width: 100%;
+      }
+      .mock-bar select {
+        min-width: 0;
+        min-height: 30px;
+        border-radius: 6px;
+        border: 1px solid var(--input);
+        background: var(--background);
+        color: var(--foreground);
+        font: inherit;
+        padding: 0 6px;
+        max-width: 100%;
+      }
+
+      /* ===== Футер ===== */
+      .app-footer {
+        border-top: 1px solid var(--border);
+        padding: 14px 0;
+        font-size: 0.8125rem;
+        color: var(--muted-foreground);
+      }
+      .app-footer .container {
+        display: flex;
+        gap: 8px 16px;
+        flex-wrap: wrap;
+      }
+    </style>
+    <style>
+      .coin-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 24px;
+        align-items: flex-end;
+      }
+      .coin-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .coin-title .coin-ico {
+        width: 40px;
+        height: 40px;
+        font-size: 13px;
+      }
+      .big-price {
+        font-size: 2rem;
+        line-height: 1.1;
+        font-weight: 700;
+      }
+      .big-price .price {
+        font-weight: 700;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 18px;
+        align-items: center;
+      }
+      .ctl {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .ctl .hint {
+        font-weight: 600;
+      }
+      .chart-wrap {
+        position: relative;
+        padding: 8px 8px 4px;
+      }
+      .chart-box {
+        position: relative;
+        height: 360px;
+        outline-offset: -2px;
+      }
+      .chart-box svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        font-size: 0.8125rem;
+        padding: 6px 8px 2px;
+        min-height: 28px;
+      }
+      .legend b {
+        font-weight: 600;
+        color: var(--muted-foreground);
+        margin-right: 4px;
+      }
+      .tv-attr {
+        position: absolute;
+        left: 12px;
+        bottom: 30px;
+        font: 700 11px/1 var(--font);
+        color: var(--muted-foreground);
+        text-decoration: none;
+        border: 1px solid var(--border);
+        background: var(--card);
+        border-radius: 5px;
+        padding: 3px 5px;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 1px;
+        background: var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .stat {
+        background: var(--card);
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+      .stat .k {
+        font-size: 0.75rem;
+        color: var(--muted-foreground);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .stat .v {
+        font-size: 1rem;
+        overflow-wrap: anywhere;
+      }
+      .combo-hint {
+        font-size: 0.8125rem;
+      }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+      }
+      @media (max-width: 640px) {
+        .big-price {
+          font-size: 1.5rem;
+        }
+        .chart-box {
+          height: 280px;
+        }
+        .hide-sm {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="header"></div>
+    <main id="main">
+      <div class="container stack">
+        <div class="mock-bar" aria-label="Панель макета (не часть интерфейса)">
+          <span class="mb-title">Макет</span>
+          <label
+            >Монета
+            <select id="coin">
+              <option value="1">BTC — крупная цена</option>
+              <option value="7">PEPE — мелкая цена</option>
+            </select>
+          </label>
+          <label
+            >Сценарий
+            <select id="scenario">
+              <option value="normal">Норма (есть пропуск в истории)</option>
+              <option value="few">Мало данных</option>
+              <option value="stale">Цена устарела</option>
+              <option value="notfound">404 — монета не отслеживается</option>
+            </select>
+          </label>
+          <button class="btn btn-sm" id="sim">Симулировать <code>price.updated</code></button>
+        </div>
+
+        <div id="page" class="stack"></div>
+      </div>
+    </main>
+    <div id="footer"></div>
+    <script>
+      /* Общие функции макетов. В apps/web это станет lib/format.ts, components/theme-toggle.tsx и т. п. */
+      const CPT = (() => {
+        /** «Сейчас» в макетах зафиксировано, чтобы относительное время было воспроизводимым. */
+        const NOW = Date.parse('2026-10-08T11:07:30.000Z');
+
+        /* ---------- Тема: светлая / тёмная / как в системе ---------- */
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        function readPref() {
+          try {
+            return localStorage.getItem('cpt-theme') || 'system';
+          } catch {
+            return 'system';
+          }
+        }
+        function writePref(v) {
+          try {
+            localStorage.setItem('cpt-theme', v);
+          } catch {
+            /* приватный режим — не страшно */
+          }
+        }
+        function applyTheme(pref) {
+          const theme = pref === 'system' ? (mq.matches ? 'dark' : 'light') : pref;
+          document.documentElement.dataset.theme = theme;
+          document
+            .querySelectorAll('[data-theme-pref]')
+            .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themePref === pref)));
+          document.dispatchEvent(new CustomEvent('cpt:theme', { detail: theme }));
+        }
+        mq.addEventListener('change', () => {
+          if (readPref() === 'system') applyTheme('system');
+        });
+        function themeToggleHTML() {
+          const opts = [
+            ['light', '☀', 'Светлая тема'],
+            ['dark', '☾', 'Тёмная тема'],
+            ['system', 'Авто', 'Как в системе'],
+          ];
+          return `<div class="seg" role="group" aria-label="Тема">${opts
+            .map(
+              ([v, t, l]) =>
+                `<button type="button" data-theme-pref="${v}" aria-pressed="false" aria-label="${l}" title="${l}">${t}</button>`,
+            )
+            .join('')}</div>`;
+        }
+        function bindThemeToggle(root = document) {
+          root.querySelectorAll('[data-theme-pref]').forEach((b) =>
+            b.addEventListener('click', () => {
+              writePref(b.dataset.themePref);
+              applyTheme(b.dataset.themePref);
+            }),
+          );
+          applyTheme(readPref());
+        }
+
+        /* ---------- Цены: строка → Intl.NumberFormat без Number() (ADR 0006, 0012) ---------- */
+        const usd2 = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        const usdSig = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          maximumSignificantDigits: 6,
+        });
+        /** Decimal из контракта: ^(0|[1-9][0-9]*)(\.[0-9]*[1-9])?$ — значит, «< 1» ⇔ строка начинается с «0». */
+        const belowOne = (s) => s.startsWith('0');
+        function formatPrice(s) {
+          return belowOne(s) ? usdSig.format(s) : usd2.format(s);
+        }
+        function priceHTML(s, { stale = false, cls = '' } = {}) {
+          const f = formatPrice(s);
+          const m = f.match(/^\$0\.(0{3,})(\d+)$/);
+          const body = m ? `$0.<span class="lz">${m[1]}</span>${m[2]}` : f;
+          return `<span class="price ${stale ? 'is-stale' : ''} ${cls}" title="${s} USD">${body}</span>`;
+        }
+        /** Подпись шкалы графика: значащие цифры, а не фиксированные знаки (ADR 0012). */
+        const axisSig = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 5 });
+        const axis2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        function axisLabel(n) {
+          return n < 1 ? axisSig.format(n) : axis2.format(n);
+        }
+
+        /* ---------- Проценты: знак всегда, стрелка, цвет ---------- */
+        const pct = new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+          signDisplay: 'exceptZero',
+        });
+        function changeHTML(s, { suffix = '' } = {}) {
+          if (s == null) return `<span class="chg none" title="Истории меньше суток">—</span>`;
+          const t = pct.format(s).replace('-', '−');
+          const dir = t.startsWith('+') ? 'up' : t.startsWith('−') ? 'down' : 'flat';
+          const arrow = dir === 'up' ? '▲ ' : dir === 'down' ? '▼ ' : '';
+          return `<span class="chg ${dir}" title="${s} %"><span aria-hidden="true">${arrow}</span>${t}%${suffix}</span>`;
+        }
+
+        /* ---------- Время: пояс браузера, в подсказке — ISO UTC ---------- */
+        const hm = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const hms = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dt = new Intl.DateTimeFormat('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        const dts = new Intl.DateTimeFormat('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        const fmt = {
+          hm: (i) => hm.format(Date.parse(i)),
+          hms: (i) => hms.format(Date.parse(i)),
+          dt: (i) => dt.format(Date.parse(i)),
+          dts: (i) => dts.format(Date.parse(i)),
+        };
+        function relative(iso) {
+          const s = Math.max(0, (NOW - Date.parse(iso)) / 1000);
+          if (s < 60) return 'только что';
+          const m = Math.floor(s / 60);
+          if (m < 60) return `${m} мин назад`;
+          const h = Math.floor(m / 60);
+          if (h < 24) return `${h} ч назад`;
+          return `${Math.floor(h / 24)} дн назад`;
+        }
+        function timeHTML(iso, mode = 'rel') {
+          const text = mode === 'rel' ? relative(iso) : fmt[mode](iso);
+          return `<time datetime="${iso}" title="${iso} (UTC)">${text}</time>`;
+        }
+        const iso = (ms) => new Date(ms).toISOString();
+
+        /* ---------- Мини-график: свой SVG (ADR 0012) ---------- */
+        function sparkHTML(points, { w = 104, h = 30, label = '' } = {}) {
+          if (!points || points.length < 2) return `<span class="muted" title="Данных пока нет">—</span>`;
+          const v = points.map((p) => Number(p.close)); // Number() допустим только для отрисовки
+          const min = Math.min(...v),
+            max = Math.max(...v),
+            span = max - min || 1;
+          const d = v
+            .map(
+              (y, i) =>
+                `${i ? 'L' : 'M'}${((i / (v.length - 1)) * (w - 2) + 1).toFixed(1)},${(h - 3 - ((y - min) / span) * (h - 6)).toFixed(1)}`,
+            )
+            .join('');
+          // Почти без изменений (< 0,1 %) — нейтральный цвет: не красим «шум» стейблкоина
+          const rel = Math.abs(v[v.length - 1] - v[0]) / v[0];
+          const dir = rel < 0.001 ? 'muted-foreground' : v[v.length - 1] >= v[0] ? 'up' : 'down';
+          return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}"><path d="${d}" fill="none" stroke="var(--${dir})" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+        }
+
+        /* ---------- Детерминированные моки ---------- */
+        function rng(seed) {
+          return () => {
+            seed |= 0;
+            seed = (seed + 0x6d2b79f5) | 0;
+            let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        /** Число → Decimal-строка контракта (без экспоненты и хвостовых нулей). Только для генерации моков. */
+        function toDecimal(n, sig = 10) {
+          let s = n.toPrecision(sig);
+          if (/e/i.test(s)) s = n.toFixed(20);
+          if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '');
+          return s;
+        }
+
+        /* ---------- Шапка и футер ---------- */
+        function headerHTML({ active = 'dashboard', role = 'operator', rt = 'online' } = {}) {
+          const op = role === 'operator';
+          const link = (id, href, text) =>
+            `<a href="${href}" ${active === id ? 'aria-current="page"' : ''}>${text}</a>`;
+          return `<a class="skip-link" href="#main">К содержимому</a>
+<header class="app-header"><div class="container">
+  <a class="logo" href="dashboard.html"><span class="logo-mark" aria-hidden="true">CPT</span><span>Crypto Price Tracker</span></a>
+  <nav class="nav" aria-label="Основная навигация">
+    ${link('dashboard', 'dashboard.html', 'Дашборд')}
+    ${
+      op
+        ? `<span class="sep" aria-hidden="true"></span>
+    ${link('watchlist', 'operator.html#watchlist', 'Watchlist')}
+    ${link('sync', 'operator.html#sync', 'Синхронизация')}
+    ${link('system', 'operator.html#system', 'Система')}
+    <a href="#" title="Экран пользователей в макеты не входит" aria-disabled="true">Пользователи</a>`
+        : ''
+    }
+  </nav>
+  <div class="header-tools">
+    <span class="rt" id="rt" data-state="${rt}"><span class="rt-dot" aria-hidden="true"></span><span id="rt-text">${rt === 'online' ? 'Онлайн' : 'Переподключение…'}</span></span>
+    ${themeToggleHTML()}
+    <details class="user-menu" style="position:relative">
+      <summary class="btn btn-ghost user-btn" aria-label="Меню пользователя"><span class="avatar" aria-hidden="true">A</span><span class="user-name">alexey</span><span class="badge">${op ? 'Operator' : 'Viewer'}</span></summary>
+      <div class="card" style="position:absolute;right:0;top:42px;min-width:180px;padding:6px;z-index:30;display:flex;flex-direction:column">
+        <a class="btn btn-ghost" style="justify-content:flex-start" href="#">Профиль и сессии</a>
+        <a class="btn btn-ghost" style="justify-content:flex-start" href="login.html">Выйти</a>
+      </div>
+    </details>
+  </div>
+</div></header>`;
+        }
+        function footerHTML() {
+          return `<footer class="app-footer"><div class="container">
+  <span>Графики: TradingView Lightweight Charts™ — <a href="https://www.tradingview.com/" rel="noopener">tradingview.com</a></span>
+  <span class="spacer"></span>
+  <span>Макет · данные — моки по <code>openapi.yaml</code> · цены в USD</span>
+</div></footer>`;
+        }
+        function setRealtime(state) {
+          const el = document.getElementById('rt');
+          if (!el) return;
+          el.dataset.state = state;
+          document.getElementById('rt-text').textContent = state === 'online' ? 'Онлайн' : 'Переподключение…';
+        }
+
+        /* ---------- Тосты: aria-live="polite" (WCAG 4.1.3) ---------- */
+        function toast(html, kind = 'info') {
+          let box = document.getElementById('toasts');
+          if (!box) {
+            box = document.createElement('div');
+            box.id = 'toasts';
+            box.className = 'toasts';
+            box.setAttribute('role', 'status');
+            box.setAttribute('aria-live', 'polite');
+            document.body.append(box);
+          }
+          const t = document.createElement('div');
+          t.className = 'toast';
+          const icon = { ok: '✓', err: '✕', info: 'ℹ', warn: '⚠' }[kind];
+          t.innerHTML = `<span aria-hidden="true" style="color:var(--${kind === 'ok' ? 'up' : kind === 'err' ? 'down' : kind === 'warn' ? 'warn-fg' : 'info-fg'})">${icon}</span><div>${html}</div>`;
+          box.append(t);
+          setTimeout(() => t.remove(), 6000);
+        }
+
+        /** Перезапуск CSS-анимации подсветки цены. */
+        function flash(el, dir) {
+          el.classList.remove('tick-up', 'tick-down');
+          void el.offsetWidth;
+          el.classList.add(dir === 'up' ? 'tick-up' : 'tick-down');
+        }
+
+        const esc = (s) =>
+          String(s).replace(
+            /[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+          );
+
+        return {
+          NOW,
+          iso,
+          applyTheme,
+          bindThemeToggle,
+          themeToggleHTML,
+          formatPrice,
+          priceHTML,
+          axisLabel,
+          changeHTML,
+          fmt,
+          relative,
+          timeHTML,
+          sparkHTML,
+          rng,
+          toDecimal,
+          headerHTML,
+          footerHTML,
+          setRealtime,
+          toast,
+          flash,
+          esc,
+        };
+      })();
+    </script>
+    <script>
+      const MIN = 60_000,
+        HOUR = 60 * MIN,
+        DAY = 24 * HOUR,
+        NOW = CPT.NOW;
+      const COINS = {
+        1: {
+          id: 1,
+          cmcId: 1,
+          symbol: 'BTC',
+          name: 'Bitcoin',
+          color: '#c2410c',
+          price: '67123.451234567891',
+          chg: '1.2345',
+          createdAt: '2025-09-14T08:00:00.000Z',
+          vol: 0.006,
+        },
+        7: {
+          id: 7,
+          cmcId: 24478,
+          symbol: 'PEPE',
+          name: 'Pepe',
+          color: '#15803d',
+          price: '0.0000123456789',
+          chg: '5.6789',
+          createdAt: '2025-11-02T10:00:00.000Z',
+          vol: 0.014,
+        },
+      };
+      const INTERVALS = { '1h': HOUR, '4h': 4 * HOUR, '1d': DAY, '1w': 7 * DAY };
+      const PERIODS = { '24h': DAY, '7d': 7 * DAY, '30d': 30 * DAY, '1y': 365 * DAY };
+      const LABEL_I = { '1h': '1 ч', '4h': '4 ч', '1d': '1 д', '1w': '1 нед' };
+      const LABEL_P = { '24h': '24 ч', '7d': '7 д', '30d': '30 д', '1y': '1 год' };
+
+      const params = new URLSearchParams(location.search);
+      const state = {
+        id: params.get('id') === '7' ? 7 : 1,
+        scen: params.get('scenario') || 'normal',
+        kind: 'candles',
+        interval: params.get('interval') || '1h',
+        period: params.get('period') || '7d',
+        sel: null,
+        histShown: 10,
+      };
+
+      /** Почасовые OHLC-свёртки (как price_rollups_1h, ADR 0007). Детерминированно, последняя цена = текущая. */
+      function hourly(coin, scen) {
+        const r = CPT.rng(coin.id * 31),
+          n = 24 * 365,
+          end = Number(coin.price),
+          out = [];
+        const hoursOfData = scen === 'few' ? 6 : n;
+        let v = end / (1 + (Number(coin.chg) / 100) * 8);
+        const topHour = Math.floor(NOW / HOUR) * HOUR;
+        for (let i = 0; i < n; i++) {
+          const t = topHour - (n - 1 - i) * HOUR;
+          const pull = (end - v) / (n - i); // мягко тянем к текущей цене
+          const o = v;
+          v = Math.max(v * (1 + (r() - 0.5) * coin.vol) + pull, end * 0.2);
+          if (i === n - 1) v = end;
+          const hi = Math.max(o, v) * (1 + r() * coin.vol * 0.4),
+            lo = Math.min(o, v) * (1 - r() * coin.vol * 0.4);
+          if (n - i > hoursOfData) continue;
+          // Пропуск: CMC лежал 30–35 ч назад — бакетов нет, их не выдумываем
+          if (scen !== 'few' && n - i > 30 && n - i <= 35) continue;
+          out.push({ t, o, h: hi, l: lo, c: v, points: i === n - 1 ? 3 : 12 });
+        }
+        return out;
+      }
+
+      /** getPriceAggregates: группировка часовых свёрток в интервал. Наружу — строки (Decimal). */
+      function aggregates(hours, interval, period) {
+        const size = INTERVALS[interval],
+          from = NOW - PERIODS[period];
+        const MONDAY = Date.parse('2026-10-05T00:00:00.000Z'); // недели — с понедельника (ADR 0007)
+        const key = (t) =>
+          interval === '1w' ? MONDAY + Math.floor((t - MONDAY) / size) * size : Math.floor(t / size) * size;
+        const map = new Map();
+        for (const h of hours) {
+          if (h.t + HOUR <= from) continue;
+          const k = key(h.t);
+          const b = map.get(k);
+          if (!b) map.set(k, { t: k, o: h.o, h: h.h, l: h.l, c: h.c, points: h.points, sum: h.c * h.points });
+          else {
+            b.h = Math.max(b.h, h.h);
+            b.l = Math.min(b.l, h.l);
+            b.c = h.c;
+            b.points += h.points;
+            b.sum += h.c * h.points;
+          }
+        }
+        const D = (x) => CPT.toDecimal(x, 10);
+        const buckets = [...map.values()].map((b) => ({
+          bucketStart: CPT.iso(b.t),
+          stats: {
+            open: D(b.o),
+            close: D(b.c),
+            min: D(b.l),
+            max: D(b.h),
+            avg: D(b.sum / b.points),
+            changePercent: (((b.c - b.o) / b.o) * 100)
+              .toFixed(4)
+              .replace(/\.?0+$/, '')
+              .replace(/^-0$/, '0'),
+            points: b.points,
+          },
+        }));
+        if (!buckets.length) return { interval, from: CPT.iso(from), to: CPT.iso(NOW), summary: null, buckets };
+        const all = [...map.values()];
+        const o = all[0].o,
+          c = all.at(-1).c,
+          pts = all.reduce((s, b) => s + b.points, 0);
+        return {
+          cryptocurrencyId: state.id,
+          currency: 'USD',
+          interval,
+          from: CPT.iso(from),
+          to: CPT.iso(NOW),
+          buckets,
+          summary: {
+            open: D(o),
+            close: D(c),
+            min: D(Math.min(...all.map((b) => b.l))),
+            max: D(Math.max(...all.map((b) => b.h))),
+            avg: D(all.reduce((s, b) => s + b.sum, 0) / pts),
+            changePercent: (((c - o) / o) * 100)
+              .toFixed(4)
+              .replace(/\.?0+$/, '')
+              .replace(/^-0$/, '0'),
+            points: pts,
+          },
+        };
+      }
+
+      /** listPriceHistory: сырые точки раз в 5 мин, от новых к старым, курсор. */
+      function historyPage(coin, offset, limit) {
+        const r = CPT.rng(coin.id * 7 + offset),
+          items = [];
+        let v = Number(coin.price);
+        const total = state.scen === 'few' ? 70 : 1000;
+        for (let i = offset; i < Math.min(offset + limit, total); i++) {
+          const fetchedAt = NOW - (state.scen === 'stale' ? 17 * MIN : 2.5 * MIN) - i * 5 * MIN;
+          items.push({
+            price: i === 0 ? coin.price : CPT.toDecimal(v, 10),
+            sourceUpdatedAt: CPT.iso(fetchedAt - 41_000),
+            fetchedAt: CPT.iso(fetchedAt),
+          });
+          v = v * (1 + (r() - 0.5) * coin.vol * 0.3);
+        }
+        return { items, nextCursor: offset + limit < total ? 'b2Zmc2V0' : null };
+      }
+
+      /** Комбинации > 1000 бакетов (ADR 0007) или < 2 бакетов — неактивны, с объяснением. */
+      function comboIssue(interval, period) {
+        const n = PERIODS[period] / INTERVALS[interval];
+        if (n > 1000)
+          return `${LABEL_I[interval]} × ${LABEL_P[period]} — это ${Math.round(n).toLocaleString('ru-RU')} бакетов, больше лимита 1000 (ADR 0007). Выберите интервал 1 д или 1 нед.`;
+        if (n < 2)
+          return `${LABEL_I[interval]} × ${LABEL_P[period]} — меньше двух бакетов, график не построить. Выберите интервал мельче.`;
+        return null;
+      }
+
+      let coin, hours, agg, hist;
+      function load() {
+        coin = { ...COINS[state.id] };
+        hours = hourly(coin, state.scen);
+        agg = aggregates(hours, state.interval, state.period);
+        hist = historyPage(coin, 0, state.histShown);
+      }
+
+      function segHTML(name, opts, current, disabledFn) {
+        return `<div class="seg" role="group" aria-label="${name}">${opts
+          .map(([v, t]) => {
+            const issue = disabledFn?.(v);
+            return `<button type="button" data-${name === 'Вид графика' ? 'kind' : name === 'Интервал' ? 'interval' : 'period'}="${v}" aria-pressed="${v === current}" ${issue ? `aria-disabled="true" title="${issue}"` : ''}>${t}</button>`;
+          })
+          .join('')}</div>`;
+      }
+
+      function render() {
+        const page = document.getElementById('page');
+        if (state.scen === 'notfound') {
+          page.innerHTML = `<div class="card card-pad" style="text-align:center;padding:48px 16px" role="alert">
+      <div style="font-size:28px" aria-hidden="true">∅</div><h1 style="margin:8px 0">Монета не отслеживается</h1>
+      <p class="muted">Возможно, оператор удалил её из watchlist вместе с историей цен.</p>
+      <p style="margin-top:14px"><a class="btn" href="dashboard.html">← К дашборду</a></p></div>`;
+          return;
+        }
+        const latest = {
+          price: coin.price,
+          change24hPercent: coin.chg,
+          isStale: state.scen === 'stale',
+          fetchedAt: CPT.iso(NOW - (state.scen === 'stale' ? 17 : 2.5) * MIN),
+          sourceUpdatedAt: CPT.iso(NOW - (state.scen === 'stale' ? 17 : 2.5) * MIN - 41_000),
+        };
+        const issueNow = comboIssue(state.interval, state.period);
+        page.innerHTML = `
+  <nav aria-label="Навигация"><a href="dashboard.html">← Дашборд</a></nav>
+  <div class="coin-head">
+    <div class="coin-title"><span class="coin-ico" style="background:${coin.color}" aria-hidden="true">${coin.symbol.slice(0, 3)}</span>
+      <div><h1>${coin.symbol} <span class="muted" style="font-weight:500">· ${coin.name}</span></h1>
+      <span class="hint">CMC #${coin.cmcId} · отслеживается с ${new Date(coin.createdAt).toLocaleDateString('ru-RU')}</span></div></div>
+    <div class="stack" style="gap:2px">
+      <div class="row" style="gap:12px"><span class="big-price" id="big-price">${CPT.priceHTML(latest.price, { stale: latest.isStale })}</span>${CPT.changeHTML(latest.change24hPercent, { suffix: ' <span class="muted" style="font-weight:400">за 24 ч</span>' })}</div>
+      <span class="hint" id="fresh">${latest.isStale ? '<span class="stale-tag">⚠ устарела</span> · ' : ''}Обновлено ${CPT.timeHTML(latest.fetchedAt)} · котировка CMC ${CPT.timeHTML(latest.sourceUpdatedAt, 'hms')}</span>
+    </div>
+  </div>
+  ${latest.isStale ? `<div class="banner banner-warn" role="status"><span class="b-icon" aria-hidden="true">⚠</span><div class="b-body"><strong>Цена устарела</strong><span>CoinMarketCap недоступен, последнее обновление — ${CPT.fmt.hm(latest.fetchedAt)}. График и история показывают сохранённые данные.</span></div></div>` : ''}
+  ${state.scen === 'few' ? `<div class="banner banner-info" role="status"><span class="b-icon" aria-hidden="true">ℹ</span><div class="b-body"><strong>Данных пока мало</strong><span>История копится с момента добавления монеты: CMC Basic не отдаёт прошлые цены. Сейчас — ${agg.summary?.points ?? 0} точек за последние 6 ч.</span></div></div>` : ''}
+
+  <section class="card" aria-labelledby="chart-title">
+    <div class="card-head" style="gap:10px 18px">
+      <h2 id="chart-title" class="sr-only">График цены</h2>
+      <div class="controls">
+        <div class="ctl"><span class="hint" aria-hidden="true">Вид</span>${segHTML(
+          'Вид графика',
+          [
+            ['candles', 'Свечи'],
+            ['line', 'Линия'],
+          ],
+          state.kind,
+        )}</div>
+        <div class="ctl"><span class="hint" aria-hidden="true">Интервал</span>${segHTML(
+          'Интервал',
+          [
+            ['1h', '1ч'],
+            ['4h', '4ч'],
+            ['1d', '1д'],
+            ['1w', '1н'],
+          ],
+          state.interval,
+          (v) => comboIssue(v, state.period),
+        )}</div>
+        <div class="ctl"><span class="hint" aria-hidden="true">Период</span>${segHTML(
+          'Период',
+          [
+            ['24h', '24ч'],
+            ['7d', '7д'],
+            ['30d', '30д'],
+            ['1y', '1г'],
+          ],
+          state.period,
+          (v) => comboIssue(state.interval, v),
+        )}</div>
+      </div>
+    </div>
+    <p class="combo-hint muted" id="combo-hint" role="status" style="padding:8px 16px 0;${issueNow ? '' : 'display:none'}">${issueNow ?? ''}</p>
+    <div class="chart-wrap">
+      <div class="legend" id="legend" aria-live="polite"></div>
+      <div class="chart-box" id="chart" tabindex="0" role="group" aria-roledescription="график"
+        aria-label="${coin.symbol}: ${state.kind === 'candles' ? 'свечи' : 'линия'}, интервал ${LABEL_I[state.interval]}, период ${LABEL_P[state.period]}. Стрелки влево и вправо — перемещение по бакетам." aria-describedby="legend"></div>
+      <a class="tv-attr" href="https://www.tradingview.com/" rel="noopener" title="Charting by TradingView (attributionLogo)">TV</a>
+    </div>
+    <p class="hint" style="padding:0 16px 12px">Пустые промежутки — часы без данных (CMC был недоступен). Бакеты не интерполируются. В apps/web график рисует Lightweight Charts, здесь — SVG-имитация.</p>
+  </section>
+
+  <section aria-labelledby="sum-title" class="stack" style="gap:8px">
+    <div class="row"><h2 id="sum-title">Сводка за ${LABEL_P[state.period]}</h2><span class="hint">getPriceAggregates.summary</span></div>
+    ${
+      agg.summary
+        ? `<div class="stats">
+      ${stat('Открытие', CPT.priceHTML(agg.summary.open))}
+      ${stat('Закрытие', CPT.priceHTML(agg.summary.close))}
+      ${stat('Минимум', CPT.priceHTML(agg.summary.min))}
+      ${stat('Максимум', CPT.priceHTML(agg.summary.max))}
+      ${stat('Среднее <span title="Статистика: 10 значащих цифр (ADR 0007)">ⓘ</span>', CPT.priceHTML(agg.summary.avg))}
+      ${stat('Изменение', CPT.changeHTML(agg.summary.changePercent))}
+      ${stat('Точек', `<span class="num">${agg.summary.points.toLocaleString('ru-RU')}</span>`)}
+    </div>`
+        : `<p class="muted">За период данных нет.</p>`
+    }
+  </section>
+
+  <section class="card" aria-labelledby="hist-title">
+    <div class="card-head"><h2 id="hist-title">История цен</h2><span class="hint">сырые точки, от новых к старым</span></div>
+    <div class="table-wrap"><table class="data">
+      <thead><tr><th scope="col">Получено</th><th scope="col" class="r">Цена, USD</th><th scope="col" class="r hide-sm">Котировка CMC</th></tr></thead>
+      <tbody>${hist.items.map((p) => `<tr><td class="num">${CPT.timeHTML(p.fetchedAt, 'dts')}</td><td class="r">${CPT.priceHTML(p.price)}</td><td class="r num hide-sm">${CPT.timeHTML(p.sourceUpdatedAt, 'hms')}</td></tr>`).join('')}</tbody>
+    </table></div>
+    <div class="row" style="padding:12px 16px">${hist.nextCursor ? `<button class="btn" id="more">Загрузить ещё</button><span class="hint">nextCursor → следующая страница</span>` : `<span class="hint">Это все точки</span>`}</div>
+  </section>`;
+        bind();
+        drawChart();
+      }
+      function stat(k, v) {
+        return `<div class="stat"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+      }
+
+      function bind() {
+        const hint = document.getElementById('combo-hint');
+        document.querySelectorAll('[data-kind],[data-interval],[data-period]').forEach((b) =>
+          b.addEventListener('click', () => {
+            if (b.getAttribute('aria-disabled') === 'true') {
+              hint.style.display = '';
+              hint.textContent = b.title;
+              return;
+            }
+            if (b.dataset.kind) state.kind = b.dataset.kind;
+            if (b.dataset.interval) state.interval = b.dataset.interval;
+            if (b.dataset.period) state.period = b.dataset.period;
+            state.sel = null;
+            load();
+            render();
+            document
+              .querySelector(
+                `[data-${b.dataset.kind ? 'kind' : b.dataset.interval ? 'interval' : 'period'}="${b.dataset.kind || b.dataset.interval || b.dataset.period}"]`,
+              )
+              ?.focus();
+          }),
+        );
+        document.getElementById('more')?.addEventListener('click', () => {
+          state.histShown += 10;
+          hist = historyPage(coin, 0, state.histShown);
+          render();
+          document.getElementById('more')?.focus();
+        });
+        const box = document.getElementById('chart');
+        box.addEventListener('keydown', (e) => {
+          const n = agg.buckets.length;
+          if (!n) return;
+          if (e.key === 'ArrowLeft') state.sel = Math.max(0, (state.sel ?? n) - 1);
+          else if (e.key === 'ArrowRight') state.sel = Math.min(n - 1, (state.sel ?? n - 2) + 1);
+          else if (e.key === 'Home') state.sel = 0;
+          else if (e.key === 'End') state.sel = n - 1;
+          else return;
+          e.preventDefault();
+          drawChart();
+        });
+        box.addEventListener('mousemove', (e) => {
+          const r = box.getBoundingClientRect();
+          const x = e.clientX - r.left;
+          let best = 0,
+            dist = Infinity;
+          geom.xs.forEach((bx, i) => {
+            const d = Math.abs(bx - x);
+            if (d < dist) {
+              dist = d;
+              best = i;
+            }
+          });
+          if (state.sel !== best) {
+            state.sel = best;
+            drawChart();
+          }
+        });
+        box.addEventListener('mouseleave', () => {
+          state.sel = null;
+          drawChart();
+        });
+      }
+
+      let geom = { xs: [] };
+      const tickTime = (t) =>
+        state.period === '24h' || (state.period === '7d' && state.interval !== '1d')
+          ? state.period === '24h'
+            ? CPT.fmt.hm(CPT.iso(t))
+            : new Date(t).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })
+          : new Date(t).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
+
+      function drawChart() {
+        const box = document.getElementById('chart');
+        if (!box) return;
+        const W = box.clientWidth,
+          H = box.clientHeight,
+          padR = 78,
+          padB = 26,
+          padT = 8,
+          padL = 8;
+        const b = agg.buckets,
+          legend = document.getElementById('legend');
+        if (!b.length) {
+          box.innerHTML = `<div style="display:grid;place-items:center;height:100%" class="muted">За период данных нет</div>`;
+          legend.innerHTML = '';
+          return;
+        }
+        const size = INTERVALS[state.interval],
+          from = Date.parse(agg.from),
+          to = NOW;
+        const lo = Math.min(...b.map((x) => Number(x.stats.min))),
+          hi = Math.max(...b.map((x) => Number(x.stats.max)));
+        const span = hi - lo || hi * 0.01,
+          yMin = lo - span * 0.06,
+          yMax = hi + span * 0.06;
+        const X = (t) => padL + ((t - from) / (to - from)) * (W - padL - padR);
+        const Y = (v) => padT + (1 - (v - yMin) / (yMax - yMin)) * (H - padT - padB);
+        const slot = Math.max(1, ((W - padL - padR) * size) / (to - from));
+        const cw = Math.max(1, Math.min(14, slot * 0.68));
+        geom.xs = b.map((x) => X(Date.parse(x.bucketStart) + size / 2));
+        let svg = '';
+        for (let i = 0; i <= 4; i++) {
+          // сетка и правая шкала (как price scale в TradingView)
+          const v = yMin + (yMax - yMin) * (i / 4),
+            y = Y(v);
+          svg += `<line x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}" stroke="var(--border)"/><text x="${W - padR + 8}" y="${y + 4}" font-size="11" fill="var(--muted-foreground)" style="font-variant-numeric:tabular-nums">${CPT.axisLabel(v)}</text>`;
+        }
+        for (let i = 0; i <= 4; i++) {
+          const t = from + (to - from) * (i / 4),
+            x = X(t);
+          svg += `<text x="${x}" y="${H - 8}" font-size="11" fill="var(--muted-foreground)" text-anchor="${i === 0 ? 'start' : i === 4 ? 'end' : 'middle'}">${tickTime(t)}</text>`;
+        }
+        if (state.kind === 'candles') {
+          b.forEach((x, i) => {
+            const s = x.stats,
+              o = Number(s.open),
+              c = Number(s.close),
+              up = c >= o,
+              col = up ? 'var(--up)' : 'var(--down)',
+              cx = geom.xs[i];
+            const y1 = Y(Math.max(o, c)),
+              y2 = Y(Math.min(o, c));
+            svg +=
+              `<line x1="${cx}" x2="${cx}" y1="${Y(Number(s.max))}" y2="${Y(Number(s.min))}" stroke="${col}" stroke-width="1"/>` +
+              `<rect x="${cx - cw / 2}" y="${y1}" width="${cw}" height="${Math.max(1, y2 - y1)}" fill="${col}"/>`;
+          });
+        } else {
+          let d = '';
+          b.forEach((x, i) => {
+            const gap = i > 0 && Date.parse(x.bucketStart) - Date.parse(b[i - 1].bucketStart) > size;
+            d += `${i === 0 || gap ? 'M' : 'L'}${geom.xs[i].toFixed(1)},${Y(Number(x.stats.close)).toFixed(1)}`;
+          });
+          svg += `<path d="${d}" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linejoin="round"/>`;
+        }
+        const last = b.at(-1),
+          ly = Y(Number(last.stats.close));
+        svg +=
+          `<line x1="${padL}" x2="${W - padR}" y1="${ly}" y2="${ly}" stroke="var(--muted-foreground)" stroke-dasharray="3 3" opacity=".6"/>` +
+          `<rect x="${W - padR + 2}" y="${ly - 10}" width="${padR - 4}" height="20" rx="4" fill="var(--foreground)"/><text x="${W - padR + 8}" y="${ly + 4}" font-size="11" font-weight="700" fill="var(--background)" style="font-variant-numeric:tabular-nums">${CPT.axisLabel(Number(last.stats.close))}</text>`;
+        const sel = state.sel ?? b.length - 1;
+        if (state.sel !== null)
+          svg += `<line x1="${geom.xs[sel]}" x2="${geom.xs[sel]}" y1="${padT}" y2="${H - padB}" stroke="var(--muted-foreground)" stroke-dasharray="4 3"/>`;
+        box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${svg}</svg>`;
+        const s = b[sel].stats,
+          st = b[sel].bucketStart;
+        // Дневные и недельные бакеты выровнены по UTC (ADR 0007): показываем дату UTC, а не «03:00» по Москве
+        const when = ['1d', '1w'].includes(state.interval)
+          ? `<time datetime="${st}" title="${st} (UTC)">${state.interval === '1w' ? 'нед. с ' : ''}${new Date(st).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' })} UTC</time>`
+          : CPT.timeHTML(st, 'dt');
+        legend.innerHTML = `<span class="num">${when}</span>
+    <span><b>O</b>${CPT.priceHTML(s.open)}</span><span><b>H</b>${CPT.priceHTML(s.max)}</span><span><b>L</b>${CPT.priceHTML(s.min)}</span><span><b>C</b>${CPT.priceHTML(s.close)}</span>
+    ${CPT.changeHTML(s.changePercent)}<span class="muted">${s.points} точ.</span>`;
+      }
+
+      new ResizeObserver(() => drawChart()).observe(document.body);
+      document.addEventListener('cpt:theme', () => drawChart());
+
+      /* price.updated → обновить последнюю свечу (в apps/web — series.update()) и цену в шапке */
+      document.getElementById('sim').addEventListener('click', () => {
+        if (state.scen !== 'normal') {
+          CPT.toast('Событие доступно в сценарии «Норма»', 'info');
+          return;
+        }
+        const k = 1 + (Math.random() - 0.45) * 0.004,
+          v = Number(coin.price) * k;
+        coin.price = CPT.toDecimal(v, 10);
+        const lastH = hours.at(-1);
+        lastH.c = v;
+        lastH.h = Math.max(lastH.h, v);
+        lastH.l = Math.min(lastH.l, v);
+        agg = aggregates(hours, state.interval, state.period);
+        const el = document.getElementById('big-price');
+        el.innerHTML = CPT.priceHTML(coin.price);
+        CPT.flash(el, k >= 1 ? 'up' : 'down');
+        drawChart();
+      });
+
+      document.getElementById('coin').value = String(state.id);
+      document.getElementById('scenario').value = state.scen;
+      document.getElementById('coin').addEventListener('change', (e) => {
+        state.id = Number(e.target.value);
+        state.histShown = 10;
+        load();
+        render();
+      });
+      document.getElementById('scenario').addEventListener('change', (e) => {
+        state.scen = e.target.value;
+        state.histShown = 10;
+        load();
+        render();
+      });
+      document.getElementById('header').innerHTML = CPT.headerHTML({ active: 'dashboard', role: 'operator' });
+      CPT.bindThemeToggle(document.getElementById('header'));
+      document.getElementById('footer').innerHTML = CPT.footerHTML();
+      load();
+      render();
+    </script>
+  </body>
+</html>
