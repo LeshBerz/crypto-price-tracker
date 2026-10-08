@@ -1,6 +1,8 @@
 // Только для ts-jest: тесты компилируются в CommonJS (ADR 0004).
 // rewriteRelativeImportExtensions выключен: Jest сам резолвит './x.ts' и трансформирует файл,
 // а переписанный './x.js' он бы не нашёл.
+// esModuleInterop: для module=nodenext он включён по умолчанию, для commonjs — нет. Без него
+// `import express from 'express'` в Jest превратится в require('express').default === undefined.
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
@@ -8,6 +10,7 @@
     "moduleResolution": "bundler",
     "verbatimModuleSyntax": false,
     "isolatedModules": false,
+    "esModuleInterop": true,
     "rewriteRelativeImportExtensions": false
   }
 }
