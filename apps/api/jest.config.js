@@ -14,6 +14,7 @@ export default {
     // Критичный код — 100 % (ADR 0009)
     './src/common/decimal.ts': { lines: 100, branches: 100, functions: 100, statements: 100 },
     './src/openapi/': { lines: 100, branches: 100, functions: 100, statements: 100 },
+    './src/http/auth.ts': { lines: 100, branches: 100, functions: 100, statements: 100 },
   },
   setupFilesAfterEnv: ['<rootDir>/tests/helpers/contract.ts'],
   clearMocks: true,

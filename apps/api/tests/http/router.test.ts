@@ -4,7 +4,9 @@ import { gzipSync } from 'node:zlib';
 import express from 'express';
 import request from 'supertest';
 import { errorHandler, notFound } from '../../src/http/errors.ts';
+import { silentLogger } from '../../src/common/logger.ts';
 import { HttpProblem } from '../../src/http/problem.ts';
+import { compileSpec } from '../../src/openapi/spec.ts';
 import { requestContext } from '../../src/http/request-context.ts';
 import { hasBody, mountFromSpec, RESPONDED, type Handlers } from '../../src/http/router.ts';
 import { bearer, fakeAuthenticator, TOKENS } from '../helpers/auth.ts';
@@ -344,6 +346,32 @@ describe('errorHandler: прочие ошибки чтения тела', () => 
 });
 
 describe('mountFromSpec', () => {
+  it('Allow без HEAD, если у пути нет GET', async () => {
+    const postOnly = compileSpec({
+      openapi: '3.0.3',
+      paths: { '/jobs': { post: { operationId: 'runJob', security: [], responses: { '202': { description: 'x' } } } } },
+    });
+    const app = express();
+    app.use(requestContext({ logger: silentLogger, clock: new FakeClock() }));
+    app.use(
+      mountFromSpec({
+        spec: postOnly,
+        handlers: { runJob: () => ({ status: 202 }) } as never,
+        authenticator: fakeAuthenticator,
+      }),
+    );
+    app.use(errorHandler);
+    const res = await request(app).get('/jobs');
+    expect(res.status).toBe(405);
+    expect(res.headers.allow).toBe('POST');
+  });
+
+  it('HttpProblem без опций: detail = title', () => {
+    const problem = new HttpProblem(404, 'not-found');
+    expect(problem.message).toBe('Not Found');
+    expect(problem.options).toEqual({});
+  });
+
   it('операция без хендлера — ошибка при монтировании (fail-fast)', () => {
     expect(() => mountFromSpec({ spec, handlers: {} as Handlers, authenticator: fakeAuthenticator })).toThrow(
       'Нет хендлера для операции getLiveness',
