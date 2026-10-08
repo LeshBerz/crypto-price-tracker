@@ -35,7 +35,7 @@
 | День | Дата | План, ч | Задачи | Накопл. план | Сделано, ч | Накопл. сделано |
 |---|---|---|---|---|---|---|
 | 2 | 07.10 | 7 | A-хвост · B1 · B2 · B3 (начало) | 7 | 7,5 | 7,5 |
-| 3 | 08.10 | 7 | B3 · B4 · B5 · B6 · B7 | 14 | | |
+| 3 | 08.10 | 7 | B3 · B4 · B5 · B6 · B7 | 14 | 6,25 | 13,75 |
 | 4 | 09.10 | 7 | B8 · B9 · B10 (начало) | 21 | | |
 | 5 | 10.10 | 7 | B10 · B11 · B12 (начало) | 28 | | |
 | 6 | 11.10 | 7 | B12 · B13 · B14 · B15 · B16 · B17 | 35 | | |
@@ -62,7 +62,7 @@
 
 ## Фаза B — `apps/api` (35,5 ч) 🔄
 
-> **Остановились 07.10:** B1–B3 готовы (каркас, CI, слой БД, `Decimal`; 176 тестов, покрытие 100 %). Следующий шаг — B4: конфиг, логгер, `Clock`, `X-Request-Id`.
+> **Остановились 08.10:** B1–B7 готовы — фундамент и HTTP-слой: конфиг, JSON-логи, `Clock`, валидатор и роутер из спеки, RFC 9457, `/health/*`, Swagger UI (426 тестов, покрытие 100 %). Сверх плана — разбор `docs/study/01` из B18. Отставание по сумме оценок — 0,25 ч (B3 закрыт днём раньше, его остаток числился в плане дня 3), покрывается запасом 2 ч. Следующий шаг — B8: auth по API-ключам.
 
 Порядок — от фундамента к фичам: каждая задача опирается только на предыдущие. Тесты пишутся вместе с кодом, а не после. Цикл этапа (`docs/study/NN`, вопросы к интервью) — внутри задач, отмеченных 📘.
 
@@ -71,10 +71,10 @@
 | B1 | **Каркас монорепо:** корневой `package.json` (workspaces), `@cpt/api`, `tsconfig.base` / build / test, ESLint (запрет `import.meta`, `Date.now`, `node:timers/promises` в обход `Clock`), Prettier, Jest (ts-jest → CJS), `scripts/check-deps.ts`, кодогенерация `openapi.json` и `api-types.ts` + проверка актуальности, husky + lint-staged + commitlint, GitHub Actions (job `api`), `.nvmrc`, `.env.example` | C7, бриф §4 | 0004, 0005, 0008 | 2,5 | ✅ |
 | B2 | **Слой БД:** подключение `node:sqlite`, PRAGMA, раннер миграций (`schema_migrations`, SHA-256, транзакция на миграцию, отказ при изменённом файле), `0001_core.sql`, транзакции (основа `UnitOfWork`; сам порт — с первым репозиторием в B8), тест правила «целые — BigInt» | C1, C2, C3, D-1, D-2 | 0003, 0007, 0013 | 1,5 | ✅ |
 | B3 | 📘 **`Decimal` на BigInt:** `parse` (экспонента, нули, ≤ 40 символов), `toString`, `compare`, `add`/`sub`/`mul`/`div` с HALF_EVEN, 100 % покрытия | D-3, CLAUDE.md §6 | 0006 | 1,5 | ✅ |
-| B4 | **Общее ядро:** конфиг из env с валидацией (без значений секретов в ошибках), JSON-логгер с `child` и маскированием, `Clock` (`SystemClock` / `FakeClock`), `X-Request-Id` | D-4, C4, C5 | 0015 | 1 | ⬜ |
-| B5 | 📘 **Валидатор подмножества JSON Schema:** компиляция при старте, fail-fast на неподдерживаемых словах, приведение query/path, `default`, `date-time` с зоной, все ошибки с путями. 100 % покрытия | C10 | 0008, 0014 | 2,5 | ⬜ |
-| B6 | **Роутер из спеки:** `mountFromSpec` + `Handlers<operations>`, `x-required-scopes`, Problem Details (RFC 9457), 404/405, 413/415, error-middleware, Jest-матчер `toMatchContract` | F8, C10 | 0008, 0014 | 2 | ⬜ |
-| B7 | **`createApp(deps)` + `/health/*` + Swagger UI** (`/docs`, `/openapi.json`, Scarf выключен) | F8, бриф §4 | 0004, 0014 | 0,75 | ⬜ |
+| B4 | **Общее ядро:** конфиг из env с валидацией (без значений секретов в ошибках), JSON-логгер с `child` и маскированием, `Clock` (`SystemClock` / `FakeClock`), `X-Request-Id` | D-4, C4, C5 | 0015 | 1 | ✅ |
+| B5 | 📘 **Валидатор подмножества JSON Schema:** компиляция при старте, fail-fast на неподдерживаемых словах, приведение query/path, `default`, `date-time` с зоной, все ошибки с путями. 100 % покрытия | C10 | 0008, 0014 | 2,5 | ✅ |
+| B6 | **Роутер из спеки:** `mountFromSpec` + `Handlers<operations>`, `x-required-scopes`, Problem Details (RFC 9457), 404/405, 413/415, error-middleware, Jest-матчер `toMatchContract` | F8, C10 | 0008, 0014 | 2 | ✅ |
+| B7 | **`createApp(deps)` + `/health/*` + Swagger UI** (`/docs`, `/openapi.json`, Scarf выключен) | F8, бриф §4 | 0004, 0014 | 0,75 | ✅ |
 | B8 | 📘 **Auth:** `ApiKeyRepository`, `requireAuth` + `requireScope`, SHA-256 + `timingSafeEqual`, троттлинг `last_used_at`, bootstrap ключей из env, CLI `keys:create` / `keys:revoke`, 401/403 по RFC 6750. 100 % покрытия middleware | F1, C4 | 0002, 0013 | 2 | ⬜ |
 | B9 | 📘 **Адаптер CMC + HTTP-стаб:** axios-инстанс с таймаутом, reviver с `context.source`, классификация ошибок, retry с backoff + jitter через `Clock`, `resolveSymbol` (лучший `cmc_rank`), `getQuotes`, `getUsage`. Стаб на `node:http`: 200, 429 + `Retry-After`, 500, 401, обрыв, таймаут, невалидный JSON, неизвестный символ | F3, F7, C4, C5, C9, D-4 | 0006, 0009, 0015 | 3 | ⬜ |
 | B10 | **Watchlist CRUD:** репозиторий, `WatchlistService`, 5 операций, лимит 100, `watchlist.changed` после COMMIT | F2, D-1, C2, C10 | 0013, 0014, 0015 | 2,5 | ⬜ |
