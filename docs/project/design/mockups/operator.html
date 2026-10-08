@@ -1,0 +1,1928 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Панель оператора — Crypto Price Tracker (макет)</title>
+    <script>
+      /* тема до первой отрисовки — без вспышки */ (function () {
+        var p = 'system';
+        try {
+          p = localStorage.getItem('cpt-theme') || 'system';
+        } catch (e) {}
+        var d = p === 'dark' || (p === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = d ? 'dark' : 'light';
+      })();
+    </script>
+    <style>
+      /* ===== Токены (имена как в shadcn/ui; в apps/web переедут в @theme Tailwind 4) ===== */
+      :root {
+        color-scheme: light;
+        --background: #ffffff;
+        --surface: #f6f7f9;
+        --card: #ffffff;
+        --foreground: #0f172a;
+        --muted-foreground: #526075;
+        --border: #e3e7ee;
+        --input: #7b8799;
+        --primary: #1d4ed8;
+        --primary-foreground: #ffffff;
+        --ring: #1d4ed8;
+        --up: #047857;
+        --up-bg: #e7f6ef;
+        --down: #b91c1c;
+        --down-bg: #fdeceb;
+        --stale: #5b6577;
+        --warn-fg: #8a3c00;
+        --warn-bg: #fff7e6;
+        --warn-border: #f2c27a;
+        --info-fg: #1e3a8a;
+        --info-bg: #eef4ff;
+        --info-border: #b9cdf7;
+        --error-bg: #fef2f2;
+        --error-border: #f3b4b4;
+        --skeleton: #e9edf3;
+        --shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 3px rgb(15 23 42 / 0.08);
+        --radius: 10px;
+        --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+      }
+      :root[data-theme='dark'] {
+        color-scheme: dark;
+        --background: #0b0f17;
+        --surface: #0f141e;
+        --card: #111723;
+        --foreground: #e6e9ef;
+        --muted-foreground: #9aa4b5;
+        --border: #232c3b;
+        --input: #6b7689;
+        --primary: #7aa7ff;
+        --primary-foreground: #0b0f17;
+        --ring: #7aa7ff;
+        --up: #34d399;
+        --up-bg: #0d2a20;
+        --down: #f87171;
+        --down-bg: #301417;
+        --stale: #8b95a7;
+        --warn-fg: #fbbf5a;
+        --warn-bg: #2a1f0b;
+        --warn-border: #6b4a12;
+        --info-fg: #a9c4ff;
+        --info-bg: #0f1d38;
+        --info-border: #24406f;
+        --error-bg: #2a1214;
+        --error-border: #6b2a2e;
+        --skeleton: #1b2331;
+        --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+      }
+
+      /* ===== База ===== */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .input::placeholder {
+        text-transform: none;
+        color: var(--muted-foreground);
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--foreground);
+        font: 15px/1.5 var(--font);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      a {
+        color: var(--primary);
+        text-underline-offset: 2px;
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: 1.25;
+        margin: 0;
+      }
+      h1 {
+        font-size: 1.375rem;
+      }
+      h2 {
+        font-size: 1.0625rem;
+      }
+      h3 {
+        font-size: 0.9375rem;
+      }
+      p {
+        margin: 0;
+      }
+      code,
+      .mono {
+        font-family: var(--mono);
+        font-size: 0.875em;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .muted {
+        color: var(--muted-foreground);
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      :focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      .skip-link {
+        position: absolute;
+        left: 8px;
+        top: -40px;
+        background: var(--card);
+        padding: 8px 12px;
+        border-radius: 6px;
+        z-index: 50;
+      }
+      .skip-link:focus {
+        top: 8px;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 16px;
+      }
+      main {
+        flex: 1;
+        padding: 20px 0 32px;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .spacer {
+        flex: 1;
+      }
+
+      /* ===== Шапка ===== */
+      .app-header {
+        border-bottom: 1px solid var(--border);
+        background: var(--card);
+      }
+      .app-header .container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        min-height: 56px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        color: var(--foreground);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .logo-mark {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        background: var(--primary);
+        color: var(--primary-foreground);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .nav {
+        display: flex;
+        gap: 2px;
+        flex-wrap: wrap;
+      }
+      .nav a {
+        color: var(--muted-foreground);
+        text-decoration: none;
+        padding: 6px 10px;
+        border-radius: 7px;
+        font-size: 0.9rem;
+      }
+      .nav a:hover {
+        color: var(--foreground);
+        background: var(--surface);
+      }
+      .nav a[aria-current='page'] {
+        color: var(--foreground);
+        background: var(--surface);
+        font-weight: 600;
+      }
+      .nav .sep {
+        width: 1px;
+        background: var(--border);
+        margin: 6px 4px;
+      }
+      .header-tools {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+      .rt {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8125rem;
+        color: var(--muted-foreground);
+        white-space: nowrap;
+      }
+      .rt-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--up);
+      }
+      .rt[data-state='offline'] .rt-dot {
+        background: transparent;
+        border: 2px solid var(--stale);
+      }
+      .user-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      @media (max-width: 720px) {
+        .app-header .nav {
+          order: 3;
+          width: 100%;
+        }
+        .user-name,
+        .user-btn .badge {
+          display: none;
+        }
+      }
+      @media (max-width: 420px) {
+        .rt #rt-text {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+        }
+        .header-tools {
+          gap: 4px;
+        }
+        .header-tools .seg button {
+          min-width: 32px;
+          padding: 0 6px;
+        }
+      }
+
+      /* ===== Кнопки и поля ===== */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 0 14px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--foreground);
+        font: inherit;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .btn:hover {
+        background: var(--surface);
+      }
+      .btn-primary {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .btn-primary:hover {
+        background: var(--primary);
+        filter: brightness(1.08);
+      }
+      .btn-danger {
+        background: var(--down);
+        border-color: var(--down);
+        color: #fff;
+      }
+      :root[data-theme='dark'] .btn-danger {
+        color: #0b0f17;
+      }
+      .btn-ghost {
+        border-color: transparent;
+        background: transparent;
+      }
+      .btn-sm {
+        min-height: 30px;
+        padding: 0 10px;
+        font-size: 0.8125rem;
+      }
+      .btn[disabled],
+      .btn[aria-disabled='true'] {
+        opacity: 0.55;
+        cursor: not-allowed;
+        filter: none;
+      }
+      .icon-btn {
+        min-width: 36px;
+        padding: 0 8px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .label {
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+      .hint {
+        font-size: 0.8125rem;
+        color: var(--muted-foreground);
+      }
+      .input {
+        min-height: 38px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 1px solid var(--input);
+        background: var(--background);
+        color: var(--foreground);
+        font: inherit;
+        width: 100%;
+      }
+      .input[aria-invalid='true'] {
+        border-color: var(--down);
+      }
+      .field-error {
+        color: var(--down);
+        font-size: 0.8125rem;
+        display: flex;
+        gap: 6px;
+        align-items: flex-start;
+      }
+
+      /* Сегментированный переключатель */
+      .seg {
+        display: inline-flex;
+        padding: 3px;
+        gap: 2px;
+        border-radius: 9px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        flex-wrap: wrap;
+      }
+      .seg button {
+        min-height: 30px;
+        min-width: 40px;
+        padding: 0 10px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted-foreground);
+        font: inherit;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .seg button[aria-pressed='true'] {
+        background: var(--card);
+        color: var(--foreground);
+        box-shadow: var(--shadow);
+      }
+      .seg button[aria-disabled='true'] {
+        opacity: 0.45;
+        cursor: not-allowed;
+        text-decoration: line-through;
+        text-decoration-thickness: 1px;
+      }
+
+      /* ===== Карточки, бейджи, баннеры ===== */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+      .card-pad {
+        padding: 16px;
+      }
+      .card-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 22px;
+        padding: 0 8px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid var(--border);
+        color: var(--muted-foreground);
+        background: var(--surface);
+        white-space: nowrap;
+      }
+      .badge-ok {
+        color: var(--up);
+        background: var(--up-bg);
+        border-color: transparent;
+      }
+      .badge-err {
+        color: var(--down);
+        background: var(--down-bg);
+        border-color: transparent;
+      }
+      .badge-warn {
+        color: var(--warn-fg);
+        background: var(--warn-bg);
+        border-color: var(--warn-border);
+      }
+      .badge-info {
+        color: var(--info-fg);
+        background: var(--info-bg);
+        border-color: var(--info-border);
+      }
+
+      .banner {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 12px 14px;
+        border-radius: var(--radius);
+        border: 1px solid;
+      }
+      .banner-warn {
+        background: var(--warn-bg);
+        color: var(--warn-fg);
+        border-color: var(--warn-border);
+      }
+      .banner-info {
+        background: var(--info-bg);
+        color: var(--info-fg);
+        border-color: var(--info-border);
+      }
+      .banner-error {
+        background: var(--error-bg);
+        color: var(--down);
+        border-color: var(--error-border);
+      }
+      .banner .b-icon {
+        font-size: 1.1rem;
+        line-height: 1.3;
+      }
+      .banner .b-body {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+      .banner strong {
+        font-weight: 700;
+      }
+      .banner a {
+        color: inherit;
+        font-weight: 600;
+      }
+
+      /* ===== Числа: цена, проценты ===== */
+      .price {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        font-weight: 600;
+      }
+      .price .lz {
+        color: var(--muted-foreground);
+        font-weight: 400;
+      }
+      .price.is-stale {
+        color: var(--stale);
+      }
+      .chg {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        font-weight: 600;
+      }
+      .chg.up {
+        color: var(--up);
+      }
+      .chg.down {
+        color: var(--down);
+      }
+      .chg.flat,
+      .chg.none {
+        color: var(--muted-foreground);
+      }
+      .stale-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.75rem;
+        color: var(--warn-fg);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .pause-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.75rem;
+        color: var(--muted-foreground);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      /* Подсветка изменившейся цены: только ячейка, ≤ 1 с, без анимации при reduced motion */
+      @keyframes tick-up {
+        from {
+          background: var(--up-bg);
+        }
+        to {
+          background: transparent;
+        }
+      }
+      @keyframes tick-down {
+        from {
+          background: var(--down-bg);
+        }
+        to {
+          background: transparent;
+        }
+      }
+      .tick-up {
+        animation: tick-up 1s ease-out;
+      }
+      .tick-down {
+        animation: tick-down 1s ease-out;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .tick-up,
+        .tick-down {
+          animation: none;
+        }
+        .spinner {
+          animation: none !important;
+        }
+      }
+
+      /* ===== Таблицы ===== */
+      .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+      }
+      table.data {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+      }
+      table.data th {
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+      table.data td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+      }
+      table.data tr:last-child td {
+        border-bottom: 0;
+      }
+      table.data tbody tr:hover {
+        background: var(--surface);
+      }
+      table.data .r {
+        text-align: right;
+      }
+      .coin-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+      .coin-ico {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 800;
+        color: #fff;
+        flex: none;
+      }
+      .coin-sym {
+        font-weight: 700;
+        color: var(--foreground);
+        text-decoration: none;
+      }
+      .coin-sym:hover {
+        text-decoration: underline;
+      }
+      .coin-name {
+        color: var(--muted-foreground);
+        font-size: 0.8125rem;
+      }
+
+      /* Скелетоны */
+      .sk {
+        display: inline-block;
+        height: 12px;
+        border-radius: 6px;
+        background: var(--skeleton);
+      }
+
+      /* ===== Тосты ===== */
+      .toasts {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 40;
+        max-width: min(380px, calc(100vw - 32px));
+      }
+      .toast {
+        background: var(--card);
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        font-size: 0.875rem;
+        display: flex;
+        gap: 10px;
+      }
+
+      /* ===== Диалог ===== */
+      dialog {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0;
+        background: var(--card);
+        color: var(--foreground);
+        width: min(460px, calc(100vw - 32px));
+        box-shadow: 0 20px 50px rgb(0 0 0 / 0.3);
+      }
+      dialog::backdrop {
+        background: rgb(2 6 23 / 0.55);
+      }
+      .dialog-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      /* ===== Спиннер ===== */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .spinner {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        animation: spin 0.8s linear infinite;
+        display: inline-block;
+        vertical-align: -2px;
+      }
+
+      /* ===== Панель макета (не часть продукта) ===== */
+      .mock-bar {
+        border: 1px dashed var(--input);
+        border-radius: var(--radius);
+        padding: 10px 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        align-items: center;
+        font-size: 0.8125rem;
+        background: var(--surface);
+      }
+      .mock-bar .mb-title {
+        font-weight: 700;
+        color: var(--muted-foreground);
+        text-transform: uppercase;
+        font-size: 0.6875rem;
+        letter-spacing: 0.06em;
+      }
+      .mock-bar label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        max-width: 100%;
+      }
+      .mock-bar select {
+        min-width: 0;
+        min-height: 30px;
+        border-radius: 6px;
+        border: 1px solid var(--input);
+        background: var(--background);
+        color: var(--foreground);
+        font: inherit;
+        padding: 0 6px;
+        max-width: 100%;
+      }
+
+      /* ===== Футер ===== */
+      .app-footer {
+        border-top: 1px solid var(--border);
+        padding: 14px 0;
+        font-size: 0.8125rem;
+        color: var(--muted-foreground);
+      }
+      .app-footer .container {
+        display: flex;
+        gap: 8px 16px;
+        flex-wrap: wrap;
+      }
+    </style>
+    <style>
+      .subnav {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+      }
+      .subnav a {
+        padding: 10px 12px;
+        color: var(--muted-foreground);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+      }
+      .subnav a[aria-current='page'] {
+        color: var(--foreground);
+        border-bottom-color: var(--primary);
+      }
+      .add-form {
+        display: grid;
+        grid-template-columns: minmax(0, 260px) auto;
+        gap: 12px;
+        align-items: start;
+      }
+      .add-form .actions {
+        padding-top: 27px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .adv summary {
+        cursor: pointer;
+        font-size: 0.875rem;
+        color: var(--primary);
+        width: max-content;
+      }
+      .adv[open] summary {
+        margin-bottom: 8px;
+      }
+      .form-alert {
+        grid-column: 1 / -1;
+      }
+      .act {
+        display: flex;
+        gap: 4px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+      }
+      .tile {
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .tile .k {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--muted-foreground);
+        font-weight: 700;
+      }
+      .tile .v {
+        font-size: 1.125rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .dl {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        gap: 8px 16px;
+        margin: 0;
+        font-size: 0.875rem;
+      }
+      .dl dt {
+        color: var(--muted-foreground);
+      }
+      .dl dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      .bar {
+        height: 10px;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 1px solid var(--input);
+        overflow: hidden;
+      }
+      .bar > span {
+        display: block;
+        height: 100%;
+        background: var(--primary);
+      }
+      .bar.warn > span {
+        background: var(--warn-fg);
+      }
+      .cols-2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 16px;
+      }
+      .err-cell {
+        max-width: 280px;
+      }
+      .err-cell .msg {
+        display: block;
+        font-size: 0.8125rem;
+        color: var(--muted-foreground);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      tr.hl td {
+        background: var(--info-bg);
+      }
+      .m-cards {
+        display: none;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .m-cards li {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      @media (max-width: 760px) {
+        .desk {
+          display: none;
+        }
+        .m-cards {
+          display: block;
+        }
+        .add-form {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .add-form .actions {
+          padding-top: 0;
+        }
+        .cols-2 {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="header"></div>
+    <main id="main">
+      <div class="container stack">
+        <div class="mock-bar" aria-label="Панель макета (не часть интерфейса)">
+          <span class="mb-title">Макет</span>
+          <label
+            >Ответ на «Добавить»
+            <select id="mock-add">
+              <option value="201">201 — добавлена</option>
+              <option value="400">400 — validation-error</option>
+              <option value="409">409 — already-tracked</option>
+              <option value="422u">422 — unknown-symbol</option>
+              <option value="422l">422 — watchlist-limit-reached</option>
+              <option value="503">503 — upstream-unavailable</option>
+            </select></label
+          >
+          <label
+            >Ответ на «Синхронизировать»
+            <select id="mock-sync">
+              <option value="202">202 — принят</option>
+              <option value="409">409 — sync-already-running</option>
+            </select></label
+          >
+          <label
+            >Система
+            <select id="mock-sys">
+              <option value="ok">Норма</option>
+              <option value="down">CMC недоступен</option>
+              <option value="low">Квота на исходе</option>
+              <option value="null">Квота ещё не получена</option>
+            </select></label
+          >
+        </div>
+
+        <div class="stack" style="gap: 4px">
+          <h1>Панель оператора</h1>
+          <p class="hint">Управление watchlist, синхронизацией и состояние интеграции с CoinMarketCap</p>
+        </div>
+        <nav class="subnav" aria-label="Разделы оператора">
+          <a href="#watchlist" data-tab="watchlist">Watchlist</a>
+          <a href="#sync" data-tab="sync">Синхронизация</a>
+          <a href="#system" data-tab="system">Система</a>
+        </nav>
+
+        <!-- ================= WATCHLIST ================= -->
+        <section id="tab-watchlist" class="stack" aria-labelledby="h-wl" hidden>
+          <h2 id="h-wl" class="sr-only">Watchlist</h2>
+          <div class="card card-pad stack" style="gap: 12px">
+            <h3>Добавить монету</h3>
+            <form id="add-form" class="add-form" novalidate>
+              <div class="field">
+                <label class="label" for="sym">Символ</label>
+                <input
+                  class="input mono"
+                  id="sym"
+                  name="symbol"
+                  autocomplete="off"
+                  spellcheck="false"
+                  maxlength="15"
+                  placeholder="например, AVAX"
+                  aria-describedby="sym-hint sym-err"
+                  style="text-transform: uppercase"
+                />
+                <span class="hint" id="sym-hint"
+                  >Латинские буквы и цифры, до 15 символов. Монету найдём в CoinMarketCap.</span
+                >
+                <span class="field-error" id="sym-err" role="alert"></span>
+                <details class="adv">
+                  <summary>Дополнительно</summary>
+                  <div class="field">
+                    <label class="label" for="cmc"
+                      >CMC ID <span class="muted" style="font-weight: 400">(необязательно)</span></label
+                    >
+                    <input
+                      class="input mono"
+                      id="cmc"
+                      inputmode="numeric"
+                      pattern="[0-9]*"
+                      aria-describedby="cmc-hint"
+                    />
+                    <span class="hint" id="cmc-hint"
+                      >Символы в CMC не уникальны. Без ID выберем активную монету с лучшим рангом.</span
+                    >
+                  </div>
+                </details>
+              </div>
+              <div class="actions"><button class="btn btn-primary" id="add-btn" type="submit">Добавить</button></div>
+              <div class="form-alert" id="add-alert" role="alert"></div>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h3>Отслеживаемые монеты</h3>
+              <span class="badge" id="wl-count"></span><span class="spacer"></span
+              ><span class="hint">лимит 100 (квота CMC)</span>
+            </div>
+            <div id="wl-table"></div>
+          </div>
+        </section>
+
+        <!-- ================= SYNC ================= -->
+        <section id="tab-sync" class="stack" aria-labelledby="h-sync" hidden>
+          <h2 id="h-sync" class="sr-only">Синхронизация</h2>
+          <div class="card card-pad" id="sync-now"></div>
+          <div class="card">
+            <div class="card-head">
+              <h3>История запусков</h3>
+              <span class="spacer"></span
+              ><span class="hint">от новых к старым · обновляется по SSE <code>sync.finished</code></span>
+            </div>
+            <div id="runs"></div>
+          </div>
+        </section>
+
+        <!-- ================= SYSTEM ================= -->
+        <section id="tab-system" class="stack" aria-labelledby="h-sys" hidden>
+          <h2 id="h-sys" class="sr-only">Система</h2>
+          <div id="sys" class="stack"></div>
+        </section>
+      </div>
+    </main>
+
+    <dialog id="del-dlg" aria-labelledby="del-title">
+      <form method="dialog" class="dialog-body" id="del-form">
+        <h2 id="del-title"></h2>
+        <p id="del-text"></p>
+        <div class="field">
+          <label class="label" for="del-confirm" id="del-label"></label>
+          <input class="input mono" id="del-confirm" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="dialog-actions">
+          <button class="btn" value="cancel" formnovalidate>Отмена</button>
+          <button class="btn" value="pause" id="del-pause">Поставить на паузу</button>
+          <button class="btn btn-danger" value="delete" id="del-ok" disabled>Удалить навсегда</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="ren-dlg" aria-labelledby="ren-title">
+      <form method="dialog" class="dialog-body">
+        <h2 id="ren-title">Переименовать</h2>
+        <div class="field">
+          <label class="label" for="ren-name">Отображаемое имя</label>
+          <input class="input" id="ren-name" maxlength="100" required />
+          <span class="hint">Символ и CMC ID не меняются: это идентичность монеты.</span>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn" value="cancel" formnovalidate>Отмена</button
+          ><button class="btn btn-primary" value="save">Сохранить</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="footer"></div>
+    <script>
+      /* Общие функции макетов. В apps/web это станет lib/format.ts, components/theme-toggle.tsx и т. п. */
+      const CPT = (() => {
+        /** «Сейчас» в макетах зафиксировано, чтобы относительное время было воспроизводимым. */
+        const NOW = Date.parse('2026-10-08T11:07:30.000Z');
+
+        /* ---------- Тема: светлая / тёмная / как в системе ---------- */
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        function readPref() {
+          try {
+            return localStorage.getItem('cpt-theme') || 'system';
+          } catch {
+            return 'system';
+          }
+        }
+        function writePref(v) {
+          try {
+            localStorage.setItem('cpt-theme', v);
+          } catch {
+            /* приватный режим — не страшно */
+          }
+        }
+        function applyTheme(pref) {
+          const theme = pref === 'system' ? (mq.matches ? 'dark' : 'light') : pref;
+          document.documentElement.dataset.theme = theme;
+          document
+            .querySelectorAll('[data-theme-pref]')
+            .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themePref === pref)));
+          document.dispatchEvent(new CustomEvent('cpt:theme', { detail: theme }));
+        }
+        mq.addEventListener('change', () => {
+          if (readPref() === 'system') applyTheme('system');
+        });
+        function themeToggleHTML() {
+          const opts = [
+            ['light', '☀', 'Светлая тема'],
+            ['dark', '☾', 'Тёмная тема'],
+            ['system', 'Авто', 'Как в системе'],
+          ];
+          return `<div class="seg" role="group" aria-label="Тема">${opts
+            .map(
+              ([v, t, l]) =>
+                `<button type="button" data-theme-pref="${v}" aria-pressed="false" aria-label="${l}" title="${l}">${t}</button>`,
+            )
+            .join('')}</div>`;
+        }
+        function bindThemeToggle(root = document) {
+          root.querySelectorAll('[data-theme-pref]').forEach((b) =>
+            b.addEventListener('click', () => {
+              writePref(b.dataset.themePref);
+              applyTheme(b.dataset.themePref);
+            }),
+          );
+          applyTheme(readPref());
+        }
+
+        /* ---------- Цены: строка → Intl.NumberFormat без Number() (ADR 0006, 0012) ---------- */
+        const usd2 = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        const usdSig = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          maximumSignificantDigits: 6,
+        });
+        /** Decimal из контракта: ^(0|[1-9][0-9]*)(\.[0-9]*[1-9])?$ — значит, «< 1» ⇔ строка начинается с «0». */
+        const belowOne = (s) => s.startsWith('0');
+        function formatPrice(s) {
+          return belowOne(s) ? usdSig.format(s) : usd2.format(s);
+        }
+        function priceHTML(s, { stale = false, cls = '' } = {}) {
+          const f = formatPrice(s);
+          const m = f.match(/^\$0\.(0{3,})(\d+)$/);
+          const body = m ? `$0.<span class="lz">${m[1]}</span>${m[2]}` : f;
+          return `<span class="price ${stale ? 'is-stale' : ''} ${cls}" title="${s} USD">${body}</span>`;
+        }
+        /** Подпись шкалы графика: значащие цифры, а не фиксированные знаки (ADR 0012). */
+        const axisSig = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 5 });
+        const axis2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        function axisLabel(n) {
+          return n < 1 ? axisSig.format(n) : axis2.format(n);
+        }
+
+        /* ---------- Проценты: знак всегда, стрелка, цвет ---------- */
+        const pct = new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+          signDisplay: 'exceptZero',
+        });
+        function changeHTML(s, { suffix = '' } = {}) {
+          if (s == null) return `<span class="chg none" title="Истории меньше суток">—</span>`;
+          const t = pct.format(s).replace('-', '−');
+          const dir = t.startsWith('+') ? 'up' : t.startsWith('−') ? 'down' : 'flat';
+          const arrow = dir === 'up' ? '▲ ' : dir === 'down' ? '▼ ' : '';
+          return `<span class="chg ${dir}" title="${s} %"><span aria-hidden="true">${arrow}</span>${t}%${suffix}</span>`;
+        }
+
+        /* ---------- Время: пояс браузера, в подсказке — ISO UTC ---------- */
+        const hm = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const hms = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dt = new Intl.DateTimeFormat('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        const dts = new Intl.DateTimeFormat('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        const fmt = {
+          hm: (i) => hm.format(Date.parse(i)),
+          hms: (i) => hms.format(Date.parse(i)),
+          dt: (i) => dt.format(Date.parse(i)),
+          dts: (i) => dts.format(Date.parse(i)),
+        };
+        function relative(iso) {
+          const s = Math.max(0, (NOW - Date.parse(iso)) / 1000);
+          if (s < 60) return 'только что';
+          const m = Math.floor(s / 60);
+          if (m < 60) return `${m} мин назад`;
+          const h = Math.floor(m / 60);
+          if (h < 24) return `${h} ч назад`;
+          return `${Math.floor(h / 24)} дн назад`;
+        }
+        function timeHTML(iso, mode = 'rel') {
+          const text = mode === 'rel' ? relative(iso) : fmt[mode](iso);
+          return `<time datetime="${iso}" title="${iso} (UTC)">${text}</time>`;
+        }
+        const iso = (ms) => new Date(ms).toISOString();
+
+        /* ---------- Мини-график: свой SVG (ADR 0012) ---------- */
+        function sparkHTML(points, { w = 104, h = 30, label = '' } = {}) {
+          if (!points || points.length < 2) return `<span class="muted" title="Данных пока нет">—</span>`;
+          const v = points.map((p) => Number(p.close)); // Number() допустим только для отрисовки
+          const min = Math.min(...v),
+            max = Math.max(...v),
+            span = max - min || 1;
+          const d = v
+            .map(
+              (y, i) =>
+                `${i ? 'L' : 'M'}${((i / (v.length - 1)) * (w - 2) + 1).toFixed(1)},${(h - 3 - ((y - min) / span) * (h - 6)).toFixed(1)}`,
+            )
+            .join('');
+          // Почти без изменений (< 0,1 %) — нейтральный цвет: не красим «шум» стейблкоина
+          const rel = Math.abs(v[v.length - 1] - v[0]) / v[0];
+          const dir = rel < 0.001 ? 'muted-foreground' : v[v.length - 1] >= v[0] ? 'up' : 'down';
+          return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}"><path d="${d}" fill="none" stroke="var(--${dir})" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+        }
+
+        /* ---------- Детерминированные моки ---------- */
+        function rng(seed) {
+          return () => {
+            seed |= 0;
+            seed = (seed + 0x6d2b79f5) | 0;
+            let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        /** Число → Decimal-строка контракта (без экспоненты и хвостовых нулей). Только для генерации моков. */
+        function toDecimal(n, sig = 10) {
+          let s = n.toPrecision(sig);
+          if (/e/i.test(s)) s = n.toFixed(20);
+          if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '');
+          return s;
+        }
+
+        /* ---------- Шапка и футер ---------- */
+        function headerHTML({ active = 'dashboard', role = 'operator', rt = 'online' } = {}) {
+          const op = role === 'operator';
+          const link = (id, href, text) =>
+            `<a href="${href}" ${active === id ? 'aria-current="page"' : ''}>${text}</a>`;
+          return `<a class="skip-link" href="#main">К содержимому</a>
+<header class="app-header"><div class="container">
+  <a class="logo" href="dashboard.html"><span class="logo-mark" aria-hidden="true">CPT</span><span>Crypto Price Tracker</span></a>
+  <nav class="nav" aria-label="Основная навигация">
+    ${link('dashboard', 'dashboard.html', 'Дашборд')}
+    ${
+      op
+        ? `<span class="sep" aria-hidden="true"></span>
+    ${link('watchlist', 'operator.html#watchlist', 'Watchlist')}
+    ${link('sync', 'operator.html#sync', 'Синхронизация')}
+    ${link('system', 'operator.html#system', 'Система')}
+    <a href="#" title="Экран пользователей в макеты не входит" aria-disabled="true">Пользователи</a>`
+        : ''
+    }
+  </nav>
+  <div class="header-tools">
+    <span class="rt" id="rt" data-state="${rt}"><span class="rt-dot" aria-hidden="true"></span><span id="rt-text">${rt === 'online' ? 'Онлайн' : 'Переподключение…'}</span></span>
+    ${themeToggleHTML()}
+    <details class="user-menu" style="position:relative">
+      <summary class="btn btn-ghost user-btn" aria-label="Меню пользователя"><span class="avatar" aria-hidden="true">A</span><span class="user-name">alexey</span><span class="badge">${op ? 'Operator' : 'Viewer'}</span></summary>
+      <div class="card" style="position:absolute;right:0;top:42px;min-width:180px;padding:6px;z-index:30;display:flex;flex-direction:column">
+        <a class="btn btn-ghost" style="justify-content:flex-start" href="#">Профиль и сессии</a>
+        <a class="btn btn-ghost" style="justify-content:flex-start" href="login.html">Выйти</a>
+      </div>
+    </details>
+  </div>
+</div></header>`;
+        }
+        function footerHTML() {
+          return `<footer class="app-footer"><div class="container">
+  <span>Графики: TradingView Lightweight Charts™ — <a href="https://www.tradingview.com/" rel="noopener">tradingview.com</a></span>
+  <span class="spacer"></span>
+  <span>Макет · данные — моки по <code>openapi.yaml</code> · цены в USD</span>
+</div></footer>`;
+        }
+        function setRealtime(state) {
+          const el = document.getElementById('rt');
+          if (!el) return;
+          el.dataset.state = state;
+          document.getElementById('rt-text').textContent = state === 'online' ? 'Онлайн' : 'Переподключение…';
+        }
+
+        /* ---------- Тосты: aria-live="polite" (WCAG 4.1.3) ---------- */
+        function toast(html, kind = 'info') {
+          let box = document.getElementById('toasts');
+          if (!box) {
+            box = document.createElement('div');
+            box.id = 'toasts';
+            box.className = 'toasts';
+            box.setAttribute('role', 'status');
+            box.setAttribute('aria-live', 'polite');
+            document.body.append(box);
+          }
+          const t = document.createElement('div');
+          t.className = 'toast';
+          const icon = { ok: '✓', err: '✕', info: 'ℹ', warn: '⚠' }[kind];
+          t.innerHTML = `<span aria-hidden="true" style="color:var(--${kind === 'ok' ? 'up' : kind === 'err' ? 'down' : kind === 'warn' ? 'warn-fg' : 'info-fg'})">${icon}</span><div>${html}</div>`;
+          box.append(t);
+          setTimeout(() => t.remove(), 6000);
+        }
+
+        /** Перезапуск CSS-анимации подсветки цены. */
+        function flash(el, dir) {
+          el.classList.remove('tick-up', 'tick-down');
+          void el.offsetWidth;
+          el.classList.add(dir === 'up' ? 'tick-up' : 'tick-down');
+        }
+
+        const esc = (s) =>
+          String(s).replace(
+            /[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+          );
+
+        return {
+          NOW,
+          iso,
+          applyTheme,
+          bindThemeToggle,
+          themeToggleHTML,
+          formatPrice,
+          priceHTML,
+          axisLabel,
+          changeHTML,
+          fmt,
+          relative,
+          timeHTML,
+          sparkHTML,
+          rng,
+          toDecimal,
+          headerHTML,
+          footerHTML,
+          setRealtime,
+          toast,
+          flash,
+          esc,
+        };
+      })();
+    </script>
+    <script>
+      const MIN = 60_000,
+        NOW = CPT.NOW,
+        REQ = () => crypto.randomUUID?.() ?? '3b1f6c2a-9d4e-4f1a-8c7b-2e5d6f7a8b9c';
+      const SYMBOL_RE = /^[A-Z0-9]{1,15}$/; // тот же паттерн, что Symbol в openapi.yaml
+
+      /* ---------- Моки listCryptocurrencies ---------- */
+      let coins = [
+        {
+          id: 1,
+          cmcId: 1,
+          symbol: 'BTC',
+          name: 'Bitcoin',
+          isPaused: false,
+          lastUpdatedAt: CPT.iso(NOW - 2.5 * MIN),
+          createdAt: '2025-09-14T08:00:00.000Z',
+          points: 112_604,
+        },
+        {
+          id: 2,
+          cmcId: 1027,
+          symbol: 'ETH',
+          name: 'Ethereum',
+          isPaused: false,
+          lastUpdatedAt: CPT.iso(NOW - 2.5 * MIN),
+          createdAt: '2025-09-14T08:01:00.000Z',
+          points: 112_590,
+        },
+        {
+          id: 3,
+          cmcId: 5426,
+          symbol: 'SOL',
+          name: 'Solana',
+          isPaused: false,
+          lastUpdatedAt: CPT.iso(NOW - 2.5 * MIN),
+          createdAt: '2025-10-01T12:00:00.000Z',
+          points: 107_311,
+        },
+        {
+          id: 4,
+          cmcId: 11419,
+          symbol: 'TON',
+          name: 'Toncoin',
+          isPaused: false,
+          lastUpdatedAt: CPT.iso(NOW - 2.5 * MIN),
+          createdAt: CPT.iso(NOW - 10 * 60 * MIN),
+          points: 120,
+        },
+        {
+          id: 7,
+          cmcId: 24478,
+          symbol: 'PEPE',
+          name: 'Pepe',
+          isPaused: false,
+          lastUpdatedAt: CPT.iso(NOW - 2.5 * MIN),
+          createdAt: '2025-11-02T10:00:00.000Z',
+          points: 97_052,
+        },
+        {
+          id: 9,
+          cmcId: 52,
+          symbol: 'XRP',
+          name: 'XRP',
+          isPaused: true,
+          lastUpdatedAt: CPT.iso(NOW - 2 * 24 * 60 * MIN),
+          createdAt: '2025-09-20T09:00:00.000Z',
+          points: 108_100,
+        },
+        {
+          id: 10,
+          cmcId: 32196,
+          symbol: 'HYPE',
+          name: 'Hyperliquid',
+          isPaused: false,
+          lastUpdatedAt: null,
+          createdAt: CPT.iso(NOW - 1 * MIN),
+          points: 0,
+        },
+      ];
+      const KNOWN = {
+        AVAX: { cmcId: 5805, name: 'Avalanche' },
+        LINK: { cmcId: 1975, name: 'Chainlink' },
+        ADA: { cmcId: 2010, name: 'Cardano' },
+      };
+
+      /* ---------- Моки listSyncRuns ---------- */
+      const run = (id, agoMin, trigger, status, saved, attempts, credits, error, durS = 1.4) => ({
+        id,
+        trigger,
+        status,
+        startedAt: CPT.iso(NOW - agoMin * MIN),
+        finishedAt: status === 'running' ? null : CPT.iso(NOW - agoMin * MIN + durS * 1000),
+        coinsRequested: 6,
+        pricesSaved: saved,
+        attempts,
+        creditsUsed: credits,
+        error,
+      });
+      let runs = [
+        run(412, 2.5, 'schedule', 'succeeded', 6, 1, 1),
+        run(411, 7.5, 'schedule', 'succeeded', 6, 1, 1),
+        run(
+          410,
+          12.5,
+          'schedule',
+          'failed',
+          0,
+          3,
+          0,
+          { code: 'CMC_TIMEOUT', message: 'CoinMarketCap не ответил за 10 000 мс (3 попытки с backoff)' },
+          31.2,
+        ),
+        run(409, 17.5, 'manual', 'partial', 5, 1, 1, {
+          code: 'CMC_BAD_RESPONSE',
+          message: 'В ответе нет данных по id 10407',
+        }),
+        run(
+          408,
+          22.5,
+          'schedule',
+          'failed',
+          0,
+          1,
+          0,
+          { code: 'CMC_RATE_LIMITED', message: 'HTTP 429: превышен лимит запросов в минуту' },
+          0.4,
+        ),
+        run(407, 27.5, 'schedule', 'succeeded', 6, 2, 1, null, 3.1),
+        run(406, 95, 'startup', 'interrupted', 0, 1, null, null, 10),
+      ];
+
+      const STATUS = {
+        succeeded: ['badge-ok', '✓', 'успешно'],
+        failed: ['badge-err', '✕', 'ошибка'],
+        partial: ['badge-warn', '◐', 'частично'],
+        running: ['badge-info', '', 'идёт'],
+        interrupted: ['badge-warn', '■', 'прерван'],
+      };
+      const TRIGGER = { schedule: 'по расписанию', manual: 'вручную', startup: 'при старте' };
+      const statusBadge = (s) =>
+        `<span class="badge ${STATUS[s][0]}">${s === 'running' ? '<span class="spinner" aria-hidden="true"></span>' : `<span aria-hidden="true">${STATUS[s][1]}</span>`} ${STATUS[s][2]}</span>`;
+      const dur = (r) =>
+        r.finishedAt
+          ? `${((Date.parse(r.finishedAt) - Date.parse(r.startedAt)) / 1000).toLocaleString('ru-RU', { maximumFractionDigits: 1 })} с`
+          : '—';
+      const problemLine = (p) =>
+        `<span class="hint">Код: <code>${p.type.replace('urn:cpt:problem:', '')}</code> · requestId <code>${p.requestId}</code></span>`;
+
+      /* ================= WATCHLIST ================= */
+      function renderWatchlist() {
+        document.getElementById('wl-count').textContent = `${coins.length} из 100`;
+        const rows = coins
+          .map(
+            (c) => `<tr data-row="${c.id}">
+    <td><a class="coin-sym" href="coin.html?id=${c.id}">${c.symbol}</a> <span class="coin-name">${CPT.esc(c.name)}</span></td>
+    <td class="num">${c.cmcId}</td>
+    <td>${c.isPaused ? '<span class="badge">⏸ на паузе</span>' : '<span class="badge badge-ok">● активна</span>'}</td>
+    <td class="upd">${c.lastUpdatedAt ? CPT.timeHTML(c.lastUpdatedAt) : '<span class="muted">ожидает синхронизации</span>'}</td>
+    <td class="num">${new Date(c.createdAt).toLocaleDateString('ru-RU')}</td>
+    <td><div class="act">${actions(c)}</div></td></tr>`,
+          )
+          .join('');
+        document.getElementById('wl-table').innerHTML = `<div class="table-wrap desk"><table class="data">
+    <thead><tr><th scope="col">Монета</th><th scope="col">CMC ID</th><th scope="col">Статус</th><th scope="col">Последняя цена</th><th scope="col">Добавлена</th><th scope="col" class="r">Действия</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <ul class="m-cards">${coins
+      .map(
+        (
+          c,
+        ) => `<li><div class="row"><a class="coin-sym" href="coin.html?id=${c.id}">${c.symbol}</a><span class="coin-name">${CPT.esc(c.name)} · CMC #${c.cmcId}</span><span class="spacer"></span>${c.isPaused ? '<span class="badge">⏸ на паузе</span>' : '<span class="badge badge-ok">● активна</span>'}</div>
+      <span class="hint">Последняя цена: ${c.lastUpdatedAt ? CPT.relative(c.lastUpdatedAt) : 'ожидает синхронизации'} · добавлена ${new Date(c.createdAt).toLocaleDateString('ru-RU')}</span><div class="act" style="justify-content:flex-start">${actions(c)}</div></li>`,
+      )
+      .join('')}</ul>`;
+        document
+          .querySelectorAll('[data-act]')
+          .forEach((b) => b.addEventListener('click', () => onAction(b.dataset.act, Number(b.dataset.id))));
+      }
+      const actions = (
+        c,
+      ) => `<button class="btn btn-sm" data-act="rename" data-id="${c.id}" aria-label="Переименовать ${c.symbol}">Переименовать</button>
+  <button class="btn btn-sm" data-act="pause" data-id="${c.id}" aria-label="${c.isPaused ? 'Возобновить' : 'Приостановить'} ${c.symbol}">${c.isPaused ? '▶ Возобновить' : '⏸ Пауза'}</button>
+  <button class="btn btn-sm" data-act="delete" data-id="${c.id}" aria-label="Удалить ${c.symbol}" style="color:var(--down)">Удалить</button>`;
+
+      function onAction(act, id) {
+        const c = coins.find((x) => x.id === id);
+        if (act === 'pause') {
+          // PATCH { isPaused } → 200 → invalidate (без оптимистичного обновления)
+          c.isPaused = !c.isPaused;
+          renderWatchlist();
+          CPT.toast(
+            c.isPaused
+              ? `${c.symbol} на паузе: синхронизация остановлена, история сохранена`
+              : `${c.symbol}: синхронизация возобновлена`,
+            'ok',
+          );
+        }
+        if (act === 'rename') {
+          const d = document.getElementById('ren-dlg');
+          document.getElementById('ren-name').value = c.name;
+          d.onclose = () => {
+            if (d.returnValue === 'save') {
+              const v = document.getElementById('ren-name').value.trim();
+              if (v) {
+                c.name = v;
+                renderWatchlist();
+                CPT.toast(`Имя ${c.symbol} изменено`, 'ok');
+              }
+            }
+          };
+          d.showModal();
+        }
+        if (act === 'delete') {
+          const d = document.getElementById('del-dlg'),
+            inp = document.getElementById('del-confirm'),
+            ok = document.getElementById('del-ok');
+          document.getElementById('del-title').textContent = `Удалить ${c.symbol} из watchlist?`;
+          document.getElementById('del-text').innerHTML =
+            `Будет удалена <strong>вся история цен ${c.symbol} — ${c.points.toLocaleString('ru-RU')} точек</strong> и часовые свёртки. Действие необратимо. Чтобы сохранить историю, поставьте монету на паузу.<br><span class="hint">Число точек — <code>summary.points</code> из <code>getPriceAggregates</code> (interval=1w, from=createdAt), запрашивается при открытии диалога.</span>`;
+          document.getElementById('del-label').textContent = `Введите ${c.symbol}, чтобы подтвердить`;
+          document.getElementById('del-pause').hidden = c.isPaused;
+          inp.value = '';
+          ok.disabled = true;
+          inp.oninput = () => {
+            ok.disabled = inp.value.trim().toUpperCase() !== c.symbol;
+          };
+          d.onclose = () => {
+            if (d.returnValue === 'delete') {
+              coins = coins.filter((x) => x.id !== id);
+              renderWatchlist();
+              CPT.toast(`${c.symbol} удалена вместе с историей`, 'ok');
+            }
+            if (d.returnValue === 'pause') {
+              c.isPaused = true;
+              renderWatchlist();
+              CPT.toast(`${c.symbol} на паузе, история сохранена`, 'ok');
+            }
+          };
+          d.showModal();
+          inp.focus();
+        }
+      }
+
+      let retryTimer = null;
+      document.getElementById('sym').addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase();
+        clearErr();
+      });
+      function clearErr() {
+        const s = document.getElementById('sym');
+        s.removeAttribute('aria-invalid');
+        document.getElementById('sym-err').innerHTML = '';
+        document.getElementById('add-alert').innerHTML = '';
+      }
+      function fieldErr(html) {
+        document.getElementById('sym').setAttribute('aria-invalid', 'true');
+        document.getElementById('sym-err').innerHTML = `<span aria-hidden="true">✕</span><span>${html}</span>`;
+      }
+      function formAlert(kind, title, body) {
+        document.getElementById('add-alert').innerHTML =
+          `<div class="banner banner-${kind}"><span class="b-icon" aria-hidden="true">${kind === 'error' ? '✕' : '⚠'}</span><div class="b-body"><strong>${title}</strong><span>${body}</span></div></div>`;
+      }
+      document.getElementById('add-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        clearErr();
+        const sym = document.getElementById('sym').value.trim(),
+          mode = document.getElementById('mock-add').value;
+        if (mode !== '400' && !SYMBOL_RE.test(sym)) {
+          fieldErr('Только латинские буквы A–Z и цифры, от 1 до 15 символов');
+          document.getElementById('sym').focus();
+          return;
+        }
+        const btn = document.getElementById('add-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Проверяем в CoinMarketCap…';
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = 'Добавить';
+          const req = REQ();
+          if (mode === '201') {
+            const k = KNOWN[sym] ?? { cmcId: 9000 + coins.length, name: sym[0] + sym.slice(1).toLowerCase() };
+            coins.push({
+              id: 100 + coins.length,
+              cmcId: Number(document.getElementById('cmc').value) || k.cmcId,
+              symbol: sym,
+              name: k.name,
+              isPaused: false,
+              lastUpdatedAt: null,
+              createdAt: CPT.iso(NOW),
+              points: 0,
+            });
+            renderWatchlist();
+            document.getElementById('sym').value = '';
+            CPT.toast(
+              `Добавлен <strong>${k.name}</strong> (CMC #${k.cmcId}). Цена появится после ближайшей синхронизации.`,
+              'ok',
+            );
+          } else if (mode === '400') {
+            fieldErr('Только латинские буквы A–Z и цифры, от 1 до 15 символов'); // errors[].path = /body/symbol
+            document
+              .getElementById('sym-err')
+              .insertAdjacentHTML(
+                'beforeend',
+                ` <span class="hint">(<code>/body/symbol</code>, requestId <code>${req.slice(0, 8)}…</code>)</span>`,
+              );
+          } else if (mode === '409') {
+            const c = coins.find((x) => x.symbol === sym) ?? coins[0];
+            fieldErr(`${sym || c.symbol} уже отслеживается. <a href="coin.html?id=${c.id}">Открыть карточку</a>`); // conflictingId
+          } else if (mode === '422u') {
+            fieldErr(
+              `Символ «${CPT.esc(sym)}» не найден в CoinMarketCap. Проверьте написание или укажите CMC ID в «Дополнительно».`,
+            );
+          } else if (mode === '422l') {
+            formAlert(
+              'warn',
+              'Достигнут лимит: 100 монет',
+              `Лимит связан с квотой CMC Basic. Удалите неиспользуемую монету или поставьте её на паузу. ${problemLine({ type: 'urn:cpt:problem:watchlist-limit-reached', requestId: req })}`,
+            );
+          } else if (mode === '503') {
+            let left = 30;
+            formAlert(
+              'error',
+              'CoinMarketCap недоступен',
+              `Без него символ не проверить, а непроверенные монеты мы не добавляем. Повторите через <span id="retry-left">${left}</span> с. ${problemLine({ type: 'urn:cpt:problem:upstream-unavailable', requestId: req })}`,
+            );
+            btn.disabled = true;
+            btn.textContent = `Повторить через ${left} с`;
+            clearInterval(retryTimer);
+            retryTimer = setInterval(() => {
+              left -= 1;
+              btn.textContent = `Повторить через ${left} с`;
+              const s = document.getElementById('retry-left');
+              if (s) s.textContent = left;
+              if (left <= 0) {
+                clearInterval(retryTimer);
+                btn.disabled = false;
+                btn.textContent = 'Добавить';
+              }
+            }, 1000);
+          }
+        }, 700);
+      });
+
+      /* ================= SYNC ================= */
+      let running = null;
+      function renderSync() {
+        const last = runs.find((r) => r.status !== 'running');
+        const nextAt = CPT.iso(Date.parse(last.finishedAt) + 5 * MIN);
+        document.getElementById('sync-now').innerHTML = `<div class="row" style="gap:12px 20px;align-items:flex-start">
+    <div class="stack" style="gap:6px;min-width:220px">
+      <span class="hint" style="font-weight:700;text-transform:uppercase;font-size:.75rem">Сейчас</span>
+      ${
+        running
+          ? `<div class="row">${statusBadge('running')}<span>запуск #${running.id} начат ${CPT.timeHTML(running.startedAt, 'hms')}</span></div>`
+          : `<div class="row">${statusBadge(last.status)}<span>запуск #${last.id} · ${CPT.timeHTML(last.finishedAt, 'hms')} · сохранено ${last.pricesSaved} из ${last.coinsRequested}</span></div>`
+      }
+    </div>
+    <dl class="dl" style="flex:1;min-width:240px">
+      <dt>Следующий запуск</dt><dd>${running ? 'после завершения текущего' : `≈ ${CPT.timeHTML(nextAt, 'hms')} <span class="muted">(каждые 5 мин)</span>`} <span class="badge badge-info" title="Поля schedule.intervalMs и nextRunAt предложены в ADR 0017">ADR 0017</span></dd>
+      <dt>Планировщик</dt><dd><span class="badge badge-ok">● работает</span></dd>
+    </dl>
+    <button class="btn btn-primary" id="sync-btn" ${running ? 'aria-disabled="true"' : ''}>${running ? '<span class="spinner" aria-hidden="true"></span> Идёт синхронизация…' : 'Синхронизировать сейчас'}</button>
+  </div>`;
+        document.getElementById('sync-btn').addEventListener('click', trigger);
+        const tr = runs
+          .map(
+            (r) => `<tr id="run-${r.id}">
+    <td class="num">#${r.id}</td><td class="num">${CPT.timeHTML(r.startedAt, 'dts')}</td><td class="num">${dur(r)}</td><td>${TRIGGER[r.trigger]}</td>
+    <td>${statusBadge(r.status)}</td><td class="num r">${r.pricesSaved}/${r.coinsRequested}</td><td class="num r">${r.attempts}</td><td class="num r">${r.creditsUsed ?? '—'}</td>
+    <td class="err-cell">${r.error ? `<code>${r.error.code}</code><span class="msg" title="${CPT.esc(r.error.message)}">${CPT.esc(r.error.message)}</span>` : '<span class="muted">—</span>'}</td></tr>`,
+          )
+          .join('');
+        document.getElementById('runs').innerHTML = `<div class="table-wrap desk"><table class="data">
+    <thead><tr><th scope="col">№</th><th scope="col">Начало</th><th scope="col">Длит.</th><th scope="col">Триггер</th><th scope="col">Статус</th><th scope="col" class="r">Цен</th><th scope="col" class="r">Попыток</th><th scope="col" class="r">Кредитов</th><th scope="col">Ошибка</th></tr></thead>
+    <tbody>${tr}</tbody></table></div>
+    <ul class="m-cards">${runs
+      .map(
+        (
+          r,
+        ) => `<li><div class="row"><strong class="num">#${r.id}</strong>${statusBadge(r.status)}<span class="spacer"></span><span class="hint">${CPT.fmt.dts(r.startedAt)}</span></div>
+      <span class="hint">${TRIGGER[r.trigger]} · ${dur(r)} · цен ${r.pricesSaved}/${r.coinsRequested} · попыток ${r.attempts} · кредитов ${r.creditsUsed ?? '—'}</span>
+      ${r.error ? `<span><code>${r.error.code}</code> <span class="hint">${CPT.esc(r.error.message)}</span></span>` : ''}</li>`,
+      )
+      .join('')}</ul>
+    <div class="row" style="padding:12px 16px"><button class="btn">Загрузить ещё</button><span class="hint">nextCursor</span></div>`;
+      }
+      function trigger() {
+        if (running) {
+          CPT.toast('Синхронизация уже идёт', 'info');
+          return;
+        }
+        if (document.getElementById('mock-sync').value === '409') {
+          // 409 sync-already-running + conflictingId
+          CPT.toast(
+            `Синхронизация уже идёт (#412). <a href="#run-412" onclick="document.getElementById('run-412').classList.add('hl')">Перейти к ней</a>`,
+            'info',
+          );
+          return;
+        }
+        // 202 Accepted + Location → строка running; завершение — по SSE sync.finished, без опроса
+        running = run(413, 0, 'manual', 'running', 0, 1, null);
+        runs.unshift(running);
+        renderSync();
+        setTimeout(() => {
+          Object.assign(running, {
+            status: 'succeeded',
+            finishedAt: CPT.iso(NOW + 2100),
+            pricesSaved: 6,
+            creditsUsed: 1,
+          });
+          CPT.toast(`Синхронизация #413 завершена: сохранено 6 цен`, 'ok');
+          running = null;
+          renderSync();
+        }, 3000);
+      }
+
+      /* ================= SYSTEM ================= */
+      function renderSystem() {
+        const mode = document.getElementById('mock-sys').value;
+        const cmc = {
+          lastSuccessAt: mode === 'down' ? CPT.iso(NOW - 17.5 * MIN) : CPT.iso(NOW - 2.5 * MIN),
+          lastError:
+            mode === 'down'
+              ? { code: 'CMC_TIMEOUT', message: 'CoinMarketCap не ответил за 10 000 мс', at: CPT.iso(NOW - 2.4 * MIN) }
+              : {
+                  code: 'CMC_TIMEOUT',
+                  message: 'CoinMarketCap не ответил за 10 000 мс',
+                  at: CPT.iso(NOW - 12.5 * MIN),
+                },
+          quota:
+            mode === 'null'
+              ? null
+              : {
+                  creditLimitMonthly: 15000,
+                  creditsUsedMonth: mode === 'low' ? 13_920 : 5_731,
+                  creditsLeftMonth: mode === 'low' ? 1_080 : 9_269,
+                  creditsUsedToday: mode === 'low' ? 1_150 : 134,
+                  fetchedAt: CPT.iso(NOW - 4 * MIN),
+                },
+        };
+        const down = mode === 'down';
+        // Прогноз: кредитов за запуск (среднее по listSyncRuns) × запусков в сутки (schedule.intervalMs, ADR 0017) × дней до конца месяца
+        const perRun = mode === 'low' ? 2 : 1,
+          perDay = perRun * 288,
+          monthEnd = Date.parse('2026-11-01T00:00:00.000Z');
+        const daysLeft = (monthEnd - NOW) / (24 * 60 * MIN);
+        const q = cmc.quota,
+          need = Math.round(perDay * daysLeft);
+        const enough = q && need <= q.creditsLeftMonth;
+        const runOut = q && !enough ? new Date(NOW + (q.creditsLeftMonth / perDay) * 24 * 60 * MIN) : null;
+        const usedPct = q ? Math.round((q.creditsUsedMonth / q.creditLimitMonthly) * 100) : 0;
+        document.getElementById('sys').innerHTML = `
+  <div class="tiles">
+    <div class="card tile"><span class="k">CoinMarketCap</span><span class="v">${down ? '<span class="badge badge-err">✕ недоступен</span>' : '<span class="badge badge-ok">✓ доступен</span>'}</span>
+      <span class="hint">${down ? `последний успех ${CPT.relative(cmc.lastSuccessAt)}; цены на дашборде устарели` : `последний успех ${CPT.relative(cmc.lastSuccessAt)}`}</span></div>
+    <div class="card tile"><span class="k">Квота на месяц</span><span class="v">${q ? `${enough ? '<span class="badge badge-ok">✓ хватит</span>' : '<span class="badge badge-warn">⚠ закончится раньше</span>'}` : '<span class="badge">нет данных</span>'}</span>
+      <span class="hint">${q ? `осталось ${q.creditsLeftMonth.toLocaleString('ru-RU')} из ${q.creditLimitMonthly.toLocaleString('ru-RU')} кредитов` : 'key/info ещё не запрашивался'}</span></div>
+    <div class="card tile"><span class="k">Сервис</span><span class="v"><span class="badge badge-ok">✓ готов</span></span><span class="hint">/health/ready: БД, миграции, планировщик</span></div>
+  </div>
+  ${down ? `<div class="banner banner-warn" role="status"><span class="b-icon" aria-hidden="true">⚠</span><div class="b-body"><strong>Источник недоступен, сервис работает на сохранённых данных</strong><span>Дашборды показывают последние цены с пометкой «устарела». Readiness от CMC не зависит — это штатная деградация. Синхронизация продолжает попытки по расписанию.</span></div></div>` : ''}
+  <div class="cols-2">
+    <section class="card card-pad stack" style="gap:12px" aria-labelledby="h-cmc"><h3 id="h-cmc">Интеграция с CoinMarketCap</h3>
+      <dl class="dl">
+        <dt>Последний успех</dt><dd>${CPT.timeHTML(cmc.lastSuccessAt, 'dts')} <span class="muted">(${CPT.relative(cmc.lastSuccessAt)})</span></dd>
+        <dt>Последняя ошибка</dt><dd><code>${cmc.lastError.code}</code> · ${CPT.timeHTML(cmc.lastError.at, 'dts')}<br><span class="muted">${cmc.lastError.message}</span></dd>
+        <dt>Расписание</dt><dd>каждые 5 мин <span class="badge badge-info" title="ADR 0017, Proposed">ADR 0017</span></dd>
+      </dl>
+    </section>
+    <section class="card card-pad stack" style="gap:12px" aria-labelledby="h-quota"><h3 id="h-quota">Квота CMC (план Basic)</h3>
+      ${
+        q
+          ? `<div class="stack" style="gap:6px">
+        <div class="row"><span>Использовано за месяц</span><span class="spacer"></span><strong class="num">${q.creditsUsedMonth.toLocaleString('ru-RU')} / ${q.creditLimitMonthly.toLocaleString('ru-RU')}</strong><span class="muted num">(${usedPct} %)</span></div>
+        <div class="bar ${enough ? '' : 'warn'}" role="progressbar" aria-label="Использование квоты за месяц" aria-valuemin="0" aria-valuemax="${q.creditLimitMonthly}" aria-valuenow="${q.creditsUsedMonth}" aria-valuetext="${usedPct} процентов"><span style="width:${usedPct}%"></span></div>
+      </div>
+      <dl class="dl">
+        <dt>Сегодня</dt><dd class="num">${q.creditsUsedToday.toLocaleString('ru-RU')} кредитов</dd>
+        <dt>Прогноз</dt><dd>${
+          enough
+            ? `при текущем интервале нужно ≈ ${need.toLocaleString('ru-RU')} до конца месяца — <strong style="color:var(--up)">хватит</strong>, запас ≈ ${(q.creditsLeftMonth - need).toLocaleString('ru-RU')}`
+            : `<strong style="color:var(--warn-fg)">⚠ закончится ≈ ${runOut.toLocaleDateString('ru-RU')}</strong> — раньше конца месяца. Увеличьте интервал или уберите монеты`
+        }</dd>
+        <dt>Данные квоты</dt><dd>по CMC <code>key/info</code>, ${CPT.relative(q.fetchedAt)}</dd>
+      </dl>`
+          : `<p class="muted">Квота ещё не получена: CMC <code>key/info</code> не запрашивался. Появится после первой успешной синхронизации.</p>`
+      }
+    </section>
+  </div>
+  <section class="card card-pad stack" style="gap:10px" aria-labelledby="h-health"><h3 id="h-health">Здоровье сервиса <span class="hint" style="font-weight:400">/health/ready</span></h3>
+    <div class="row" style="gap:10px 18px">
+      <span class="row" style="gap:6px">База данных <span class="badge badge-ok">✓ ok</span></span>
+      <span class="row" style="gap:6px">Миграции <span class="badge badge-ok">✓ ok</span></span>
+      <span class="row" style="gap:6px">Планировщик <span class="badge badge-ok">● running</span></span>
+      <span class="hint">Доступность CMC в readiness не входит (ADR 0014)</span>
+    </div>
+  </section>`;
+      }
+
+      /* ---------- Вкладки по hash: ссылки из шапки ведут прямо в раздел ---------- */
+      function showTab() {
+        const tab = ['watchlist', 'sync', 'system'].includes(location.hash.slice(1))
+          ? location.hash.slice(1)
+          : 'watchlist';
+        ['watchlist', 'sync', 'system'].forEach((t) => {
+          document.getElementById(`tab-${t}`).hidden = t !== tab;
+        });
+        document.querySelectorAll('[data-tab]').forEach((a) => {
+          if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page');
+          else a.removeAttribute('aria-current');
+        });
+        document.getElementById('header').innerHTML = CPT.headerHTML({ active: tab, role: 'operator' });
+        CPT.bindThemeToggle(document.getElementById('header'));
+      }
+      window.addEventListener('hashchange', showTab);
+      document.getElementById('mock-sys').addEventListener('change', renderSystem);
+      const qp = new URLSearchParams(location.search);
+      for (const [k, id] of [
+        ['add', 'mock-add'],
+        ['sync', 'mock-sync'],
+        ['sys', 'mock-sys'],
+      ])
+        if (qp.get(k)) document.getElementById(id).value = qp.get(k);
+      document.getElementById('footer').innerHTML = CPT.footerHTML();
+      showTab();
+      renderWatchlist();
+      renderSync();
+      renderSystem();
+    </script>
+  </body>
+</html>
