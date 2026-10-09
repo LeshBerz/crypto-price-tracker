@@ -2,6 +2,8 @@
 import type { Repositories, UnitOfWork } from '../unit-of-work.ts';
 import type { Database } from './database.ts';
 import { SqliteApiKeyRepository } from './repositories/api-keys.ts';
+import { SqliteCryptocurrencyRepository } from './repositories/cryptocurrencies.ts';
+import { SqlitePriceRepository } from './repositories/prices.ts';
 import { TransactionRunner } from './transaction.ts';
 
 export class SqliteUnitOfWork implements UnitOfWork {
@@ -11,7 +13,11 @@ export class SqliteUnitOfWork implements UnitOfWork {
 
   constructor(db: Database) {
     this.tx = new TransactionRunner(db);
-    this.repos = { apiKeys: new SqliteApiKeyRepository(db) };
+    this.repos = {
+      apiKeys: new SqliteApiKeyRepository(db),
+      cryptocurrencies: new SqliteCryptocurrencyRepository(db),
+      prices: new SqlitePriceRepository(db),
+    };
   }
 
   run<T>(work: (repos: Repositories) => Promise<T>): Promise<T> {
