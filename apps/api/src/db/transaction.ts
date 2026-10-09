@@ -7,6 +7,14 @@ export class NestedTransactionError extends Error {
 }
 
 /**
+ * Страховка репозиториев: запрос вне транзакции на общем соединении мог бы попасть внутрь чужой открытой
+ * транзакции (её BEGIN уже выполнен, а fn ждёт await) и прочитать или записать незакоммиченное.
+ */
+export function assertInTransaction(db: Database): void {
+  if (!db.isTransaction) throw new Error('Репозиторий вызван вне UnitOfWork.run: запрос к БД — только в транзакции');
+}
+
+/**
  * Выполняет fn внутри BEGIN IMMEDIATE … COMMIT; при исключении — ROLLBACK и проброс ошибки.
  *
  * Соединение одно на процесс, поэтому транзакции сериализуются очередью: пока fn ждёт await,
