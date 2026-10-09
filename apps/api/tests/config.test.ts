@@ -1,4 +1,5 @@
-import { API_KEY_PATTERN, ConfigError, loadConfig, MIN_SYNC_INTERVAL_MS } from '../src/config.ts';
+import { API_KEY_PATTERN } from '../src/auth/api-key.ts';
+import { ConfigError, databasePathFrom, loadConfig, MIN_SYNC_INTERVAL_MS } from '../src/config.ts';
 
 const VIEWER = 'cpt_' + 'v'.repeat(43);
 const OPERATOR = 'cpt_' + 'o'.repeat(43);
@@ -110,5 +111,11 @@ describe('loadConfig', () => {
     expect(API_KEY_PATTERN.test(VIEWER)).toBe(true);
     expect(API_KEY_PATTERN.test(`${VIEWER}x`)).toBe(false);
     expect(API_KEY_PATTERN.test('cpt_' + '+'.repeat(43))).toBe(false);
+  });
+
+  it('databasePathFrom: путь к БД без остального конфига (для CLI)', () => {
+    expect(databasePathFrom({})).toBe('./data/cpt.db');
+    expect(databasePathFrom({ DATABASE_PATH: '  ' })).toBe('./data/cpt.db');
+    expect(databasePathFrom({ DATABASE_PATH: ' /data/x.db ' })).toBe('/data/x.db');
   });
 });
