@@ -1,6 +1,7 @@
 // Конфигурация из переменных окружения (D-4, C4, ADR 0015 §5). Читается один раз при старте:
 // дальше всё приложение получает типизированный объект, а не лезет в process.env.
 // Список переменных с комментариями — .env.example в корне репозитория.
+import { API_KEY_PATTERN } from './auth/api-key.ts';
 import { LOG_LEVELS, type LogLevel } from './common/logger.ts';
 
 export type Config = {
@@ -15,8 +16,6 @@ export type Config = {
 
 /** Минимальный интервал: чаще квота CMC Basic не выдержит (ADR 0007, ~2,9 мин — теоретический предел) */
 export const MIN_SYNC_INTERVAL_MS = 180_000;
-/** Формат ключа ADR 0002: cpt_ + 32 случайных байта в base64url (43 символа) */
-export const API_KEY_PATTERN = /^cpt_[A-Za-z0-9_-]{43}$/;
 
 export class ConfigError extends Error {
   override name = 'ConfigError';
@@ -85,11 +84,16 @@ export function loadConfig(env: Env): Config {
   return {
     port,
     logLevel: logLevel as LogLevel,
-    databasePath: read('DATABASE_PATH') ?? './data/cpt.db',
+    databasePath: databasePathFrom(env),
     cmc: { apiKey: apiKey as string, baseUrl: baseUrl.replace(/\/+$/, ''), timeoutMs },
     syncIntervalMs,
     bootstrapKeys: { viewer, operator },
   };
+}
+
+/** Отдельно от loadConfig: CLI нужна только БД, а не ключ CMC и остальной конфиг сервера */
+export function databasePathFrom(env: Env): string {
+  return env['DATABASE_PATH']?.trim() || './data/cpt.db';
 }
 
 function isHttpUrl(value: string): boolean {
