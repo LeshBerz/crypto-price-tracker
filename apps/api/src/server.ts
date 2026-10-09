@@ -1,16 +1,19 @@
 // Composition root ТЗ-редакции (ADR 0005, 0015 §5): конфиг → логгер → БД и миграции → приложение → listen.
-// Здесь живут настоящие адаптеры; всё остальное получает их аргументами. Bootstrap ключей (B8), планировщик (B12)
+// Здесь живут настоящие адаптеры; всё остальное получает их аргументами. Планировщик (B12)
 // и graceful shutdown по SIGTERM/SIGINT (B14) добавятся сюда же.
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { createApp } from './app.ts';
+import { ApiKeyAuthenticator } from './auth/api-key-authenticator.ts';
+import { bootstrapApiKeys } from './auth/bootstrap.ts';
 import { SystemClock } from './common/clock.ts';
 import { createJsonLogger } from './common/logger.ts';
 import { ConfigError, loadConfig } from './config.ts';
 import { openDatabase } from './db/database.ts';
 import { loadMigrations, migrate } from './db/migrations.ts';
+import { SqliteUnitOfWork } from './db/unit-of-work.ts';
 
-function main(): void {
+async function main(): Promise<void> {
   let config;
   try {
     config = loadConfig(process.env);
@@ -33,7 +36,11 @@ function main(): void {
   const { applied, current } = migrate(db, migrations, () => clock.now());
   logger.info('database ready', { path: config.databasePath, schemaVersion: current, applied });
 
-  const app = createApp({ db, schemaVersion: current, logger, clock });
+  const uow = new SqliteUnitOfWork(db);
+  await bootstrapApiKeys({ keys: config.bootstrapKeys, uow, clock, logger });
+  const authenticator = new ApiKeyAuthenticator({ uow, clock });
+
+  const app = createApp({ db, schemaVersion: current, logger, clock, authenticator });
   const server = app.listen(config.port, () => {
     logger.info('http server listening', { port: config.port, docs: `http://localhost:${config.port}/docs` });
   });
@@ -43,4 +50,4 @@ function main(): void {
   });
 }
 
-main();
+await main();
