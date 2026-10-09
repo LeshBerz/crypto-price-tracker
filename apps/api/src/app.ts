@@ -7,7 +7,7 @@ import type { Logger } from './common/logger.ts';
 import type { Database } from './db/database.ts';
 import { openapiDocument } from './generated/openapi.ts';
 import { healthHandlers, staticLifecycle, type Lifecycle } from './health.ts';
-import { denyAllAuthenticator, type Authenticator } from './http/auth.ts';
+import type { Authenticator } from './http/auth.ts';
 import { errorHandler, notFound } from './http/errors.ts';
 import { HttpProblem } from './http/problem.ts';
 import { requestContext } from './http/request-context.ts';
@@ -20,8 +20,7 @@ export type AppDeps = {
   schemaVersion: number;
   logger: Logger;
   clock: Clock;
-  /** До B8 — denyAll: защищённые операции отвечают 401 */
-  authenticator?: Authenticator;
+  authenticator: Authenticator;
   lifecycle?: Lifecycle;
   generateRequestId?: () => string;
 };
@@ -81,7 +80,7 @@ export function createApp(deps: AppDeps): Express {
     swaggerUi.setup(openapiDocument as swaggerUi.JsonObject, { customSiteTitle: 'Crypto Price Tracker API' }),
   );
 
-  app.use(mountFromSpec({ spec, handlers, authenticator: deps.authenticator ?? denyAllAuthenticator }));
+  app.use(mountFromSpec({ spec, handlers, authenticator: deps.authenticator }));
   app.use(notFound);
   app.use(errorHandler);
   return app;

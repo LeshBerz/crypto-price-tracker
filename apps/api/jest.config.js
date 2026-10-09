@@ -8,13 +8,15 @@ export default {
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.jest.json' }],
   },
-  collectCoverageFrom: ['src/**/*.ts', '!src/generated/**', '!src/server.ts'],
+  // Точки входа (server.ts, cli/keys.ts) только собирают зависимости; их логика покрыта через тестируемые модули
+  collectCoverageFrom: ['src/**/*.ts', '!src/generated/**', '!src/server.ts', '!src/cli/keys.ts'],
   coverageThreshold: {
     global: { lines: 90, branches: 85 },
     // Критичный код — 100 % (ADR 0009)
     './src/common/decimal.ts': { lines: 100, branches: 100, functions: 100, statements: 100 },
     './src/openapi/': { lines: 100, branches: 100, functions: 100, statements: 100 },
     './src/http/auth.ts': { lines: 100, branches: 100, functions: 100, statements: 100 },
+    './src/auth/': { lines: 100, branches: 100, functions: 100, statements: 100 },
   },
   setupFilesAfterEnv: ['<rootDir>/tests/helpers/contract.ts'],
   clearMocks: true,
