@@ -5,6 +5,7 @@ import swaggerUi from 'swagger-ui-express';
 import type { Clock } from './common/clock.ts';
 import type { Logger } from './common/logger.ts';
 import type { Database } from './db/database.ts';
+import type { EventBus } from './events/event-bus.ts';
 import { openapiDocument } from './generated/openapi.ts';
 import { healthHandlers, staticLifecycle, type Lifecycle } from './health.ts';
 import type { Authenticator } from './http/auth.ts';
@@ -12,7 +13,11 @@ import { errorHandler, notFound } from './http/errors.ts';
 import { HttpProblem } from './http/problem.ts';
 import { requestContext } from './http/request-context.ts';
 import { mountFromSpec, type Handlers, type OperationId } from './http/router.ts';
+import type { MarketDataProvider } from './market-data/provider.ts';
 import { compileSpec } from './openapi/spec.ts';
+import type { UnitOfWork } from './unit-of-work.ts';
+import { watchlistHandlers } from './watchlist/handlers.ts';
+import { WatchlistService } from './watchlist/watchlist-service.ts';
 
 export type AppDeps = {
   db: Database;
@@ -21,20 +26,20 @@ export type AppDeps = {
   logger: Logger;
   clock: Clock;
   authenticator: Authenticator;
+  uow: UnitOfWork;
+  marketData: MarketDataProvider;
+  events: EventBus;
+  /** Интервал синхронизации: от него зависит isStale у цен */
+  syncIntervalMs: number;
   lifecycle?: Lifecycle;
   generateRequestId?: () => string;
 };
 
 /**
- * Операции, хендлеры которых появятся в следующих задачах (B8–B13). Явный список вместо Partial<Handlers>:
+ * Операции, хендлеры которых появятся в следующих задачах (B11–B13). Явный список вместо Partial<Handlers>:
  * тип Handlers по-прежнему требует хендлер на каждую операцию, а заглушки видно поиском.
  */
 const PENDING = [
-  'listCryptocurrencies',
-  'createCryptocurrency',
-  'getCryptocurrency',
-  'updateCryptocurrency',
-  'deleteCryptocurrency',
   'listLatestPrices',
   'listSparklines',
   'listPriceHistory',
@@ -61,6 +66,16 @@ export function createApp(deps: AppDeps): Express {
   const handlers = {
     ...(Object.fromEntries(PENDING.map((id) => [id, pending(id)])) as Record<(typeof PENDING)[number], () => never>),
     ...healthHandlers({ db: deps.db, schemaVersion: deps.schemaVersion, lifecycle }),
+    ...watchlistHandlers({
+      watchlist: new WatchlistService({
+        uow: deps.uow,
+        marketData: deps.marketData,
+        events: deps.events,
+        clock: deps.clock,
+      }),
+      clock: deps.clock,
+      syncIntervalMs: deps.syncIntervalMs,
+    }),
   } satisfies Handlers;
 
   const app = express();
