@@ -50,6 +50,8 @@ export class FakeClock implements Clock {
    */
   async advance(ms: number): Promise<void> {
     const target = this.current + ms;
+    // Сначала отдаём управление: код, вызванный прямо перед advance, успеет дойти до своего sleep
+    await new Promise((r) => setImmediate(r));
     for (;;) {
       const next = this.sleepers.filter((s) => s.at <= target).sort((a, b) => a.at - b.at)[0];
       if (!next) break;
