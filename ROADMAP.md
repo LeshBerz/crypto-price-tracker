@@ -36,7 +36,7 @@
 |---|---|---|---|---|---|---|
 | 2 | 07.10 | 7 | A-хвост · B1 · B2 · B3 (начало) | 7 | 7,5 | 7,5 |
 | 3 | 08.10 | 7 | B3 · B4 · B5 · B6 · B7 | 14 | 6,25 | 13,75 |
-| 4 | 09.10 | 7 | B8 · B9 · B10 (начало) | 21 | | |
+| 4 | 09.10 | 7 | B8 · B9 · B10 (начало) | 21 | 7,5 | 21,25 |
 | 5 | 10.10 | 7 | B10 · B11 · B12 (начало) | 28 | | |
 | 6 | 11.10 | 7 | B12 · B13 · B14 · B15 · B16 · B17 | 35 | | |
 | 7 | 12.10 | 7 | **E1 (сдача)** · B18 · запас 2 ч | 42 | | |
@@ -62,7 +62,9 @@
 
 ## Фаза B — `apps/api` (35,5 ч) 🔄
 
-> **Остановились 08.10:** B1–B7 готовы — фундамент и HTTP-слой: конфиг, JSON-логи, `Clock`, валидатор и роутер из спеки, RFC 9457, `/health/*`, Swagger UI (426 тестов, покрытие 100 %). Сверх плана — разбор `docs/study/01` из B18, подробный разбор дня `docs/study/12` и дизайн `apps/web` в ветке `design/web-analysis` (аналитика, макеты, ADR 0017–0018 Proposed; вопросы Q1–Q17 — при старте фазы C). Отставание по сумме оценок — 0,25 ч (B3 закрыт днём раньше, его остаток числился в плане дня 3), покрывается запасом 2 ч. Следующий шаг — B8: auth по API-ключам.
+> **Остановились 09.10:** B8–B10 готовы: auth по API-ключам (SHA-256 + `timingSafeEqual`, отзыв, bootstrap из env, CLI `keys:create`/`keys:revoke`), адаптер CMC с классификацией ошибок, ретраями на `Clock` и точными ценами, HTTP-стаб на `node:http`, watchlist CRUD (5 операций, лимит 100, `watchlist.changed` после COMMIT). 635 тестов, покрытие 100 % по строкам. B10 закрыт целиком, а не начат — выработка 21,25 ч при плане 21 (+0,25 ч). Задел на следующие задачи: `PriceRepository.latestFor` и `toLatestPrice` (`isStale`, `change24hPercent`) для B11, матрица 401/403 по всем 14 защищённым операциям для B15, `withRetry` для B12. Разборы `docs/study/05` и `07`. Следующий шаг — B11: чтение цен.
+
+> **08.10:** B1–B7 готовы — фундамент и HTTP-слой: конфиг, JSON-логи, `Clock`, валидатор и роутер из спеки, RFC 9457, `/health/*`, Swagger UI (426 тестов, покрытие 100 %). Сверх плана — разбор `docs/study/01` из B18, подробный разбор дня `docs/study/12` и дизайн `apps/web` в ветке `design/web-analysis` (аналитика, макеты, ADR 0017–0018 Proposed; вопросы Q1–Q17 — при старте фазы C). Отставание по сумме оценок — 0,25 ч (B3 закрыт днём раньше, его остаток числился в плане дня 3), покрывается запасом 2 ч. Следующий шаг — B8: auth по API-ключам.
 
 Порядок — от фундамента к фичам: каждая задача опирается только на предыдущие. Тесты пишутся вместе с кодом, а не после. Цикл этапа (`docs/study/NN`, вопросы к интервью) — внутри задач, отмеченных 📘.
 
@@ -75,9 +77,9 @@
 | B5 | 📘 **Валидатор подмножества JSON Schema:** компиляция при старте, fail-fast на неподдерживаемых словах, приведение query/path, `default`, `date-time` с зоной, все ошибки с путями. 100 % покрытия | C10 | 0008, 0014 | 2,5 | ✅ |
 | B6 | **Роутер из спеки:** `mountFromSpec` + `Handlers<operations>`, `x-required-scopes`, Problem Details (RFC 9457), 404/405, 413/415, error-middleware, Jest-матчер `toMatchContract` | F8, C10 | 0008, 0014 | 2 | ✅ |
 | B7 | **`createApp(deps)` + `/health/*` + Swagger UI** (`/docs`, `/openapi.json`, Scarf выключен) | F8, бриф §4 | 0004, 0014 | 0,75 | ✅ |
-| B8 | 📘 **Auth:** `ApiKeyRepository`, `requireAuth` + `requireScope`, SHA-256 + `timingSafeEqual`, троттлинг `last_used_at`, bootstrap ключей из env, CLI `keys:create` / `keys:revoke`, 401/403 по RFC 6750. 100 % покрытия middleware | F1, C4 | 0002, 0013 | 2 | ⬜ |
-| B9 | 📘 **Адаптер CMC + HTTP-стаб:** axios-инстанс с таймаутом, reviver с `context.source`, классификация ошибок, retry с backoff + jitter через `Clock`, `resolveSymbol` (лучший `cmc_rank`), `getQuotes`, `getUsage`. Стаб на `node:http`: 200, 429 + `Retry-After`, 500, 401, обрыв, таймаут, невалидный JSON, неизвестный символ | F3, F7, C4, C5, C9, D-4 | 0006, 0009, 0015 | 3 | ⬜ |
-| B10 | **Watchlist CRUD:** репозиторий, `WatchlistService`, 5 операций, лимит 100, `watchlist.changed` после COMMIT | F2, D-1, C2, C10 | 0013, 0014, 0015 | 2,5 | ⬜ |
+| B8 | 📘 **Auth:** `ApiKeyRepository`, `requireAuth` + `requireScope`, SHA-256 + `timingSafeEqual`, троттлинг `last_used_at`, bootstrap ключей из env, CLI `keys:create` / `keys:revoke`, 401/403 по RFC 6750. 100 % покрытия middleware | F1, C4 | 0002, 0013 | 2 | ✅ |
+| B9 | 📘 **Адаптер CMC + HTTP-стаб:** axios-инстанс с таймаутом, reviver с `context.source`, классификация ошибок, retry с backoff + jitter через `Clock`, `resolveSymbol` (лучший `cmc_rank`), `getQuotes`, `getUsage`. Стаб на `node:http`: 200, 429 + `Retry-After`, 500, 401, обрыв, таймаут, невалидный JSON, неизвестный символ | F3, F7, C4, C5, C9, D-4 | 0006, 0009, 0015 | 3 | ✅ |
+| B10 | **Watchlist CRUD:** репозиторий, `WatchlistService`, 5 операций, лимит 100, `watchlist.changed` после COMMIT | F2, D-1, C2, C10 | 0013, 0014, 0015 | 2,5 | ✅ |
 | B11 | 📘 **Чтение цен:** актуальные (`isStale`, `change24h`, `lastSync`), история (keyset-курсор), агрегаты (свёртки, bare columns, неделя с понедельника, ≤ 1000 бакетов, avg 10 знач. цифр, `changePercent`), спарклайны одним запросом | F3, F5, D-2, D-3 | 0006, 0007, 0014 | 3,5 | ⬜ |
 | B12 | 📘 **Синхронизация:** `SyncService` (два слоя защиты от наложения, ретраи, `partial`, свёртка в той же транзакции, события после COMMIT), планировщик на цепочке `setTimeout`, логика старта, `interrupted` при старте, операции `sync-runs` (202 + `Location`) и `system/cmc` | F4, F6, F7, C5, C9 | 0007, 0013, 0015 | 3,5 | ⬜ |
 | B13 | **SSE-хаб и `/stream`:** события `price.updated`, `sync.finished`, `watchlist.changed`, `heartbeat` 25 с, `id:` для `Last-Event-ID` | расширение | 0014, 0015 | 1,5 | ⬜ |
