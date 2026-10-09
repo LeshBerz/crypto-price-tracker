@@ -12,6 +12,8 @@ import { ConfigError, loadConfig } from './config.ts';
 import { openDatabase } from './db/database.ts';
 import { loadMigrations, migrate } from './db/migrations.ts';
 import { SqliteUnitOfWork } from './db/unit-of-work.ts';
+import { InProcessEventBus } from './events/event-bus.ts';
+import { CmcMarketDataProvider } from './market-data/cmc-provider.ts';
 
 async function main(): Promise<void> {
   let config;
@@ -40,7 +42,20 @@ async function main(): Promise<void> {
   await bootstrapApiKeys({ keys: config.bootstrapKeys, uow, clock, logger });
   const authenticator = new ApiKeyAuthenticator({ uow, clock });
 
-  const app = createApp({ db, schemaVersion: current, logger, clock, authenticator });
+  const marketData = new CmcMarketDataProvider({ ...config.cmc, clock });
+  const events = new InProcessEventBus(logger);
+
+  const app = createApp({
+    db,
+    schemaVersion: current,
+    logger,
+    clock,
+    authenticator,
+    uow,
+    marketData,
+    events,
+    syncIntervalMs: config.syncIntervalMs,
+  });
   const server = app.listen(config.port, () => {
     logger.info('http server listening', { port: config.port, docs: `http://localhost:${config.port}/docs` });
   });
