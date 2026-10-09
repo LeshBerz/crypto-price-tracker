@@ -5,7 +5,7 @@ import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/', '**/dist/', '**/coverage/', '**/src/generated/', '**/openapi/.bundle/'],
+    ignores: ['**/node_modules/', '**/dist/', '.claude/', '**/coverage/', '**/src/generated/', '**/openapi/.bundle/'],
   },
   js.configs.recommended,
   ...tseslint.configs.strict,
