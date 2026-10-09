@@ -1,5 +1,5 @@
 // Аутентификация по Bearer API key и проверка scope (ADR 0002). Здесь — порт и общая логика 401/403
-// по RFC 6750; сама проверка ключа (SHA-256 + timingSafeEqual по БД) — адаптер ApiKeyAuthenticator в B8.
+// по RFC 6750; сама проверка ключа (SHA-256 + timingSafeEqual по БД) — адаптер auth/api-key-authenticator.ts.
 // Аналог в Nest: AuthGuard + RolesGuard с метаданными @Scopes() — здесь scopes берутся из x-required-scopes.
 import type { RequestHandler } from 'express';
 import { HttpProblem } from './problem.ts';
@@ -14,11 +14,6 @@ export interface Authenticator {
   /** Токен из заголовка Authorization: Bearer <token>. null — ключ неизвестен или отозван */
   authenticate(token: string): Promise<Principal | null>;
 }
-
-/** Безопасный вариант по умолчанию, пока нет настоящего адаптера: никого не пускает */
-export const denyAllAuthenticator: Authenticator = {
-  authenticate: () => Promise.resolve(null),
-};
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
