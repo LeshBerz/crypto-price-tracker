@@ -39,8 +39,11 @@ export interface SyncRunRepository {
   running(): Promise<SyncRunRecord | null>;
   /** Самый свежий запуск в любом статусе */
   latest(): Promise<SyncRunRecord | null>;
-  /** Последний запуск с одним из статусов: succeeded/partial — «CMC отвечал», failed — последняя ошибка */
-  latestWithStatus(statuses: readonly SyncRunStatus[]): Promise<SyncRunRecord | null>;
+  /**
+   * Последний запуск с одним из статусов среди тех, что реально ходили в CMC (attempts > 0):
+   * succeeded/partial — «CMC отвечал», failed — последняя ошибка. Запуск с пустым watchlist CMC не вызывает
+   */
+  latestAttempted(statuses: readonly SyncRunStatus[]): Promise<SyncRunRecord | null>;
   /** От новых к старым; before — курсор последней строки предыдущей страницы */
   page(limit: number, before: KeysetCursor | null): Promise<SyncRunRecord[]>;
   /** Запуски, оставшиеся running после падения процесса, → interrupted. Возвращает их число */

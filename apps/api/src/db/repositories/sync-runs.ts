@@ -65,8 +65,8 @@ export class SqliteSyncRunRepository implements SyncRunRepository {
       get: db.prepare(`SELECT ${COLUMNS} FROM sync_runs WHERE id = ?`),
       running: db.prepare(`SELECT ${COLUMNS} FROM sync_runs WHERE status = 'running'`),
       latest: db.prepare(`SELECT ${COLUMNS} FROM sync_runs ORDER BY started_at DESC, id DESC LIMIT 1`),
-      latestWithStatus: db.prepare(
-        `SELECT ${COLUMNS} FROM sync_runs WHERE status IN (SELECT value FROM json_each(?))
+      latestAttempted: db.prepare(
+        `SELECT ${COLUMNS} FROM sync_runs WHERE attempts > 0 AND status IN (SELECT value FROM json_each(?))
           ORDER BY started_at DESC, id DESC LIMIT 1`,
       ),
       // Сравнение кортежей (started_at, id) < (?, ?) — keyset: страница не «плывёт», когда появляются новые запуски
@@ -126,9 +126,9 @@ export class SqliteSyncRunRepository implements SyncRunRepository {
     return row ? toRecord(row) : null;
   }
 
-  async latestWithStatus(statuses: readonly SyncRunStatus[]): Promise<SyncRunRecord | null> {
+  async latestAttempted(statuses: readonly SyncRunStatus[]): Promise<SyncRunRecord | null> {
     assertInTransaction(this.db);
-    const row = this.statements.latestWithStatus.get(JSON.stringify(statuses)) as SyncRunRow | undefined;
+    const row = this.statements.latestAttempted.get(JSON.stringify(statuses)) as SyncRunRow | undefined;
     return row ? toRecord(row) : null;
   }
 

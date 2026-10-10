@@ -35,7 +35,22 @@ export type PriceBucketRow = {
 
 export type CloseRow = { cryptocurrencyId: number; bucketStart: number; close: string };
 
+export type NewPricePoint = {
+  cryptocurrencyId: number;
+  syncRunId: number;
+  price: string;
+  sourceUpdatedAt: number;
+  fetchedAt: number;
+};
+
 export interface PriceRepository {
+  /**
+   * Сохраняет точки и возвращает те, что действительно вставлены. Пропускаются: точка, которая уже есть
+   * (CMC не обновил котировку — тот же source_updated_at), и точка монеты, удалённой за время запроса к CMC.
+   */
+  insertMany(points: readonly NewPricePoint[]): Promise<NewPricePoint[]>;
+  /** Пересчитывает часовую свёртку монеты из сырых точек часа, начинающегося в hourStart (ADR 0007) */
+  recomputeRollup(cryptocurrencyId: number, hourStart: number): Promise<void>;
   /** Последняя цена каждой монеты из ids одним запросом (без N+1). Монеты без цен в ответ не попадают */
   latestFor(ids: readonly number[], dayAgo: number): Promise<LatestPriceRow[]>;
   /** Сырые точки от новых к старым */

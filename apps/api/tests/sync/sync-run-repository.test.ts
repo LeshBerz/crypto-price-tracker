@@ -54,7 +54,7 @@ describe('SqliteSyncRunRepository', () => {
     ).rejects.toThrow('7');
   });
 
-  it('✅ failed сохраняет код и текст ошибки; latestWithStatus находит последний исход нужного вида', async () => {
+  it('✅ failed сохраняет код и текст ошибки; latestAttempted находит последний исход нужного вида', async () => {
     const { uow } = setup();
     await uow.run(async ({ syncRuns }) => {
       expect(await syncRuns.latest()).toBeNull();
@@ -74,9 +74,9 @@ describe('SqliteSyncRunRepository', () => {
     });
     await uow.run(async ({ syncRuns }) => {
       expect(await syncRuns.latest()).toMatchObject({ id: 2, errorCode: 'CMC_TIMEOUT', errorMessage: 'timeout' });
-      expect(await syncRuns.latestWithStatus(['succeeded', 'partial'])).toMatchObject({ id: 1 });
-      expect(await syncRuns.latestWithStatus(['failed'])).toMatchObject({ id: 2 });
-      expect(await syncRuns.latestWithStatus(['interrupted'])).toBeNull();
+      expect(await syncRuns.latestAttempted(['succeeded', 'partial'])).toMatchObject({ id: 1 });
+      expect(await syncRuns.latestAttempted(['failed'])).toMatchObject({ id: 2 });
+      expect(await syncRuns.latestAttempted(['interrupted'])).toBeNull();
     });
   });
 

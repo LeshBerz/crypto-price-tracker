@@ -3,6 +3,7 @@ import type {
   BucketQuery,
   CloseRow,
   HistoryQuery,
+  NewPricePoint,
   LatestPriceRow,
   PriceBucketRow,
   PricePointRow,
@@ -54,6 +55,30 @@ export class SqlitePriceRepository implements PriceRepository {
                  WHERE l.cryptocurrency_id = ids.value
                  ORDER BY l.fetched_at DESC, l.id DESC LIMIT 1)
          ORDER BY h.cryptocurrency_id`),
+      // ON CONFLICT DO NOTHING: повторная синхронизация той же котировки идемпотентна (UNIQUE по монете и
+      // source_updated_at). WHERE EXISTS: монету могли удалить, пока шёл запрос к CMC, — без него упал бы FK
+      insert: db.prepare(`
+        INSERT INTO price_history (cryptocurrency_id, sync_run_id, price, source_updated_at, fetched_at)
+        SELECT ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM cryptocurrencies WHERE id = ?)
+        ON CONFLICT (cryptocurrency_id, source_updated_at) DO NOTHING`),
+      // Свёртка часа пересчитывается целиком из сырых точек (их в часе единицы), а не «доливается»:
+      // результат не зависит от того, сколько раз и в каком порядке её считали. open/close — по времени,
+      // min/max — по REAL, но в свёртку попадает точная TEXT-строка той же точки
+      rollup: db.prepare(`
+        WITH h AS (
+          SELECT id, price, price_num, fetched_at FROM price_history
+           WHERE cryptocurrency_id = ? AND fetched_at >= ? AND fetched_at < ?)
+        INSERT INTO price_rollups_1h (cryptocurrency_id, bucket_start, points, open, close, min, max, sum_num)
+        SELECT ?, ?, count(*),
+               (SELECT price FROM h ORDER BY fetched_at, id LIMIT 1),
+               (SELECT price FROM h ORDER BY fetched_at DESC, id DESC LIMIT 1),
+               (SELECT price FROM h ORDER BY price_num, id LIMIT 1),
+               (SELECT price FROM h ORDER BY price_num DESC, id LIMIT 1),
+               sum(price_num)
+          FROM h WHERE true HAVING count(*) > 0
+        ON CONFLICT (cryptocurrency_id, bucket_start) DO UPDATE SET
+          points = excluded.points, open = excluded.open, close = excluded.close,
+          min = excluded.min, max = excluded.max, sum_num = excluded.sum_num`),
       // Keyset по (fetched_at, id): следующая страница начинается строго после курсора, поэтому вставки между
       // запросами не дают ни дублей, ни пропусков (у OFFSET — дают). Идёт по индексу price_history_coin_time
       history: db.prepare(`
@@ -102,6 +127,28 @@ export class SqlitePriceRepository implements PriceRepository {
       fetchedAt: row.fetched_at,
       priceDayAgo: row.price_day_ago,
     }));
+  }
+
+  async insertMany(points: readonly NewPricePoint[]): Promise<NewPricePoint[]> {
+    assertInTransaction(this.db);
+    return points.filter((point) => {
+      const coin = sqlInt(point.cryptocurrencyId);
+      const result = this.statements.insert.run(
+        coin,
+        sqlInt(point.syncRunId),
+        point.price,
+        sqlInt(point.sourceUpdatedAt),
+        sqlInt(point.fetchedAt),
+        coin,
+      );
+      return result.changes > 0;
+    });
+  }
+
+  async recomputeRollup(cryptocurrencyId: number, hourStart: number): Promise<void> {
+    assertInTransaction(this.db);
+    const [coin, from, to] = [sqlInt(cryptocurrencyId), sqlInt(hourStart), sqlInt(hourStart + HOUR_MS)];
+    this.statements.rollup.run(coin, from, to, coin, from);
   }
 
   async history(cryptocurrencyId: number, query: HistoryQuery): Promise<PricePointRow[]> {
