@@ -4,6 +4,7 @@ import type { Database } from './database.ts';
 import { SqliteApiKeyRepository } from './repositories/api-keys.ts';
 import { SqliteCryptocurrencyRepository } from './repositories/cryptocurrencies.ts';
 import { SqlitePriceRepository } from './repositories/prices.ts';
+import { SqliteSyncRunRepository } from './repositories/sync-runs.ts';
 import { TransactionRunner } from './transaction.ts';
 
 export class SqliteUnitOfWork implements UnitOfWork {
@@ -17,6 +18,7 @@ export class SqliteUnitOfWork implements UnitOfWork {
       apiKeys: new SqliteApiKeyRepository(db),
       cryptocurrencies: new SqliteCryptocurrencyRepository(db),
       prices: new SqlitePriceRepository(db),
+      syncRuns: new SqliteSyncRunRepository(db),
     };
   }
 
