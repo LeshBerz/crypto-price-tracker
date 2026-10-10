@@ -17,6 +17,8 @@ export type CryptocurrencyPatch = { name?: string; isPaused?: boolean };
 
 export interface CryptocurrencyRepository {
   list(): Promise<CryptocurrencyRecord[]>;
+  /** Монеты, которые синхронизируются: без поставленных на паузу */
+  listActive(): Promise<CryptocurrencyRecord[]>;
   get(id: number): Promise<CryptocurrencyRecord | null>;
   /** Монета с этим символом или этим cmc_id — для 409 already-tracked */
   findConflict(symbol: string, cmcId: number | undefined): Promise<CryptocurrencyRecord | null>;
@@ -26,4 +28,8 @@ export interface CryptocurrencyRepository {
   update(id: number, patch: CryptocurrencyPatch, at: number): Promise<CryptocurrencyRecord | null>;
   /** false — монеты нет. История и свёртки удаляются каскадом (ADR 0013 №4) */
   delete(id: number): Promise<boolean>;
+  /** Проставляет last_updated_at монетам, у которых сохранена новая цена (D-1) */
+  markUpdated(ids: readonly number[], at: number): Promise<void>;
+  /** Когда в последний раз сохранялась цена хоть одной монеты; null — ни разу */
+  lastUpdatedAt(): Promise<number | null>;
 }

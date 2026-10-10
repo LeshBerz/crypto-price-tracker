@@ -42,6 +42,11 @@ export class SqliteCryptocurrencyRepository implements CryptocurrencyRepository 
     this.db = db;
     this.statements = {
       list: db.prepare(`SELECT ${COLUMNS} FROM cryptocurrencies ORDER BY symbol`),
+      listActive: db.prepare(`SELECT ${COLUMNS} FROM cryptocurrencies WHERE is_paused = 0 ORDER BY symbol`),
+      markUpdated: db.prepare(
+        'UPDATE cryptocurrencies SET last_updated_at = ? WHERE id IN (SELECT value FROM json_each(?))',
+      ),
+      lastUpdatedAt: db.prepare('SELECT max(last_updated_at) AS at FROM cryptocurrencies'),
       get: db.prepare(`SELECT ${COLUMNS} FROM cryptocurrencies WHERE id = ?`),
       conflict: db.prepare(`SELECT ${COLUMNS} FROM cryptocurrencies WHERE symbol = ? OR cmc_id = ? LIMIT 1`),
       count: db.prepare('SELECT count(*) AS n FROM cryptocurrencies'),
@@ -61,6 +66,21 @@ export class SqliteCryptocurrencyRepository implements CryptocurrencyRepository 
   async list(): Promise<CryptocurrencyRecord[]> {
     assertInTransaction(this.db);
     return (this.statements.list.all() as CryptocurrencyRow[]).map(toRecord);
+  }
+
+  async listActive(): Promise<CryptocurrencyRecord[]> {
+    assertInTransaction(this.db);
+    return (this.statements.listActive.all() as CryptocurrencyRow[]).map(toRecord);
+  }
+
+  async markUpdated(ids: readonly number[], at: number): Promise<void> {
+    assertInTransaction(this.db);
+    this.statements.markUpdated.run(sqlInt(at), JSON.stringify(ids));
+  }
+
+  async lastUpdatedAt(): Promise<number | null> {
+    assertInTransaction(this.db);
+    return (this.statements.lastUpdatedAt.get() as { at: number | null }).at;
   }
 
   async get(id: number): Promise<CryptocurrencyRecord | null> {
