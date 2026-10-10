@@ -4,6 +4,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Clock } from '../common/clock.ts';
 import type { Logger } from '../common/logger.ts';
+import type { components } from '../generated/api-types.ts';
 
 export type DomainEvent<T extends string, P> = {
   id: string;
@@ -19,8 +20,25 @@ export type WatchlistChanged = DomainEvent<
   { cryptocurrencyId: number; change: 'added' | 'updated' | 'removed' }
 >;
 
-/** Каталог событий; price.updated и sync.finished добавятся с синхронизацией (B12) */
-export type AppEvent = WatchlistChanged;
+/** По одному на каждую сохранённую цену; время — ISO 8601, как в контракте */
+export type PriceUpdated = DomainEvent<
+  'price.updated',
+  {
+    cryptocurrencyId: number;
+    symbol: string;
+    price: string;
+    currency: 'USD';
+    sourceUpdatedAt: string;
+    fetchedAt: string;
+    syncRunId: number;
+  }
+>;
+
+/** Запуск синхронизации завершён; payload — SyncRun как в контракте */
+export type SyncFinished = DomainEvent<'sync.finished', components['schemas']['SyncRun']>;
+
+/** Каталог событий (ADR 0015 §3) */
+export type AppEvent = WatchlistChanged | PriceUpdated | SyncFinished;
 export type AppEventType = AppEvent['type'];
 type EventOf<T extends AppEventType> = Extract<AppEvent, { type: T }>;
 

@@ -17,6 +17,8 @@ import type { MarketDataProvider } from './market-data/provider.ts';
 import { compileSpec } from './openapi/spec.ts';
 import { priceHandlers } from './prices/handlers.ts';
 import { PriceQueryService } from './prices/price-query-service.ts';
+import { syncHandlers } from './sync/handlers.ts';
+import type { SyncService } from './sync/sync-service.ts';
 import type { UnitOfWork } from './unit-of-work.ts';
 import { watchlistHandlers } from './watchlist/handlers.ts';
 import { WatchlistService } from './watchlist/watchlist-service.ts';
@@ -31,6 +33,8 @@ export type AppDeps = {
   uow: UnitOfWork;
   marketData: MarketDataProvider;
   events: EventBus;
+  /** Один экземпляр на процесс: его же дёргает планировщик — иначе флаг «запуск идёт» не был бы общим */
+  sync: SyncService;
   /** Интервал синхронизации: от него зависит isStale у цен */
   syncIntervalMs: number;
   lifecycle?: Lifecycle;
@@ -38,16 +42,10 @@ export type AppDeps = {
 };
 
 /**
- * Операции, хендлеры которых появятся в следующих задачах (B12–B13). Явный список вместо Partial<Handlers>:
+ * Операции, хендлеры которых появятся в следующих задачах (B13). Явный список вместо Partial<Handlers>:
  * тип Handlers по-прежнему требует хендлер на каждую операцию, а заглушки видно поиском.
  */
-const PENDING = [
-  'listSyncRuns',
-  'triggerSyncRun',
-  'getSyncRun',
-  'getCmcStatus',
-  'streamEvents',
-] as const satisfies readonly OperationId[];
+const PENDING = ['streamEvents'] as const satisfies readonly OperationId[];
 
 function pending(operationId: OperationId) {
   return () => {
@@ -79,6 +77,7 @@ export function createApp(deps: AppDeps): Express {
       clock: deps.clock,
       syncIntervalMs: deps.syncIntervalMs,
     }),
+    ...syncHandlers({ sync: deps.sync }),
   } satisfies Handlers;
 
   const app = express();
