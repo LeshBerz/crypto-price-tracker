@@ -1,6 +1,6 @@
 // Composition root ТЗ-редакции (ADR 0005, 0015 §5): конфиг → логгер → БД и миграции → приложение → listen.
-// Здесь живут настоящие адаптеры; всё остальное получает их аргументами. Планировщик (B12)
-// и graceful shutdown по SIGTERM/SIGINT (B14) добавятся сюда же.
+// Здесь живут настоящие адаптеры; всё остальное получает их аргументами.
+// Graceful shutdown по SIGTERM/SIGINT (B14) добавится сюда же.
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { createApp } from './app.ts';
@@ -14,6 +14,8 @@ import { loadMigrations, migrate } from './db/migrations.ts';
 import { SqliteUnitOfWork } from './db/unit-of-work.ts';
 import { InProcessEventBus } from './events/event-bus.ts';
 import { CmcMarketDataProvider } from './market-data/cmc-provider.ts';
+import { SyncScheduler } from './sync/scheduler.ts';
+import { SyncService } from './sync/sync-service.ts';
 
 async function main(): Promise<void> {
   let config;
@@ -45,6 +47,9 @@ async function main(): Promise<void> {
   const marketData = new CmcMarketDataProvider({ ...config.cmc, clock });
   const events = new InProcessEventBus(logger);
 
+  const sync = new SyncService({ uow, marketData, events, clock, logger });
+  const scheduler = new SyncScheduler({ sync, uow, clock, logger, intervalMs: config.syncIntervalMs });
+
   const app = createApp({
     db,
     schemaVersion: current,
@@ -54,10 +59,17 @@ async function main(): Promise<void> {
     uow,
     marketData,
     events,
+    sync,
     syncIntervalMs: config.syncIntervalMs,
+    lifecycle: { isShuttingDown: () => false, schedulerState: () => scheduler.state },
   });
   const server = app.listen(config.port, () => {
     logger.info('http server listening', { port: config.port, docs: `http://localhost:${config.port}/docs` });
+    // Планировщик — после listen (ADR 0015 §5): сначала сервис готов отвечать, потом начинает фоновую работу
+    scheduler.start().catch((error: unknown) => {
+      logger.error('scheduler failed to start', { error });
+      process.exit(1);
+    });
   });
   server.on('error', (error) => {
     logger.error('http server failed', { error });

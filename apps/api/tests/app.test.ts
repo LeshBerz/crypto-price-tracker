@@ -97,10 +97,10 @@ describe('createApp: сквозное поведение', () => {
     expect(await request(app).get('/nope')).toBeProblem(404, 'not-found');
   });
 
-  it('операция без реализации пока отвечает 500 internal-error по контракту', async () => {
+  it('операция без реализации пока отвечает 500 internal-error', async () => {
     const { app } = await createTestApp();
-    const res = await request(app).get('/api/v1/prices').set(bearer(TOKENS.viewer));
-    expect(res).toMatchContract('listLatestPrices', 500);
-    expect(res.body.detail).toBe('Operation listLatestPrices is not implemented yet');
+    const res = await request(app).get('/api/v1/stream').set(bearer(TOKENS.viewer));
+    expect(res).toBeProblem(500, 'internal-error');
+    expect(res.body.detail).toBe('Operation streamEvents is not implemented yet');
   });
 });
