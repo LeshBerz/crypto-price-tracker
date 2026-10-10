@@ -15,6 +15,8 @@ import { requestContext } from './http/request-context.ts';
 import { mountFromSpec, type Handlers, type OperationId } from './http/router.ts';
 import type { MarketDataProvider } from './market-data/provider.ts';
 import { compileSpec } from './openapi/spec.ts';
+import { priceHandlers } from './prices/handlers.ts';
+import { PriceQueryService } from './prices/price-query-service.ts';
 import type { UnitOfWork } from './unit-of-work.ts';
 import { watchlistHandlers } from './watchlist/handlers.ts';
 import { WatchlistService } from './watchlist/watchlist-service.ts';
@@ -36,14 +38,10 @@ export type AppDeps = {
 };
 
 /**
- * Операции, хендлеры которых появятся в следующих задачах (B11–B13). Явный список вместо Partial<Handlers>:
+ * Операции, хендлеры которых появятся в следующих задачах (B12–B13). Явный список вместо Partial<Handlers>:
  * тип Handlers по-прежнему требует хендлер на каждую операцию, а заглушки видно поиском.
  */
 const PENDING = [
-  'listLatestPrices',
-  'listSparklines',
-  'listPriceHistory',
-  'getPriceAggregates',
   'listSyncRuns',
   'triggerSyncRun',
   'getSyncRun',
@@ -73,6 +71,11 @@ export function createApp(deps: AppDeps): Express {
         events: deps.events,
         clock: deps.clock,
       }),
+      clock: deps.clock,
+      syncIntervalMs: deps.syncIntervalMs,
+    }),
+    ...priceHandlers({
+      prices: new PriceQueryService({ uow: deps.uow, clock: deps.clock }),
       clock: deps.clock,
       syncIntervalMs: deps.syncIntervalMs,
     }),
