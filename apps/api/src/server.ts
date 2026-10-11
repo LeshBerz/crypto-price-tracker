@@ -13,6 +13,7 @@ import { openDatabase } from './db/database.ts';
 import { loadMigrations, migrate } from './db/migrations.ts';
 import { SqliteUnitOfWork } from './db/unit-of-work.ts';
 import { InProcessEventBus } from './events/event-bus.ts';
+import { SseHub } from './events/sse-hub.ts';
 import { CmcMarketDataProvider } from './market-data/cmc-provider.ts';
 import { SyncScheduler } from './sync/scheduler.ts';
 import { SyncService } from './sync/sync-service.ts';
@@ -48,6 +49,7 @@ async function main(): Promise<void> {
   const events = new InProcessEventBus(logger);
 
   const sync = new SyncService({ uow, marketData, events, clock, logger });
+  const sse = new SseHub({ events, clock, logger });
   const scheduler = new SyncScheduler({ sync, uow, clock, logger, intervalMs: config.syncIntervalMs });
 
   const app = createApp({
@@ -60,6 +62,7 @@ async function main(): Promise<void> {
     marketData,
     events,
     sync,
+    sse,
     syncIntervalMs: config.syncIntervalMs,
     lifecycle: { isShuttingDown: () => false, schedulerState: () => scheduler.state },
   });

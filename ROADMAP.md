@@ -82,7 +82,7 @@
 | B10 | **Watchlist CRUD:** репозиторий, `WatchlistService`, 5 операций, лимит 100, `watchlist.changed` после COMMIT | F2, D-1, C2, C10 | 0013, 0014, 0015 | 2,5 | ✅ |
 | B11 | 📘 **Чтение цен:** актуальные (`isStale`, `change24h`, `lastSync`), история (keyset-курсор), агрегаты (свёртки, bare columns, неделя с понедельника, ≤ 1000 бакетов, avg 10 знач. цифр, `changePercent`), спарклайны одним запросом | F3, F5, D-2, D-3 | 0006, 0007, 0014 | 3,5 | ✅ |
 | B12 | 📘 **Синхронизация:** `SyncService` (два слоя защиты от наложения, ретраи, `partial`, свёртка в той же транзакции, события после COMMIT), планировщик на цепочке `setTimeout`, логика старта, `interrupted` при старте, операции `sync-runs` (202 + `Location`) и `system/cmc` | F4, F6, F7, C5, C9 | 0007, 0013, 0015 | 3,5 | ✅ |
-| B13 | **SSE-хаб и `/stream`:** события `price.updated`, `sync.finished`, `watchlist.changed`, `heartbeat` 25 с, `id:` для `Last-Event-ID` | расширение | 0014, 0015 | 1,5 | ⬜ |
+| B13 | **SSE-хаб и `/stream`:** события `price.updated`, `sync.finished`, `watchlist.changed`, `heartbeat` 25 с, `id:` для `Last-Event-ID` | расширение | 0014, 0015 | 1,5 | ✅ |
 | B14 | 📘 **Graceful shutdown:** координатор из 8 шагов (ADR 0015), unit-тест с внедрённым эмиттером, e2e `SIGTERM` в CI на Linux | C6, C9 | 0009, 0015 | 2 | ⬜ |
 | B15 | **Доказательство C8:** `check-endpoint-coverage` (отчёт Jest × спека), генерация `docs/project/test-matrix.md`, табличный тест 401/403 по всем защищённым операциям | C8 | 0009 | 1 | ⬜ |
 | B16 | **Docker:** multi-stage `node:24-alpine`, `npm ci --omit=dev`, `CMD ["node", …]`, не-root, healthcheck; compose: `api` + `cmc-stub`, `init: true`, volume для БД | C3, C6, D-4 | 0004, 0009 | 1 | ⬜ |
