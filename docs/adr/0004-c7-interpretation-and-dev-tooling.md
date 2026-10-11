@@ -13,7 +13,7 @@ C7: «Можно использовать только указанные биб
 
 Проблема в том, что формулировка не различает **код приложения** и **инструменты разработки**. Если читать её максимально строго, нельзя даже `@types/express`, хотя TypeScript без него с Express не работает. А бриф требует lint, typecheck и git hooks.
 
-Что мы проверили руками (Node 24.21, 06.10.2026, прототип в scratchpad):
+Что проверено руками (Node 24.21, 06.10.2026, прототип в scratchpad):
 
 | Проверка | Результат |
 |---|---|
@@ -56,7 +56,7 @@ C7: «Можно использовать только указанные биб
 
 Больше в `dependencies` ничего нет. Всё остальное закрываем стандартными модулями:
 
-| Задача | Обычно берут | У нас |
+| Задача | Обычно берут | В проекте |
 |---|---|---|
 | SQLite | better-sqlite3 | `node:sqlite` (ADR 0003) |
 | `.env` | dotenv | `process.loadEnvFile()` / `node --env-file` |
@@ -89,7 +89,7 @@ C7: «Можно использовать только указанные биб
 - `"type": "module"` (ESM), `module`/`moduleResolution: nodenext`.
 - `erasableSyntaxOnly: true`: без `enum`, `namespace` и parameter properties. Это требование нативного запуска. Вместо `enum` используем union-типы и `as const`-объекты.
 - `verbatimModuleSyntax: true`, `allowImportingTsExtensions` + `rewriteRelativeImportExtensions`: в коде пишем `import ... from './x.ts'`, `tsc` переписывает это в `.js`.
-- Jest: ts-jest компилирует тесты в CommonJS (`module: commonjs`, `moduleResolution: bundler`). Так мы обходим всё ещё экспериментальный ESM-режим Jest (`--experimental-vm-modules`). Ограничение: в `src/` нет `import.meta` и top-level await. Это проверяет ESLint (`no-restricted-syntax`).
+- Jest: ts-jest компилирует тесты в CommonJS (`module: commonjs`, `moduleResolution: bundler`). Так обходится всё ещё экспериментальный ESM-режим Jest (`--experimental-vm-modules`). Ограничение: в `src/` нет `import.meta` и top-level await. Это проверяет ESLint (`no-restricted-syntax`).
 - `strict: true` и `noUncheckedIndexedAccess: true`.
 
 ### Автоматическая проверка правила

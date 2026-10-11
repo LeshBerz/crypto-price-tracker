@@ -40,7 +40,7 @@
 | Ретраи, DLQ, poison messages | 🟡 своими руками на таблице | ✅ из коробки: quorum queues с `delivery-limit` + dead-letter exchange | 🟡 руками через `XPENDING`/`XCLAIM` | 🟡 руками через retry-топики |
 | Маршрутизация событий | ❌ | ✅ topic exchange (`price.updated.BTC`) | 🟡 | 🟡 |
 | Fan-out эфемерных событий в SSE | ✅ `LISTEN/NOTIFY` | ✅ Pub/Sub | ✅ | 🟡 тяжеловесно |
-| Опыт заказчика (Korefan: RabbitMQ + DLQ, Redis) | — | ✅ прямое продолжение | 🟡 | ❌ новый стек за 1,5 дня |
+| Имеющийся опыт (Korefan: RabbitMQ + DLQ, Redis) | — | ✅ прямое продолжение | 🟡 | ❌ новый стек за 1,5 дня |
 | Ценность для портфолио и Evercode (FinTech/Web3) | 🟡 | ✅ типовой стек | 🟡 | ✅, но риск не успеть |
 | Риск оверинжиниринга | ✅ минимальный | 🟡 оправдан таблицей P1–P6 | 🟡 | ❌ |
 
@@ -62,8 +62,8 @@
 | PostgreSQL + TimescaleDB | `timescale/timescaledb:2.30.2-pg18` | Хранение: `NUMERIC` для цен (точность из ADR 0006 без строковых трюков), `timestamptz`. История — hypertable, свёртки — **continuous aggregates** (`time_bucket`, `first`/`last`) вместо ручного пересчёта (ADR 0007). Advisory lock — выбор лидера worker'а | репозитории (`pg`, raw SQL — без ORM и здесь) |
 | Redis | `redis:8.8` | Кэш актуальных цен (cache-aside, TTL = 2 × интервал синхронизации, fallback в БД); Pub/Sub-канал `prices` для fan-out в SSE | `PriceCache`, `RealtimeBus` (`ioredis`) |
 | RabbitMQ | `rabbitmq:4.3-management` | Topic exchange `events`: `price.updated.<symbol>`, `alert.triggered`. Очереди потребителей — **quorum queues** с `x-delivery-limit` и dead-letter exchange → `*.dlq`. Ретраи с задержкой — через очереди ожидания с TTL | `EventBus` (`amqplib`) |
-| `worker` | наш образ | Планировщик синхронизации (лидер по advisory lock), outbox-relay в RabbitMQ, потребители: оценка алертов, доставка по каналам | composition root (ADR 0005) |
-| `platform-api` | наш образ, N реплик | То же HTTP-ядро `@cpt/api`, без планировщика. SSE подписан на Redis | composition root (ADR 0005) |
+| `worker` | собственный образ | Планировщик синхронизации (лидер по advisory lock), outbox-relay в RabbitMQ, потребители: оценка алертов, доставка по каналам | composition root (ADR 0005) |
+| `platform-api` | собственный образ, N реплик | То же HTTP-ядро `@cpt/api`, без планировщика. SSE подписан на Redis | composition root (ADR 0005) |
 
 ### Поток данных
 
