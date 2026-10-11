@@ -219,3 +219,4 @@ npm run check
 | [docs/project/architecture.md](docs/project/architecture.md) | Обзор архитектуры и карта ADR |
 | [docs/study/](docs/study/) | Разборы тем: как это сделано и почему |
 | [ROADMAP.md](ROADMAP.md), [docs/dailies.md](docs/dailies.md) | План, прогресс, дейлики |
+| [apps/web/](apps/web/README.md) | Веб-клиент (дополнение, в сдаваемую версию не входит): вход, сессии, каркас дашборда. Версия для проверки зафиксирована тегом `v1.0-submission` |
