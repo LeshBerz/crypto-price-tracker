@@ -1,0 +1,155 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+/* Тёмная тема — по атрибуту data-theme на <html>: его до первой отрисовки ставит скрипт из layout (без вспышки) */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme inline {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  --font-heading: var(--font-sans);
+
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Доменные цвета: рост, падение, устаревшая цена, баннеры (контраст — docs/project/design/README.md) */
+  --color-up: var(--up);
+  --color-up-bg: var(--up-bg);
+  --color-down: var(--down);
+  --color-down-bg: var(--down-bg);
+  --color-stale: var(--stale);
+  --color-warn: var(--warn-fg);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-border: var(--warn-border);
+  --color-info: var(--info-fg);
+  --color-info-bg: var(--info-bg);
+  --color-info-border: var(--info-border);
+  --color-error-bg: var(--error-bg);
+  --color-error-border: var(--error-border);
+  --color-skeleton: var(--skeleton);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}
+
+/* Значения токенов — из макетов (docs/project/design/mockups), контраст посчитан по WCAG 2.2 AA */
+:root {
+  color-scheme: light;
+  --background: #ffffff;
+  --surface: #f6f7f9;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #1d4ed8;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e8efff;
+  --secondary: #f6f7f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f6f7f9;
+  --muted-foreground: #526075;
+  --accent: #f6f7f9;
+  --accent-foreground: #0f172a;
+  --destructive: #b91c1c;
+  --border: #e3e7ee;
+  --input: #7b8799;
+  --ring: #1d4ed8;
+  --up: #047857;
+  --up-bg: #e7f6ef;
+  --down: #b91c1c;
+  --down-bg: #fdeceb;
+  --stale: #5b6577;
+  --warn-fg: #8a3c00;
+  --warn-bg: #fff7e6;
+  --warn-border: #f2c27a;
+  --info-fg: #1e3a8a;
+  --info-bg: #eef4ff;
+  --info-border: #b9cdf7;
+  --error-bg: #fef2f2;
+  --error-border: #f3b4b4;
+  --skeleton: #e9edf3;
+  --radius: 0.625rem;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #0b0f17;
+  --surface: #0f141e;
+  --foreground: #e6e9ef;
+  --card: #111723;
+  --card-foreground: #e6e9ef;
+  --popover: #111723;
+  --popover-foreground: #e6e9ef;
+  --primary: #7aa7ff;
+  --primary-foreground: #0b0f17;
+  --primary-soft: #1a2a4a;
+  --secondary: #0f141e;
+  --secondary-foreground: #e6e9ef;
+  --muted: #0f141e;
+  --muted-foreground: #9aa4b5;
+  --accent: #1b2331;
+  --accent-foreground: #e6e9ef;
+  --destructive: #f87171;
+  --border: #232c3b;
+  --input: #6b7689;
+  --ring: #7aa7ff;
+  --up: #34d399;
+  --up-bg: #0d2a20;
+  --down: #f87171;
+  --down-bg: #301417;
+  --stale: #8b95a7;
+  --warn-fg: #fbbf5a;
+  --warn-bg: #2a1f0b;
+  --warn-border: #6b4a12;
+  --info-fg: #a9c4ff;
+  --info-bg: #0f1d38;
+  --info-border: #24406f;
+  --error-bg: #2a1214;
+  --error-border: #6b2a2e;
+  --skeleton: #1b2331;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* Анимации отключаются по настройке ОС (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
