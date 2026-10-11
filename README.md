@@ -3,6 +3,23 @@
 Backend-сервис, который ведёт список отслеживаемых криптовалют, в фоне забирает их цены из CoinMarketCap, хранит историю в SQLite и отдаёт актуальные цены, историю и агрегаты через REST API.
 Тестовое задание Evercode Lab Fast Track (Backend, Node.js). Сдаваемая часть — каталог [`apps/api`](apps/api).
 
+## Что проверять
+
+**ТЗ выполнено полностью в каталоге [`apps/api`](apps/api).** Эта версия зафиксирована тегом [`v1.0-submission`](https://github.com/LeshBerz/crypto-price-tracker/tree/v1.0-submission): всё, что описано ниже в разделах «Запуск», «API», «Тесты» и «Ограничения ТЗ», относится к ней.
+
+Работа над репозиторием продолжается после сдачи. Всё, что появилось позже тега, — сверх ТЗ и сдаваемую версию не меняет:
+
+| Часть | Отношение к ТЗ | Состояние | Где |
+|---|---|---|---|
+| `apps/api` | **Сдаваемая версия**, строго по ТЗ | Готова, тег `v1.0-submission` | [код](apps/api), [требования → код и тесты](docs/project/requirements.md) |
+| `apps/web` | Сверх ТЗ: веб-клиент (дашборд и панель оператора) | В работе: вход и сессии готовы | [README web](apps/web/README.md), [макеты](docs/project/design/README.md) |
+| Алерты, профиль `platform` | Сверх ТЗ | Спроектировано, не реализовано | [ROADMAP](ROADMAP.md), [ADR](docs/adr/) |
+
+Как это гарантируется:
+- `apps/api` не зависит от остального: его образ собирается и запускается без каталога `apps/web`, `docker compose up` поднимает только api и стаб CoinMarketCap.
+- Ограничение «только указанные библиотеки» проверяется для `apps/api` в CI на каждый коммит — зависимости `apps/web` в него не попадают.
+- Изменения контракта api после сдачи делаются отдельными версиями и описываются в ADR; что и когда изменилось — в [ROADMAP](ROADMAP.md) и [дейликах](docs/dailies.md).
+
 **Стек (строго по ТЗ):** Node.js 24 · TypeScript · Express 5 · SQLite на raw SQL (`node:sqlite`) · axios · Jest + Supertest · Swagger (OpenAPI 3.0) · Docker.
 В рантайме три зависимости: `express`, `axios`, `swagger-ui-express` — это проверяет CI.
 
@@ -219,4 +236,4 @@ npm run check
 | [docs/project/architecture.md](docs/project/architecture.md) | Обзор архитектуры и карта ADR |
 | [docs/study/](docs/study/) | Разборы тем: как это сделано и почему |
 | [ROADMAP.md](ROADMAP.md), [docs/dailies.md](docs/dailies.md) | План, прогресс, дейлики |
-| [apps/web/](apps/web/README.md) | Веб-клиент (дополнение, в сдаваемую версию не входит): вход, сессии, каркас дашборда. Версия для проверки зафиксирована тегом `v1.0-submission` |
+| [apps/web/](apps/web/README.md) | Веб-клиент — сверх ТЗ, в сдаваемую версию не входит |
