@@ -49,7 +49,7 @@
 
 Данные: в [State of JS 2024 — Monorepo tools](https://2024.stateofjs.com/en-US/libraries/monorepo_tools) pnpm — явный лидер. Сами монорепо при этом, по выводу опроса, ещё не мейнстрим. Corepack: [OpenReplay](https://blog.openreplay.com/manage-package-managers-node-corepack/), [commit в nodejs/node](https://github.com/nodejs/node/commit/fa834896c8).
 
-Главный аргумент за pnpm — защита от phantom deps. У нас она уже есть: `check-deps` из ADR 0004 проверяет каждый импорт в `apps/api/src` по allowlist. Причём это **точнее**, чем pnpm: pnpm не запретит импорт пакета, явно добавленного в `dependencies`, а наш скрипт запретит всё, чего нет в ТЗ.
+Главный аргумент за pnpm — защита от phantom deps. В проекте она уже есть: `check-deps` из ADR 0004 проверяет каждый импорт в `apps/api/src` по allowlist. Причём это **точнее**, чем pnpm: pnpm не запретит импорт пакета, явно добавленного в `dependencies`, а скрипт запретит всё, чего нет в ТЗ.
 
 ## Решение (рекомендация)
 
