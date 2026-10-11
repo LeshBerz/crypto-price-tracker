@@ -18,7 +18,7 @@
     "test:scripts": "node --test \"scripts/**/*.test.ts\"",
     "check-deps": "node scripts/check-deps.ts",
     "codegen:check": "npm run codegen:check --workspaces --if-present",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm run check-deps && npm run codegen:check && npm test",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run check-deps && npm run codegen:check && npm run test:scripts && npm run test:cov -w @cpt/api && npm run test:matrix -w @cpt/api",
     "prepare": "husky"
   },
   "lint-staged": {

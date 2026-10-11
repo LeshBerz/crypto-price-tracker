@@ -19,7 +19,8 @@
     "keys:revoke": "node --env-file-if-exists=.env src/cli/keys.ts revoke",
     "smoke": "node --env-file-if-exists=.env scripts/smoke.ts",
     "test": "jest",
-    "test:cov": "jest --coverage",
+    "test:cov": "jest --coverage --json --outputFile=coverage/jest-report.json",
+    "test:matrix": "node scripts/check-endpoint-coverage.ts",
     "openapi:lint": "redocly lint openapi/openapi.yaml",
     "codegen": "redocly bundle openapi/openapi.yaml --ext json -o openapi/.bundle/openapi.json && node scripts/codegen-spec.ts && openapi-typescript openapi/openapi.yaml -o src/generated/api-types.ts",
     "codegen:check": "npm run openapi:lint && npm run codegen && node scripts/assert-clean.ts src/generated"
