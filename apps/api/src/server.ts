@@ -1,6 +1,6 @@
 // Composition root ТЗ-редакции (ADR 0005, 0015 §5): конфиг → логгер → БД и миграции → приложение → listen.
 // Здесь живут настоящие адаптеры; всё остальное получает их аргументами.
-// Graceful shutdown по SIGTERM/SIGINT (B14) добавится сюда же.
+// Остановка по SIGTERM/SIGINT — ShutdownCoordinator (shutdown.ts).
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { createApp } from './app.ts';
@@ -16,6 +16,7 @@ import { InProcessEventBus } from './events/event-bus.ts';
 import { SseHub } from './events/sse-hub.ts';
 import { CmcMarketDataProvider } from './market-data/cmc-provider.ts';
 import { SyncScheduler } from './sync/scheduler.ts';
+import { ShutdownCoordinator } from './shutdown.ts';
 import { SyncService } from './sync/sync-service.ts';
 
 async function main(): Promise<void> {
@@ -52,6 +53,8 @@ async function main(): Promise<void> {
   const sse = new SseHub({ events, clock, logger });
   const scheduler = new SyncScheduler({ sync, uow, clock, logger, intervalMs: config.syncIntervalMs });
 
+  // Координатору нужен http-сервер, а приложению — флаг остановки: связываем через позднюю ссылку
+  let shutdown: ShutdownCoordinator | null = null;
   const app = createApp({
     db,
     schemaVersion: current,
@@ -64,7 +67,7 @@ async function main(): Promise<void> {
     sync,
     sse,
     syncIntervalMs: config.syncIntervalMs,
-    lifecycle: { isShuttingDown: () => false, schedulerState: () => scheduler.state },
+    lifecycle: { isShuttingDown: () => shutdown?.isShuttingDown() ?? false, schedulerState: () => scheduler.state },
   });
   const server = app.listen(config.port, () => {
     logger.info('http server listening', { port: config.port, docs: `http://localhost:${config.port}/docs` });
@@ -74,6 +77,17 @@ async function main(): Promise<void> {
       process.exit(1);
     });
   });
+  shutdown = new ShutdownCoordinator({
+    server,
+    scheduler,
+    sync,
+    sse,
+    db,
+    clock,
+    logger,
+    exit: (code) => process.exit(code),
+  });
+  shutdown.listen(process);
   server.on('error', (error) => {
     logger.error('http server failed', { error });
     process.exit(1);
