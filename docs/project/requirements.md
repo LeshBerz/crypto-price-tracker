@@ -4,40 +4,45 @@
 
 ## Функциональные
 
-| ID | Требование | Этап | Статус |
-|---|---|---|---|
-| F1 | Аутентификация запросов к своему API через `Bearer token (API Key)` | 3 | ✅ ключи `cpt_…` в `api_keys` (SHA-256, `timingSafeEqual`, `revoked_at`), scopes ролей viewer/operator, bootstrap из env, CLI `keys:create`/`keys:revoke`; матрица 401/403 по всем 14 защищённым операциям (`tests/http/auth-matrix.test.ts`) |
-| F2 | CRUD списка отслеживаемых криптовалют | 4 | ✅ 5 операций `/api/v1/cryptocurrencies`: проверка символа в CMC (лучший `cmc_rank`), 409/422/503, лимит 100, `watchlist.changed` после COMMIT (`tests/watchlist/`) |
-| F3 | Актуальные цены отслеживаемых криптовалют из CoinMarketCap | 5 | ✅ `GET /prices`: цены из БД после фоновой синхронизации, `isStale`, `change24hPercent`, `lastSync`; спарклайны одним запросом |
-| F4 | Сохранение истории цен в БД | 5 | ✅ `SyncService` пишет `price_history` и часовую свёртку одной транзакцией; повтор той же котировки не плодит дубли |
-| F5 | Получение истории цен по выбранной криптовалюте | 5 | ✅ сырые точки с keyset-курсором и периодом `[from, to)`; агрегаты `1h`/`4h`/`1d`/`1w` (OHLC, avg, % изменения) |
-| F6 | Автоматическое обновление цен в фоне | 6 | ✅ планировщик на цепочке ожиданий (без наложения), запуск при старте по возрасту цен, ручной `POST /sync-runs` (202), журнал запусков. Остановка по сигналу — B14 |
-| F7 | Обработка ошибок и недоступности внешнего API | 5 | ✅ классификация ошибок CMC (6 кодов), ретраи с backoff и jitter, 503 + `Retry-After` при добавлении монеты; синхронизация: `failed` + `error_code`, `partial`, старые цены продолжают отдаваться с `isStale`, состояние CMC и квота — `GET /system/cmc` |
-| F8 | Документация API в формате OpenAPI | 4 | ✅ контракт `openapi.yaml`, Swagger UI `/docs`, `/openapi.json`; роутер и валидатор работают от той же спеки, ответы сверяются `toMatchContract` |
+Самопроверка 11.10 (E1.2): каждое требование → где код и чем доказано. Пути — от `apps/api/`.
+
+| ID | Требование | Статус | Код | Тесты |
+|---|---|---|---|---|
+| F1 | Аутентификация запросов к своему API через `Bearer token (API Key)` | ✅ ключи `cpt_…`, в БД только SHA-256, сравнение `timingSafeEqual`, отзыв, роли viewer/operator, выпуск из env и CLI | [`src/auth/`](../../apps/api/src/auth/), [`src/http/auth.ts`](../../apps/api/src/http/auth.ts), [`src/cli/keys-command.ts`](../../apps/api/src/cli/keys-command.ts) | [`tests/http/auth-matrix.test.ts`](../../apps/api/tests/http/auth-matrix.test.ts) (401/403 на всех 14 защищённых операциях), [`tests/auth/`](../../apps/api/tests/auth/) |
+| F2 | CRUD списка отслеживаемых криптовалют | ✅ 5 операций; символ проверяется в CMC, 409 на дубль, 422 на неизвестный символ, 503 при недоступном CMC, лимит 100 | [`src/watchlist/`](../../apps/api/src/watchlist/) | [`tests/watchlist/watchlist.test.ts`](../../apps/api/tests/watchlist/watchlist.test.ts) |
+| F3 | Актуальные цены отслеживаемых криптовалют из CoinMarketCap | ✅ `GET /prices` из БД после фоновой синхронизации: `isStale`, `change24hPercent`, `lastSync`; спарклайны одним запросом | [`src/prices/`](../../apps/api/src/prices/), [`src/sync/sync-service.ts`](../../apps/api/src/sync/sync-service.ts) | [`tests/prices/prices.test.ts`](../../apps/api/tests/prices/prices.test.ts), [`tests/sync/sync.test.ts`](../../apps/api/tests/sync/sync.test.ts) |
+| F4 | Сохранение истории цен в БД | ✅ `price_history` + часовая свёртка одной транзакцией; повтор той же котировки не даёт дублей; свёртка пересобирается из истории | [`src/db/repositories/prices.ts`](../../apps/api/src/db/repositories/prices.ts), [`migrations/0001_core.sql`](../../apps/api/migrations/0001_core.sql) | [`tests/sync/sync.test.ts`](../../apps/api/tests/sync/sync.test.ts), [`tests/prices/rollups-rebuild.test.ts`](../../apps/api/tests/prices/rollups-rebuild.test.ts) |
+| F5 | Получение истории цен по выбранной криптовалюте | ✅ сырые точки с keyset-курсором и периодом `[from, to)`; агрегаты `1h`/`4h`/`1d`/`1w` (OHLC, avg, % изменения) | [`src/prices/price-query-service.ts`](../../apps/api/src/prices/price-query-service.ts) | [`tests/prices/prices.test.ts`](../../apps/api/tests/prices/prices.test.ts) |
+| F6 | Автоматическое обновление цен в фоне | ✅ планировщик без наложения запусков, первый запуск по возрасту цен, ручной `POST /sync-runs` (202), журнал запусков, остановка по сигналу | [`src/sync/scheduler.ts`](../../apps/api/src/sync/scheduler.ts), [`src/sync/sync-service.ts`](../../apps/api/src/sync/sync-service.ts) | [`tests/sync/scheduler.test.ts`](../../apps/api/tests/sync/scheduler.test.ts), [`tests/sync/sync.test.ts`](../../apps/api/tests/sync/sync.test.ts) |
+| F7 | Обработка ошибок и недоступности внешнего API | ✅ 6 кодов ошибок CMC, ретраи с backoff и jitter, 503 + `Retry-After`; синхронизация `failed`/`partial`, старые цены отдаются с `isStale`; `GET /system/cmc` | [`src/market-data/`](../../apps/api/src/market-data/), [`src/sync/sync-service.ts`](../../apps/api/src/sync/sync-service.ts) | [`tests/market-data/`](../../apps/api/tests/market-data/), [`tests/sync/sync.test.ts`](../../apps/api/tests/sync/sync.test.ts) |
+| F8 | Документация API в формате OpenAPI | ✅ `openapi.yaml`, Swagger UI `/docs`, `/openapi.json`; маршруты и валидация строятся из той же спеки | [`openapi/openapi.yaml`](../../apps/api/openapi/openapi.yaml), [`src/http/router.ts`](../../apps/api/src/http/router.ts) | [`tests/contract/spec.test.ts`](../../apps/api/tests/contract/spec.test.ts), матчер `toMatchContract` в каждом HTTP-тесте |
 
 ## Данные
 
-| ID | Требование | Статус |
-|---|---|---|
-| D-1 | Криптовалюта: уникальный id, символ (BTC), название, дата/время последнего обновления | ✅ таблица `cryptocurrencies`, отдаётся в `Cryptocurrency` (`lastUpdatedAt`); заполнение `last_updated_at` синхронизацией — B12 |
-| D-2 | История: криптовалюта, цена, дата/время получения | ✅ `price_history`: монета, точная цена (TEXT), `fetched_at` + время котировки у источника; отдаётся в `PricePoint` |
-| D-3 | Единая валюта цены на всё приложение (USD) | ✅ точный `Decimal`; валюта зафиксирована в контракте (`Currency: enum [USD]`), все ответы с ценами несут `currency: USD` |
-| D-4 | API key CoinMarketCap — только через переменные окружения | ✅ `CMC_API_KEY` обязателен в `src/config.ts`; адаптер передаёт его только заголовком `X-CMC_PRO_API_KEY` |
+| ID | Требование | Статус | Код | Тесты |
+|---|---|---|---|---|
+| D-1 | Криптовалюта: уникальный id, символ (BTC), название, дата/время последнего обновления | ✅ таблица `cryptocurrencies`; `last_updated_at` двигает синхронизация, в API — `lastUpdatedAt` | [`migrations/0001_core.sql`](../../apps/api/migrations/0001_core.sql) | [`tests/db/schema.test.ts`](../../apps/api/tests/db/schema.test.ts), [`tests/sync/sync.test.ts`](../../apps/api/tests/sync/sync.test.ts) |
+| D-2 | История: криптовалюта, цена, дата/время получения | ✅ `price_history`: монета, точная цена (TEXT), `fetched_at` + время котировки у источника | [`migrations/0001_core.sql`](../../apps/api/migrations/0001_core.sql) | [`tests/prices/prices.test.ts`](../../apps/api/tests/prices/prices.test.ts) |
+| D-3 | Единая валюта цены на всё приложение (USD) | ✅ `Currency: enum [USD]` в контракте, все ответы с ценами несут `currency: USD` | [`openapi/openapi.yaml`](../../apps/api/openapi/openapi.yaml), [`src/common/decimal.ts`](../../apps/api/src/common/decimal.ts) | [`tests/common/decimal.test.ts`](../../apps/api/tests/common/decimal.test.ts) |
+| D-4 | API key CoinMarketCap — только через переменные окружения | ✅ `CMC_API_KEY` обязателен, уходит только заголовком `X-CMC_PRO_API_KEY` | [`src/config.ts`](../../apps/api/src/config.ts), [`src/market-data/cmc-provider.ts`](../../apps/api/src/market-data/cmc-provider.ts) | [`tests/config.test.ts`](../../apps/api/tests/config.test.ts), [`tests/market-data/cmc-provider.test.ts`](../../apps/api/tests/market-data/cmc-provider.test.ts) |
 
 ## Ограничения
 
-| ID | Ограничение | Статус |
-|---|---|---|
-| C1 | Без ORM — только raw SQL | 🔄 raw SQL в `src/db/`, миграции — SQL-файлы |
-| C2 | Данные не в памяти — только в БД | 🔄 ключи API и watchlist — в SQLite; история цен — B12 |
-| C3 | Файл БД не в репозитории | ✅ `.gitignore` |
-| C4 | API key CMC не в коде и не уходит клиенту | ✅ значения env не попадают в ошибки конфига, логгер маскирует секреты по имени и значению, ключ CMC — только в заголовке, ошибка ключа CMC → 500 без деталей, детали — в лог (тесты в `tests/market-data/`, `tests/watchlist/`) |
-| C5 | Внешние запросы: таймауты + обработка ошибок | ✅ единственный внешний клиент — `CmcMarketDataProvider`: таймаут из `CMC_TIMEOUT_MS`, классификация ошибок, проверено против стаба на настоящем сокете |
-| C6 | Фоновые задачи корректно останавливаются по SIGINT/SIGTERM | ⬜ |
-| C7 | Только указанные библиотеки + стандартные возможности Node.js | 🔄 `scripts/check-deps.ts` в CI и pre-commit |
-| C8 | Каждый эндпоинт: ≥1 позитивный и ≥1 негативный тест | 🔄 15/16: health, watchlist (5), цены (4), синхронизация и CMC (4); остался `streamEvents` (B13); у всех 14 защищённых операций — 401/403 из матрицы прав |
-| C9 | Тесты на фоновые задачи и ошибки внешнего API | ✅ ошибки CMC: 200, 429, 5xx, 401/402/403, обрыв, таймаут, битый JSON, неизвестный символ; ретраи на `FakeClock`. Фоновые задачи: запуск целиком против стаба, наложение (флаг и индекс), `partial`, `failed`, прерывание, планировщик на `FakeClock` |
-| C10 | Обязательная валидация всех входных данных | 🔄 валидатор и роутер из спеки: path, query, body всех 16 операций, неизвестный query → 400, 413/415; закрывается вместе с операциями B8–B13 |
+| ID | Требование | Статус | Код | Тесты / проверка |
+|---|---|---|---|---|
+| C1 | Без ORM — только raw SQL | ✅ SQL-запросы в репозиториях, миграции — SQL-файлы | [`src/db/repositories/`](../../apps/api/src/db/repositories/), [`migrations/`](../../apps/api/migrations/) | [`tests/db/`](../../apps/api/tests/db/); `npm run check-deps` не пропустит ORM |
+| C2 | Данные не в памяти — только в БД | ✅ watchlist, история, свёртки, запуски, ключи — в SQLite. В памяти только SSE-соединения и кэш квоты CMC (перечитывается после запуска) | [`src/db/`](../../apps/api/src/db/) | [`tests/db/`](../../apps/api/tests/db/), [`tests/sync/scheduler.test.ts`](../../apps/api/tests/sync/scheduler.test.ts) (после рестарта состояние берётся из БД) |
+| C3 | Файл БД не в репозитории | ✅ `data/`, `*.db` в `.gitignore`; в Docker — volume `api-data` | [`.gitignore`](../../.gitignore), [`docker-compose.yml`](../../docker-compose.yml) | job `docker` в CI |
+| C4 | API key CMC не в коде и не уходит клиенту | ✅ только env → заголовок; логгер маскирует секреты; ошибка ключа CMC → 500 без деталей | [`src/common/logger.ts`](../../apps/api/src/common/logger.ts), [`src/market-data/cmc-provider.ts`](../../apps/api/src/market-data/cmc-provider.ts) | [`tests/common/logger.test.ts`](../../apps/api/tests/common/logger.test.ts), [`tests/market-data/cmc-provider.test.ts`](../../apps/api/tests/market-data/cmc-provider.test.ts) |
+| C5 | Внешние запросы: таймауты + обработка ошибок | ✅ единственный внешний клиент с таймаутом и классификацией ошибок | [`src/market-data/cmc-provider.ts`](../../apps/api/src/market-data/cmc-provider.ts), [`src/market-data/retry.ts`](../../apps/api/src/market-data/retry.ts) | [`tests/market-data/`](../../apps/api/tests/market-data/) (таймаут, обрыв, 429, 5xx, битый JSON на настоящем сокете) |
+| C6 | Фоновые задачи корректно останавливаются по SIGINT/SIGTERM | ✅ координатор из 8 шагов: readiness 503 → планировщик → соединения → SSE → синхронизация → БД; сторожевой таймер | [`src/shutdown.ts`](../../apps/api/src/shutdown.ts), [`src/events/sse-hub.ts`](../../apps/api/src/events/sse-hub.ts) | [`tests/shutdown.test.ts`](../../apps/api/tests/shutdown.test.ts), [`tests/e2e/sigterm.test.ts`](../../apps/api/tests/e2e/sigterm.test.ts) (настоящий `SIGTERM`, Linux), job `docker`: `docker compose stop` → код 0 |
+| C7 | Только указанные библиотеки + стандартные возможности Node.js | ✅ runtime: `express`, `axios`, `swagger-ui-express`; остальное — `node:*` ([ADR 0004](../adr/0004-c7-interpretation-and-dev-tooling.md)) | [`scripts/check-deps.ts`](../../scripts/check-deps.ts) | CI и pre-commit: импорт вне списка — ошибка; `npm ls --omit=dev` |
+| C8 | Каждый эндпоинт: ≥1 позитивный и ≥1 негативный тест | ✅ 16/16 операций, 127 тестов (✅ 33, ❌ 94) | [`scripts/check-endpoint-coverage.ts`](../../apps/api/scripts/check-endpoint-coverage.ts) | [матрица тестов](test-matrix.md), проверка в `npm run check` и CI |
+| C9 | Тесты на фоновые задачи и ошибки внешнего API | ✅ синхронизация целиком против стаба, наложение, `partial`, `failed`, прерывание, планировщик на `FakeClock`; все виды ошибок CMC | — | [`tests/sync/`](../../apps/api/tests/sync/), [`tests/market-data/`](../../apps/api/tests/market-data/), [`tests/shutdown.test.ts`](../../apps/api/tests/shutdown.test.ts), [`tests/events/stream.test.ts`](../../apps/api/tests/events/stream.test.ts) |
+| C10 | Обязательная валидация всех входных данных | ✅ path, query, body всех 16 операций из спеки; неизвестный параметр или поле → 400; 413/415; конфиг из env тоже валидируется | [`src/openapi/`](../../apps/api/src/openapi/), [`src/config.ts`](../../apps/api/src/config.ts) | [`tests/openapi/`](../../apps/api/tests/openapi/), [`tests/http/router.test.ts`](../../apps/api/tests/http/router.test.ts), [`tests/config.test.ts`](../../apps/api/tests/config.test.ts) |
+
+**Не сделано / не проверено:**
+- `npm run smoke:cmc` (формат живого ответа CMC) написан, но **не запускался**: на машине разработки нет ключа CMC. Все тесты идут против стаба, который повторяет формат CMC по документации (риск из [ADR 0006](../adr/0006-price-precision.md)). Закрывается одним запуском с настоящим ключом.
 
 **Стек:** Node.js 18+, Express, TypeScript, SQLite, Jest + Supertest, Swagger (OpenAPI 3.0), axios, Git; Docker — приветствуется.
 
