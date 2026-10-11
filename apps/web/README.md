@@ -2,7 +2,7 @@
 
 Веб-клиент к [`apps/api`](../api): Next.js 16 (App Router) как BFF и UI. Это дополнение к сдаваемой версии: ограничения ТЗ на него не действуют, а `apps/api` от него не зависит — образ api собирается и запускается без этого каталога.
 
-**Состояние:** каркас, вход, выход и серверные сессии (задача C1). Цены, графики и панель оператора — следующие задачи фазы C в [ROADMAP](../../ROADMAP.md).
+**Состояние:** каркас, вход, выход и серверные сессии (C1); BFF к api, поток событий и Docker-образ (C2). Экраны с ценами, графиками и панелью оператора — следующие задачи фазы C в [ROADMAP](../../ROADMAP.md).
 
 **Стек:** Next.js 16.4 · React 19 · TypeScript · Tailwind CSS 4 · shadcn/ui на Base UI · `node:sqlite` (raw SQL) · Jest.
 
@@ -20,7 +20,17 @@ npm ci
 npm run hash-password -w @cpt/web
 ```
 
-Скопировать `apps/web/.env.example` в `apps/web/.env.local`, вписать логин и хэш. **В файле `.env.local` каждый знак `$` в хэше экранируется:** `scrypt\$17\$8\$1\$…`. Иначе загрузчик окружения Next примет `$17` за подстановку переменной, и сервер остановится на старте с ошибкой конфига.
+Выпустить два ключа api — по одному на роль (ключ печатается один раз):
+
+```bash
+npm run keys:create -w @cpt/api -- --name web-viewer --role viewer
+```
+
+```bash
+npm run keys:create -w @cpt/api -- --name web-operator --role operator
+```
+
+Скопировать `apps/web/.env.example` в `apps/web/.env.local`, вписать ключи, логин и хэш. Без ключей web не стартует. **В файле `.env.local` каждый знак `$` в хэше экранируется:** `scrypt\$17\$8\$1\$…`. Иначе загрузчик окружения Next примет `$17` за подстановку переменной, и сервер остановится на старте с ошибкой конфига.
 
 ```bash
 npm run dev -w @cpt/web
@@ -34,10 +44,52 @@ npm run dev -w @cpt/web
 
 | Переменная | По умолчанию | Назначение |
 |---|---|---|
+| `API_BASE_URL` | `http://localhost:3000` | Адрес api: только origin, без пути |
+| `API_VIEWER_KEY` | — (обязательна) | Ключ api роли viewer: им BFF ходит за ценами и в поток событий |
+| `API_OPERATOR_KEY` | — (обязательна) | Ключ api роли operator. Должен отличаться от ключа viewer |
+| `API_TIMEOUT_MS` | `10000` | Сколько ждать ответа api; дольше — 504 |
 | `WEB_DATABASE_PATH` | `./data/web.db` | SQLite с пользователями и сессиями. Отдельный файл, не БД api |
 | `WEB_BOOTSTRAP_LOGIN` | — | Логин первого оператора. Создаётся при старте, если такого логина ещё нет |
 | `WEB_BOOTSTRAP_PASSWORD_HASH` | — | Хэш его пароля (не сам пароль). Задаётся только вместе с логином |
 | `WEB_TRUST_PROXY` | `false` | `true`, если перед web стоит обратный прокси: тогда учитываются `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host` |
+
+### Docker
+
+Web включается в общий compose профилем. Обычный `docker compose up` его не собирает и не запускает — сдаваемая версия поднимается как раньше.
+
+В файле `.env` рядом с `docker-compose.yml` задать ключи api (их же api примет при старте), логин и хэш пароля. Хэш — в одинарных кавычках, чтобы compose не принял `$17` за переменную:
+
+```
+BOOTSTRAP_VIEWER_KEY=cpt_…
+BOOTSTRAP_OPERATOR_KEY=cpt_…
+WEB_BOOTSTRAP_LOGIN=admin
+WEB_BOOTSTRAP_PASSWORD_HASH='scrypt$17$8$1$…'
+```
+
+```bash
+docker compose --profile web up --build
+```
+
+Приложение — на http://localhost:3001 (порт меняется переменной `WEB_PORT`). Без ключей контейнер web останавливается на старте с сообщением, какой переменной не хватает. Образ: `node:24-alpine`, пользователь `node`, сервер из `.next/standalone`, БД сессий — в volume `web-data`.
+
+## Как web ходит в api
+
+Решения — [ADR 0016](../../docs/adr/0016-web-auth-and-bff-routes.md), разбор — [docs/study/15](../../docs/study/15-bff-и-sse-прокси.md).
+
+Браузер не знает ни адреса api, ни его ключей. Он обращается к web, а web — к api:
+
+| Маршрут web | Что делает |
+|---|---|
+| `/api/bff/<путь api>` | Прокси по таблице разрешённых операций. Пример: `GET /api/bff/api/v1/prices` |
+| `GET /api/stream` | Поток событий api (SSE). Сессия перепроверяется каждые 25 секунд |
+| `GET /api/health` | Готовность самого web (для healthcheck контейнера) |
+
+- **Таблица** [`src/server/bff/allowlist.ts`](src/server/bff/allowlist.ts): 15 строк «метод + путь → минимальная роль». Запроса нет в таблице — 404, в api он не уходит. Тест сверяет таблицу с `openapi.yaml`: новая операция без строки в таблице — красный CI.
+- **Ключ по роли:** сессия viewer → ключ viewer, сессия operator → ключ operator. Если BFF ошибётся, api сам ответит 403 по правам ключа.
+- **Ответы api** проходят как есть: статус, тело, ошибки RFC 9457, `Location`, `Retry-After`, `X-Request-Id`. Один `X-Request-Id` — в логах web и api.
+- **api недоступен:** 502, не ответил за `API_TIMEOUT_MS` — 504; оба в формате RFC 9457 с типом `urn:cpt:web:problem:*`.
+- **Поток** закрывается сам после выхода, отзыва сессии или отключения пользователя — на ближайшем heartbeat, с событием `session.expired`. Открытый поток не продлевает срок бездействия сессии.
+- **Типы** ответов api — [`src/generated/api-types.ts`](src/generated/api-types.ts), генерируются из `openapi.yaml`.
 
 ## Как устроен вход
 
@@ -63,6 +115,8 @@ npm run dev -w @cpt/web
 | `npm run build -w @cpt/web` | Продакшен-сборка (`output: standalone`) |
 | `npm test -w @cpt/web` | Тесты серверной части на настоящей SQLite в памяти |
 | `npm run typecheck -w @cpt/web` | Типы маршрутов Next и `tsc --noEmit` |
+| `npm run codegen -w @cpt/web` | Типы api из `apps/api/openapi/openapi.yaml` в `src/generated/` |
+| `npm run codegen:check -w @cpt/web` | Проверка, что сгенерированные типы актуальны (идёт в CI) |
 | `npm run hash-password -w @cpt/web` | Хэш пароля для `WEB_BOOTSTRAP_PASSWORD_HASH` |
 
 ## Структура
@@ -70,6 +124,8 @@ npm run dev -w @cpt/web
 | Каталог | Что внутри |
 |---|---|
 | [`src/server/`](src/server) | Серверная логика без зависимости от Next: пароли, сессии, задержка входа, БД и миграции, обработчики `/api/session` |
+| [`src/server/bff/`](src/server/bff) | Таблица разрешённых операций, запрос в api с ключом по роли, обработчики `/api/bff` и `/api/stream` |
+| [`src/generated/`](src/generated) | Типы контракта api (не редактируются руками) |
 | [`src/app/`](src/app) | Маршруты: `/login`, группа `(app)` за входом, Route Handlers в `api/` |
 | [`src/components/`](src/components) | Шапка, навигация, меню пользователя, переключатель темы; `ui/` — компоненты shadcn/ui |
 | [`src/proxy.ts`](src/proxy.ts) | Быстрый редирект на `/login` без cookie. Настоящая проверка сессии — в layout и Route Handlers |
