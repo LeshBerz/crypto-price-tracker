@@ -72,8 +72,12 @@ export class SessionService {
     return { token, expiresAt: absolute };
   }
 
-  /** Одна выборка по первичному ключу: сессия не отозвана, не истекла, пользователь активен */
-  validate(token: string | undefined): Session | null {
+  /**
+   * Одна выборка по первичному ключу: сессия не отозвана, не истекла, пользователь активен.
+   * touch: false — проверка без продления срока бездействия: для фоновых запросов, за которыми нет действия
+   * пользователя (перепроверка открытого SSE-потока).
+   */
+  validate(token: string | undefined, { touch = true }: { touch?: boolean } = {}): Session | null {
     if (!token || !TOKEN_FORMAT.test(token)) return null;
     const now = this.now();
     const row = this.db
@@ -88,7 +92,7 @@ export class SessionService {
 
     let idleExpiresAt = Number(row.idle_expires_at);
     const absoluteExpiresAt = Number(row.absolute_expires_at);
-    if (now - Number(row.last_seen_at) >= TOUCH_INTERVAL_MS) {
+    if (touch && now - Number(row.last_seen_at) >= TOUCH_INTERVAL_MS) {
       idleExpiresAt = Math.min(now + IDLE_TIMEOUT_MS, absoluteExpiresAt);
       this.db
         .prepare('UPDATE sessions SET last_seen_at = ?, idle_expires_at = ? WHERE token_hash = ?')
