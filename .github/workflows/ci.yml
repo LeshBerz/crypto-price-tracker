@@ -1,4 +1,4 @@
-# CI (бриф §4, ADR 0009). Job api — сдаваемая версия; jobs web, platform, e2e добавятся в фазе E2.
+# CI (бриф §4, ADR 0009). Job api — сдаваемая версия, job docker — образ и compose; web, platform, e2e добавятся в фазе E2.
 name: CI
 
 on:
@@ -42,3 +42,30 @@ jobs:
         run: npm run test:cov -w @cpt/api
       - name: Прод-зависимости api — только из ТЗ
         run: npm ls --omit=dev -w @cpt/api --depth=0
+
+  docker:
+    name: docker — образ, compose, smoke, остановка по SIGTERM
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Одноразовые API-ключи для прогона
+        run: |
+          key() { echo "cpt_$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=')"; }
+          echo "BOOTSTRAP_VIEWER_KEY=$(key)" >> "$GITHUB_ENV"
+          echo "BOOTSTRAP_OPERATOR_KEY=$(key)" >> "$GITHUB_ENV"
+      - name: C3 — сборка и запуск (api + cmc-stub)
+        run: docker compose up -d --build --wait
+      - name: Smoke — монета, ручная синхронизация, цены, SSE
+        run: node apps/api/scripts/smoke.ts http://localhost:3000
+      - name: C6 — docker stop завершает процесс с кодом 0
+        run: |
+          docker compose stop api
+          test "$(docker inspect -f '{{.State.ExitCode}}' "$(docker compose ps -aq api)")" = "0"
+          docker compose logs api | grep -q '"msg":"shutdown complete"'
+      - name: Логи при сбое
+        if: failure()
+        run: docker compose logs

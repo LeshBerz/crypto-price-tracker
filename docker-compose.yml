@@ -1,0 +1,41 @@
+# Запуск сдаваемой версии (C3): docker compose up --build → http://localhost:3000/docs
+# По умолчанию api ходит в стаб CoinMarketCap — сервис работает без ключа CMC и без интернета.
+# Настоящий CMC: задать в .env рядом с этим файлом CMC_API_KEY и CMC_BASE_URL=https://pro-api.coinmarketcap.com
+# Секретов в файле нет: ключи API берутся из окружения или выпускаются командой
+#   docker compose run --rm api node dist/cli/keys.js create --name reviewer --role operator
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    # tini как PID 1: передаёт SIGTERM в node и убирает зомби-процессы (ADR 0009)
+    init: true
+    ports:
+      - '${PORT:-3000}:3000'
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      CMC_API_KEY: ${CMC_API_KEY:-stub-cmc-key}
+      CMC_BASE_URL: ${CMC_BASE_URL:-http://cmc-stub:4010}
+      SYNC_INTERVAL_MS: ${SYNC_INTERVAL_MS:-300000}
+      BOOTSTRAP_VIEWER_KEY: ${BOOTSTRAP_VIEWER_KEY:-}
+      BOOTSTRAP_OPERATOR_KEY: ${BOOTSTRAP_OPERATOR_KEY:-}
+    volumes:
+      - api-data:/data
+    depends_on:
+      cmc-stub:
+        condition: service_healthy
+    # Больше сторожевого таймера остановки (15 с): Docker не пришлёт SIGKILL раньше, чем процесс выйдет сам
+    stop_grace_period: 20s
+    restart: unless-stopped
+
+  cmc-stub:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: cmc-stub
+    init: true
+    environment:
+      CMC_API_KEY: ${CMC_API_KEY:-stub-cmc-key}
+
+volumes:
+  api-data:

@@ -17,6 +17,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "keys:create": "node --env-file-if-exists=.env src/cli/keys.ts create",
     "keys:revoke": "node --env-file-if-exists=.env src/cli/keys.ts revoke",
+    "smoke": "node --env-file-if-exists=.env scripts/smoke.ts",
     "test": "jest",
     "test:cov": "jest --coverage",
     "openapi:lint": "redocly lint openapi/openapi.yaml",
