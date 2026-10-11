@@ -51,6 +51,11 @@ export interface PriceRepository {
   insertMany(points: readonly NewPricePoint[]): Promise<NewPricePoint[]>;
   /** Пересчитывает часовую свёртку монеты из сырых точек часа, начинающегося в hourStart (ADR 0007) */
   recomputeRollup(cryptocurrencyId: number, hourStart: number): Promise<void>;
+  /**
+   * Удаляет все свёртки и строит их заново из сырых точек тем же запросом, что и синхронизация.
+   * Возвращает число построенных свёрток. Сырые данные — источник истины, свёртка — производный кэш (ADR 0007)
+   */
+  rebuildRollups(): Promise<number>;
   /** Последняя цена каждой монеты из ids одним запросом (без N+1). Монеты без цен в ответ не попадают */
   latestFor(ids: readonly number[], dayAgo: number): Promise<LatestPriceRow[]>;
   /** Сырые точки от новых к старым */

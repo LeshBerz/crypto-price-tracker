@@ -8,8 +8,14 @@ export default {
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.jest.json' }],
   },
-  // Точки входа (server.ts, cli/keys.ts) только собирают зависимости; их логика покрыта через тестируемые модули
-  collectCoverageFrom: ['src/**/*.ts', '!src/generated/**', '!src/server.ts', '!src/cli/keys.ts'],
+  // Точки входа (server.ts, cli/keys.ts, cli/rollups.ts) только собирают зависимости; их логика покрыта через тестируемые модули
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/generated/**',
+    '!src/server.ts',
+    '!src/cli/keys.ts',
+    '!src/cli/rollups.ts',
+  ],
   coverageThreshold: {
     global: { lines: 90, branches: 85 },
     // Критичный код — 100 % (ADR 0009)
