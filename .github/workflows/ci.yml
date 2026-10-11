@@ -47,7 +47,7 @@ jobs:
         run: npm ls --omit=dev -w @cpt/api --depth=0
 
   web:
-    name: web — typecheck, тесты, сборка
+    name: web — typecheck, тесты, сборка, образ
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -61,10 +61,14 @@ jobs:
       - run: npm ci
       - name: Typecheck
         run: npm run typecheck -w @cpt/web
-      - name: Тесты — пароли, сессии, задержка входа, /api/session
+      - name: Типы api для web актуальны
+        run: npm run codegen:check -w @cpt/web
+      - name: Тесты — пароли, сессии, /api/session, BFF (allowlist ↔ openapi.yaml), SSE-прокси
         run: npm test -w @cpt/web
       - name: Сборка Next.js
         run: npm run build -w @cpt/web
+      - name: Образ web собирается
+        run: docker build -f apps/web/Dockerfile -t cpt-web .
 
   docker:
     name: docker — образ, compose, smoke, остановка по SIGTERM
