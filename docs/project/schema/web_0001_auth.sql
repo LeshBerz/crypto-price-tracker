@@ -9,7 +9,9 @@ CREATE TABLE users (
   created_at          INTEGER NOT NULL CHECK (created_at > 0),
   updated_at          INTEGER NOT NULL CHECK (updated_at >= created_at),
   password_changed_at INTEGER NOT NULL CHECK (password_changed_at > 0),
-  last_login_at       INTEGER
+  last_login_at       INTEGER,
+  -- гид по интерфейсу пройден: отметка на пользователя, а не на браузер (ADR 0018)
+  onboarding_completed_at INTEGER CHECK (onboarding_completed_at > 0)
 ) STRICT;
 
 CREATE TABLE sessions (
