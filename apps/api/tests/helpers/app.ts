@@ -5,6 +5,7 @@ import { ApiKeyAuthenticator } from '../../src/auth/api-key-authenticator.ts';
 import { loadMigrations } from '../../src/db/migrations.ts';
 import { SqliteUnitOfWork } from '../../src/db/unit-of-work.ts';
 import { InProcessEventBus, type AppEvent } from '../../src/events/event-bus.ts';
+import { SseHub } from '../../src/events/sse-hub.ts';
 import type { MarketDataProvider } from '../../src/market-data/provider.ts';
 import { SyncService } from '../../src/sync/sync-service.ts';
 import { seedTestKeys } from './auth.ts';
@@ -35,6 +36,7 @@ export async function createTestApp(overrides: Partial<AppDeps> = {}) {
   }
   const marketData = overrides.marketData ?? unconfiguredMarketData;
   const sync = overrides.sync ?? new SyncService({ uow, marketData, events, clock, logger });
+  const sse = overrides.sse ?? new SseHub({ events, clock, logger });
   const app = createApp({
     db,
     schemaVersion: SCHEMA_VERSION,
@@ -45,8 +47,9 @@ export async function createTestApp(overrides: Partial<AppDeps> = {}) {
     marketData,
     events,
     sync,
+    sse,
     syncIntervalMs: SYNC_INTERVAL_MS,
     ...overrides,
   });
-  return { app, db, uow, clock, events, published, logs: entries, sync, logger };
+  return { app, db, uow, clock, events, published, logs: entries, sync, sse, logger };
 }

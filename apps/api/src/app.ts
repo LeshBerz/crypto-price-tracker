@@ -6,13 +6,14 @@ import type { Clock } from './common/clock.ts';
 import type { Logger } from './common/logger.ts';
 import type { Database } from './db/database.ts';
 import type { EventBus } from './events/event-bus.ts';
+import { streamHandlers } from './events/handlers.ts';
+import type { SseHub } from './events/sse-hub.ts';
 import { openapiDocument } from './generated/openapi.ts';
 import { healthHandlers, staticLifecycle, type Lifecycle } from './health.ts';
 import type { Authenticator } from './http/auth.ts';
 import { errorHandler, notFound } from './http/errors.ts';
-import { HttpProblem } from './http/problem.ts';
 import { requestContext } from './http/request-context.ts';
-import { mountFromSpec, type Handlers, type OperationId } from './http/router.ts';
+import { mountFromSpec, type Handlers } from './http/router.ts';
 import type { MarketDataProvider } from './market-data/provider.ts';
 import { compileSpec } from './openapi/spec.ts';
 import { priceHandlers } from './prices/handlers.ts';
@@ -35,32 +36,21 @@ export type AppDeps = {
   events: EventBus;
   /** Один экземпляр на процесс: его же дёргает планировщик — иначе флаг «запуск идёт» не был бы общим */
   sync: SyncService;
+  /** Тоже один на процесс: его закрывает координатор остановки (closeAll) */
+  sse: SseHub;
   /** Интервал синхронизации: от него зависит isStale у цен */
   syncIntervalMs: number;
   lifecycle?: Lifecycle;
   generateRequestId?: () => string;
 };
 
-/**
- * Операции, хендлеры которых появятся в следующих задачах (B13). Явный список вместо Partial<Handlers>:
- * тип Handlers по-прежнему требует хендлер на каждую операцию, а заглушки видно поиском.
- */
-const PENDING = ['streamEvents'] as const satisfies readonly OperationId[];
-
-function pending(operationId: OperationId) {
-  return () => {
-    throw new HttpProblem(500, 'internal-error', { detail: `Operation ${operationId} is not implemented yet` });
-  };
-}
-
 export function createApp(deps: AppDeps): Express {
   // Компиляция спеки при старте: неподдерживаемое ключевое слово — исключение здесь, а не на запросе (ADR 0008)
   const spec = compileSpec(openapiDocument);
   const lifecycle = deps.lifecycle ?? staticLifecycle;
 
-  // satisfies: операция, которой нет ни в PENDING, ни среди реализованных, — ошибка компиляции
+  // satisfies: операция спеки без хендлера — ошибка компиляции
   const handlers = {
-    ...(Object.fromEntries(PENDING.map((id) => [id, pending(id)])) as Record<(typeof PENDING)[number], () => never>),
     ...healthHandlers({ db: deps.db, schemaVersion: deps.schemaVersion, lifecycle }),
     ...watchlistHandlers({
       watchlist: new WatchlistService({
@@ -78,6 +68,7 @@ export function createApp(deps: AppDeps): Express {
       syncIntervalMs: deps.syncIntervalMs,
     }),
     ...syncHandlers({ sync: deps.sync }),
+    ...streamHandlers({ sse: deps.sse }),
   } satisfies Handlers;
 
   const app = express();

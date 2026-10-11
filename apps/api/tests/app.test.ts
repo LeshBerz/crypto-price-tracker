@@ -1,7 +1,6 @@
 import request from 'supertest';
 import { openapiDocument } from '../src/generated/openapi.ts';
 import type { Lifecycle } from '../src/health.ts';
-import { bearer, TOKENS } from './helpers/auth.ts';
 import { createTestApp, SCHEMA_VERSION } from './helpers/app.ts';
 
 describe('[getLiveness] GET /health/live', () => {
@@ -95,12 +94,5 @@ describe('createApp: сквозное поведение', () => {
   it('неизвестный путь → 404 Problem', async () => {
     const { app } = await createTestApp();
     expect(await request(app).get('/nope')).toBeProblem(404, 'not-found');
-  });
-
-  it('операция без реализации пока отвечает 500 internal-error', async () => {
-    const { app } = await createTestApp();
-    const res = await request(app).get('/api/v1/stream').set(bearer(TOKENS.viewer));
-    expect(res).toBeProblem(500, 'internal-error');
-    expect(res.body.detail).toBe('Operation streamEvents is not implemented yet');
   });
 });
