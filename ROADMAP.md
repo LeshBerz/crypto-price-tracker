@@ -84,7 +84,7 @@
 | B12 | 📘 **Синхронизация:** `SyncService` (два слоя защиты от наложения, ретраи, `partial`, свёртка в той же транзакции, события после COMMIT), планировщик на цепочке `setTimeout`, логика старта, `interrupted` при старте, операции `sync-runs` (202 + `Location`) и `system/cmc` | F4, F6, F7, C5, C9 | 0007, 0013, 0015 | 3,5 | ✅ |
 | B13 | **SSE-хаб и `/stream`:** события `price.updated`, `sync.finished`, `watchlist.changed`, `heartbeat` 25 с, `id:` для `Last-Event-ID` | расширение | 0014, 0015 | 1,5 | ✅ |
 | B14 | 📘 **Graceful shutdown:** координатор из 8 шагов (ADR 0015), unit-тест с внедрённым эмиттером, e2e `SIGTERM` в CI на Linux | C6, C9 | 0009, 0015 | 2 | ✅ |
-| B15 | **Доказательство C8:** `check-endpoint-coverage` (отчёт Jest × спека), генерация `docs/project/test-matrix.md`, табличный тест 401/403 по всем защищённым операциям | C8 | 0009 | 1 | ⬜ |
+| B15 | **Доказательство C8:** `check-endpoint-coverage` (отчёт Jest × спека), генерация `docs/project/test-matrix.md`, табличный тест 401/403 по всем защищённым операциям | C8 | 0009 | 1 | ✅ |
 | B16 | **Docker:** multi-stage `node:24-alpine`, `npm ci --omit=dev`, `CMD ["node", …]`, не-root, healthcheck; compose: `api` + `cmc-stub`, `init: true`, volume для БД | C3, C6, D-4 | 0004, 0009 | 1 | ✅ |
 | B17 | **CLI и смоук:** `rollups:rebuild`, `smoke:cmc` — проверка формата живого ответа CMC (риск ADR 0006) | F4, F7 | 0006, 0007 | 0,75 | ⬜ |
 | B18 | **Цикл этапа:** разборы `docs/study/01–09` и вопросы к интервью к задачам 📘, `requirements.md` → ✅. Для сдачи не нужен, поэтому стоит после E1 | — | — | 3 | ⬜ |

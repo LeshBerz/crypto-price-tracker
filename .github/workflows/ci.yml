@@ -40,6 +40,8 @@ jobs:
         run: npm run test:scripts
       - name: Тесты api + coverage
         run: npm run test:cov -w @cpt/api
+      - name: C8 — у каждой операции есть ✅ и ❌, матрица тестов актуальна
+        run: npm run test:matrix -w @cpt/api && node apps/api/scripts/assert-clean.ts docs/project/test-matrix.md
       - name: Прод-зависимости api — только из ТЗ
         run: npm ls --omit=dev -w @cpt/api --depth=0
 

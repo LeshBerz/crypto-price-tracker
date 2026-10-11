@@ -460,6 +460,25 @@ describe(`[listSyncRuns] GET ${RUNS}`, () => {
 });
 
 describe(`[getSyncRun] GET ${RUNS}/{id}`, () => {
+  it('✅ 200: завершённый запуск по id — статус, счётчики и время', async () => {
+    const { app, db, sync } = await setupWithStub();
+    insertCoin(db, 1, 'BTC', BTC);
+    await sync.run('schedule');
+
+    const res = await request(app).get(`${RUNS}/1`).set(bearer(TOKENS.operator));
+    expect(res).toMatchContract('getSyncRun', 200);
+    expect(res.body).toMatchObject({
+      id: 1,
+      trigger: 'schedule',
+      status: 'succeeded',
+      startedAt: iso(T0),
+      finishedAt: iso(T0),
+      coinsRequested: 1,
+      pricesSaved: 1,
+      error: null,
+    });
+  });
+
   it('❌ 404: запуска нет · 400: id не число', async () => {
     const { app } = await createTestApp();
     expect(await request(app).get(`${RUNS}/99`).set(bearer(TOKENS.operator))).toMatchContract('getSyncRun', 404);
