@@ -17,6 +17,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "keys:create": "node --env-file-if-exists=.env src/cli/keys.ts create",
     "keys:revoke": "node --env-file-if-exists=.env src/cli/keys.ts revoke",
+    "rollups:rebuild": "node --env-file-if-exists=.env src/cli/rollups.ts",
+    "smoke:cmc": "node --env-file-if-exists=.env scripts/smoke-cmc.ts",
     "smoke": "node --env-file-if-exists=.env scripts/smoke.ts",
     "test": "jest",
     "test:cov": "jest --coverage --json --outputFile=coverage/jest-report.json",

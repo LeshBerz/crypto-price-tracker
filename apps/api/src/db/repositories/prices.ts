@@ -79,6 +79,10 @@ export class SqlitePriceRepository implements PriceRepository {
         ON CONFLICT (cryptocurrency_id, bucket_start) DO UPDATE SET
           points = excluded.points, open = excluded.open, close = excluded.close,
           min = excluded.min, max = excluded.max, sum_num = excluded.sum_num`),
+      clearRollups: db.prepare('DELETE FROM price_rollups_1h'),
+      rollupHours: db.prepare(`
+        SELECT DISTINCT cryptocurrency_id, fetched_at - fetched_at % ${HOUR_MS} AS hour_start
+          FROM price_history ORDER BY 1, 2`),
       // Keyset по (fetched_at, id): следующая страница начинается строго после курсора, поэтому вставки между
       // запросами не дают ни дублей, ни пропусков (у OFFSET — дают). Идёт по индексу price_history_coin_time
       history: db.prepare(`
@@ -149,6 +153,15 @@ export class SqlitePriceRepository implements PriceRepository {
     assertInTransaction(this.db);
     const [coin, from, to] = [sqlInt(cryptocurrencyId), sqlInt(hourStart), sqlInt(hourStart + HOUR_MS)];
     this.statements.rollup.run(coin, from, to, coin, from);
+  }
+
+  async rebuildRollups(): Promise<number> {
+    assertInTransaction(this.db);
+    this.statements.clearRollups.run();
+    const hours = this.statements.rollupHours.all() as { cryptocurrency_id: number; hour_start: number }[];
+    // Тот же recomputeRollup, что вызывает синхронизация: результат совпадает с инкрементальным по построению
+    for (const { cryptocurrency_id, hour_start } of hours) await this.recomputeRollup(cryptocurrency_id, hour_start);
+    return hours.length;
   }
 
   async history(cryptocurrencyId: number, query: HistoryQuery): Promise<PricePointRow[]> {
