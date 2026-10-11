@@ -6,3 +6,5 @@ package-lock.json
 **/openapi/.bundle/
 **/dist/
 **/coverage/
+**/.next/
+**/next-env.d.ts

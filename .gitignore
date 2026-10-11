@@ -2,6 +2,10 @@ node_modules/
 dist/
 coverage/
 .env
+.env*.local
+.next/
+next-env.d.ts
+*.tsbuildinfo
 *.db
 *.sqlite
 *.sqlite3

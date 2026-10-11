@@ -7,7 +7,8 @@
     "node": ">=24.15.0"
   },
   "workspaces": [
-    "apps/api"
+    "apps/api",
+    "apps/web"
   ],
   "scripts": {
     "lint": "eslint .",
@@ -18,15 +19,15 @@
     "test:scripts": "node --test \"scripts/**/*.test.ts\"",
     "check-deps": "node scripts/check-deps.ts",
     "codegen:check": "npm run codegen:check --workspaces --if-present",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm run check-deps && npm run codegen:check && npm run test:scripts && npm run test:cov -w @cpt/api && npm run test:matrix -w @cpt/api",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run check-deps && npm run codegen:check && npm run test:scripts && npm run test:cov -w @cpt/api && npm run test:matrix -w @cpt/api && npm test -w @cpt/web",
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.{ts,js}": [
+    "*.{ts,tsx,js,mjs}": [
       "eslint --fix --max-warnings=0 --no-warn-ignored",
       "prettier --write"
     ],
-    "*.{json,yml,yaml}": "prettier --write"
+    "*.{json,yml,yaml,css}": "prettier --write"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
@@ -35,6 +36,7 @@
     "@types/node": "^24.19.1",
     "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",

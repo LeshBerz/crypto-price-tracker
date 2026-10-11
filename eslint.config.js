@@ -2,10 +2,20 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/', '**/dist/', '.claude/', '**/coverage/', '**/src/generated/', '**/openapi/.bundle/'],
+    ignores: [
+      '**/node_modules/',
+      '**/dist/',
+      '.claude/',
+      '**/coverage/',
+      '**/src/generated/',
+      '**/openapi/.bundle/',
+      '**/.next/',
+      '**/next-env.d.ts',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.strict,
@@ -51,6 +61,11 @@ export default tseslint.config(
         },
       ],
     },
+  },
+  {
+    // apps/web — React: правила хуков ловят условные вызовы и пропущенные зависимости эффектов
+    files: ['apps/web/**/*.{ts,tsx}'],
+    ...reactHooks.configs.flat.recommended,
   },
   prettier,
 );
