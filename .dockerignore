@@ -1,10 +1,13 @@
-# В контекст сборки идёт только то, что копирует apps/api/Dockerfile
+# В контекст сборки идёт только то, что копируют apps/api/Dockerfile и apps/web/Dockerfile
 **/node_modules
 **/dist
 **/coverage
 **/.next
 **/data
 **/.env
+**/.env.*
+!**/.env.example
+**/*.tsbuildinfo
 **/*.db
 .git
 .github
@@ -13,4 +16,5 @@
 CLAUDE.md
 docs
 apps/api/tests
+apps/web/tests
 apps/api/openapi/.bundle
