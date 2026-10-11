@@ -3,6 +3,9 @@
 # Настоящий CMC: задать в .env рядом с этим файлом CMC_API_KEY и CMC_BASE_URL=https://pro-api.coinmarketcap.com
 # Секретов в файле нет: ключи API берутся из окружения или выпускаются командой
 #   docker compose run --rm api node dist/cli/keys.js create --name reviewer --role operator
+#
+# Веб-клиент (сверх ТЗ) включается профилем и на запуск выше не влияет: docker compose --profile web up --build
+# Ему нужны BOOTSTRAP_VIEWER_KEY, BOOTSTRAP_OPERATOR_KEY, WEB_BOOTSTRAP_LOGIN и WEB_BOOTSTRAP_PASSWORD_HASH — apps/web/README.md
 services:
   api:
     build:
@@ -37,5 +40,32 @@ services:
     environment:
       CMC_API_KEY: ${CMC_API_KEY:-stub-cmc-key}
 
+  # Дашборд и панель оператора (ADR 0016). Профиль: без --profile web сервис не собирается и не запускается.
+  web:
+    profiles: [web]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    init: true
+    ports:
+      - '${WEB_PORT:-3001}:3000'
+    environment:
+      API_BASE_URL: http://api:3000
+      # Те же ключи, что api принимает при старте: web ходит в api ключом по роли сессии, браузер их не видит.
+      # Пустое значение здесь не ошибка compose (иначе сломался бы запуск без профиля) — web сам остановится
+      # на старте с сообщением, какой переменной не хватает
+      API_VIEWER_KEY: ${BOOTSTRAP_VIEWER_KEY:-}
+      API_OPERATOR_KEY: ${BOOTSTRAP_OPERATOR_KEY:-}
+      WEB_BOOTSTRAP_LOGIN: ${WEB_BOOTSTRAP_LOGIN:-}
+      WEB_BOOTSTRAP_PASSWORD_HASH: ${WEB_BOOTSTRAP_PASSWORD_HASH:-}
+      WEB_TRUST_PROXY: ${WEB_TRUST_PROXY:-false}
+    volumes:
+      - web-data:/data
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   api-data:
+  web-data:
