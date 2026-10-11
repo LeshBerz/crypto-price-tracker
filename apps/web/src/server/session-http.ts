@@ -1,5 +1,6 @@
 // HTTP-обработчики /api/session на стандартных Request и Response: тестируются без запуска Next.
 import type { Services } from './container';
+import { json, problem } from './problem';
 import {
   clearSessionCookie,
   clientIp,
@@ -9,38 +10,6 @@ import {
   readSessionToken,
   sessionCookie,
 } from './request';
-
-type ProblemSlug =
-  | 'validation-error'
-  | 'unsupported-media-type'
-  | 'forbidden-origin'
-  | 'invalid-credentials'
-  | 'too-many-attempts'
-  | 'unauthorized';
-
-const TITLES: Record<ProblemSlug, string> = {
-  'validation-error': 'Некорректный запрос',
-  'unsupported-media-type': 'Ожидается application/json',
-  'forbidden-origin': 'Запрос с другого сайта отклонён',
-  'invalid-credentials': 'Неверный логин или пароль',
-  'too-many-attempts': 'Слишком много попыток входа',
-  unauthorized: 'Требуется вход',
-};
-
-/** Тот же формат ошибок, что у api (RFC 9457): клиентский код разбирает ответы BFF и api одинаково */
-function problem(status: number, slug: ProblemSlug, extra: Record<string, unknown> = {}, headers: HeadersInit = {}) {
-  return new Response(JSON.stringify({ type: `urn:cpt:web:problem:${slug}`, title: TITLES[slug], status, ...extra }), {
-    status,
-    headers: { 'Content-Type': 'application/problem+json; charset=utf-8', 'Cache-Control': 'no-store', ...headers },
-  });
-}
-
-function json(status: number, body: unknown, headers: HeadersInit = {}): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers },
-  });
-}
 
 /** Слои 2 и 3 защиты от CSRF: JSON-тело (HTML-форма его не отправит) и свой Origin */
 function rejectForeign(request: Request, services: Services, requireJson: boolean): Response | null {
