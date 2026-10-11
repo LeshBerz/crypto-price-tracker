@@ -1,7 +1,9 @@
 // Composition root серверной части web: одна БД и один набор сервисов на процесс.
 import { AuthService } from './auth-service';
 import { loadConfig, type WebConfig } from './config';
+import type { ApiFetch } from './bff/upstream';
 import { migrate, openDatabase, type Database } from './db';
+import { consoleLog, type Log } from './log';
 import { LoginThrottle } from './login-throttle';
 import { hashPassword, verifyPassword } from './passwords';
 import { SessionService } from './sessions';
@@ -15,6 +17,9 @@ export type Services = {
   throttle: LoginThrottle;
   auth: AuthService;
   now: () => number;
+  /** fetch для запросов в api: в тестах подменяется */
+  apiFetch: ApiFetch;
+  log: Log;
 };
 
 export function createServices(config: WebConfig, now: () => number = Date.now): Services {
@@ -31,7 +36,17 @@ export function createServices(config: WebConfig, now: () => number = Date.now):
   const dummyHash = () => (dummy ??= hashPassword('no such user'));
 
   const auth = new AuthService({ users, sessions, throttle, now, verifyPassword, dummyHash });
-  return { config, db, users, sessions, throttle, auth, now };
+  return {
+    config,
+    db,
+    users,
+    sessions,
+    throttle,
+    auth,
+    now,
+    apiFetch: (input, init) => fetch(input, init),
+    log: consoleLog,
+  };
 }
 
 // В dev Next перезагружает модули при каждой правке: без globalThis каждая перезагрузка открывала бы БД заново
