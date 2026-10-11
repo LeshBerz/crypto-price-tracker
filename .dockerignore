@@ -1,0 +1,15 @@
+# В контекст сборки идёт только то, что копирует apps/api/Dockerfile
+**/node_modules
+**/dist
+**/coverage
+**/data
+**/.env
+**/*.db
+.git
+.github
+.husky
+.claude
+CLAUDE.md
+docs
+apps/api/tests
+apps/api/openapi/.bundle
