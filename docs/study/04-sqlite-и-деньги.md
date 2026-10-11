@@ -14,14 +14,14 @@
 
 ## Как это в Nest → как в Express
 
-| Nest + TypeORM / Prisma | У нас |
+| Nest + TypeORM / Prisma | В проекте |
 |---|---|
 | `TypeOrmModule.forRoot({ synchronize })` | `openDatabase()` + PRAGMA, без ORM (C1) |
 | `typeorm migration:run`, таблица `migrations` | `migrate()` + `schema_migrations` с контрольной суммой — TypeORM её не хранит, а Flyway и Prisma хранят |
 | `dataSource.transaction(async (em) => …)` | `TransactionRunner.run(async () => …)` |
 | `@Column('decimal', { precision, scale })` + `decimal.js` | `TEXT` + генерируемая `REAL`-колонка + свой `Decimal` (C7: decimal.js нельзя) |
 
-## В нашем проекте
+## В проекте
 
 - [`src/db/database.ts`](../../apps/api/src/db/database.ts) — подключение, PRAGMA, `sqlInt()`: целое в параметре SQL только как BigInt.
 - [`src/db/migrations.ts`](../../apps/api/src/db/migrations.ts) — раннер: формат имени, версии подряд, контрольная сумма, транзакция на миграцию.
