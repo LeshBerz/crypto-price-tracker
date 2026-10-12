@@ -1,12 +1,11 @@
 // /api/bff/[...path] — прокси в apps/api (ADR 0016). Порядок проверок: сессия → allowlist → роль → CSRF → запрос.
 import { randomUUID } from 'node:crypto';
+import { BACKGROUND_HEADER, BFF_PREFIX } from '@/lib/bff-contract';
 import type { Services } from '../container';
 import { problem } from '../problem';
 import { isJsonRequest, isSameOrigin, readSessionToken } from '../request';
 import { hasRole, matchRoute } from './allowlist';
 import { callApi, failureCode, UpstreamError } from './upstream';
-
-export const BFF_PREFIX = '/api/bff';
 
 /** Тела запросов контракта — десятки байт JSON; предел отсекает мусор раньше, чем он уйдёт в api */
 export const MAX_BODY_BYTES = 64 * 1024;
@@ -64,7 +63,10 @@ export async function handleBff(request: Request, services: Services): Promise<R
     problem(status, slug, { requestId }, { 'X-Request-Id': requestId });
 
   // 401 раньше 404: без сессии нельзя узнать, какие маршруты существуют
-  const session = services.sessions.validate(readSessionToken(request));
+  // Фоновое чтение (перезапрос по событию потока) сессию проверяет, но срок бездействия не продлевает.
+  // Заголовок ставит клиент: соврав, он может только укоротить собственную сессию. На запись признак не действует
+  const background = request.method === 'GET' && request.headers.get(BACKGROUND_HEADER) === '1';
+  const session = services.sessions.validate(readSessionToken(request), { touch: !background });
   if (!session) return fail(401, 'unauthorized');
 
   // URL уже нормализован: сегментов `..` и `.` в pathname нет, выйти за пределы таблицы ими нельзя

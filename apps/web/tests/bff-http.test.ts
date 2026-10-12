@@ -1,4 +1,5 @@
 import { handleBff, MAX_BODY_BYTES } from '@/server/bff/bff-http';
+import { IDLE_TIMEOUT_MS } from '@/server/sessions';
 import type { Role } from '@/server/users';
 import { createTestContext, TEST_API, type TestContext } from './helpers';
 
@@ -237,6 +238,47 @@ describe('[bff] /api/bff/[...path]', () => {
         ctx,
       );
       expect(response.status).toBe(413);
+    });
+  });
+
+  describe('срок бездействия', () => {
+    const HOUR = 60 * 60 * 1000;
+
+    it('✅ обычный запрос продлевает сессию', async () => {
+      apiReplies(() => Response.json({}));
+      ctx.advance(HOUR);
+      await handleBff(request('/api/v1/prices', { token: tokens.viewer }), ctx);
+      ctx.advance(IDLE_TIMEOUT_MS - 1);
+
+      expect((await handleBff(request('/api/v1/prices', { token: tokens.viewer }), ctx)).status).toBe(200);
+    });
+
+    it('✅ фоновый запрос отвечает, но сессию не продлевает', async () => {
+      apiReplies(() => Response.json({}));
+      const background = { token: tokens.viewer, headers: { 'x-cpt-background': '1' } };
+      ctx.advance(HOUR);
+      expect((await handleBff(request('/api/v1/prices', background), ctx)).status).toBe(200);
+      ctx.advance(HOUR);
+
+      expect((await handleBff(request('/api/v1/prices', background), ctx)).status).toBe(401);
+    });
+
+    it('❌ признак фона на записи не действует: POST продлевает сессию', async () => {
+      apiReplies(() => Response.json({}, { status: 202 }));
+      ctx.advance(HOUR);
+      const posted = await handleBff(
+        request('/api/v1/sync-runs', {
+          method: 'POST',
+          body: {},
+          token: tokens.operator,
+          headers: { 'x-cpt-background': '1' },
+        }),
+        ctx,
+      );
+      expect(posted.status).toBe(202);
+      ctx.advance(IDLE_TIMEOUT_MS - 1);
+
+      expect((await handleBff(request('/api/v1/sync-runs', { token: tokens.operator }), ctx)).status).toBe(202);
     });
   });
 
