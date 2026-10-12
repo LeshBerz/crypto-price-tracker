@@ -32,6 +32,18 @@ export function PriceValue({ latest, flash }: { latest: LatestPrice | null; flas
   );
 }
 
+/** Цена вне списка (сводка, подсказка графика, история): те же округление и приглушённые нули */
+export function PriceText({ price, className }: { price: string; className?: string }) {
+  const { head, zeros, tail } = splitPrice(formatPrice(price));
+  return (
+    <span title={`${price} USD`} className={cn('font-mono tabular-nums', className)}>
+      {head}
+      {zeros && <span className="opacity-45">{zeros}</span>}
+      {tail}
+    </span>
+  );
+}
+
 const CHANGE_STYLE = {
   up: { className: 'text-up', Icon: ArrowUp },
   down: { className: 'text-down', Icon: ArrowDown },
