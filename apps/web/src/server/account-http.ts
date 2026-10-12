@@ -27,7 +27,7 @@ import {
   readSessionToken,
 } from './request';
 import { SESSION_ID_FORMAT, type Session, type SessionInfo } from './sessions';
-import { UserAdminError } from './user-admin';
+import { isUserAdminError } from './user-admin';
 import type { Role, UserSummary } from './users';
 
 /** Тела этих маршрутов — два-три коротких поля */
@@ -113,7 +113,7 @@ function toSessionDto(info: SessionInfo, current: Session): SessionDto {
 
 /** Доменная ошибка → Problem Details; остальное летит дальше и станет 500 */
 function fromAdminError(error: unknown): Response {
-  if (!(error instanceof UserAdminError)) throw error;
+  if (!isUserAdminError(error)) throw error;
   const extra = { detail: error.message };
   if (error.kind === 'invalid-login') return problem(400, 'validation-error', extra);
   if (error.kind === 'not-found') return problem(404, 'not-found', extra);

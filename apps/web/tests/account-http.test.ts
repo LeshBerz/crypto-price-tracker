@@ -25,7 +25,7 @@ import { migrate, MIGRATIONS, openDatabase } from '@/server/db';
 import { FREE_ATTEMPTS } from '@/server/login-throttle';
 import * as passwords from '@/server/passwords';
 import { hashToken, SESSION_ID_FORMAT } from '@/server/sessions';
-import { generatePassword } from '@/server/user-admin';
+import { generatePassword, isUserAdminError, UserAdminError } from '@/server/user-admin';
 import { LOGIN_FORMAT } from '@/server/users';
 import { createTestContext, START, type TestContext } from './helpers';
 
@@ -639,6 +639,22 @@ describe('пользователи и сессии', () => {
       expect((await change(body, { token: undefined })).status).toBe(401);
       expect(await canLogin('bob', PASSWORD)).toBe(true);
     });
+  });
+});
+
+describe('[user-admin] доменная ошибка узнаётся без instanceof', () => {
+  it('✅ ошибка из другого экземпляра модуля (другой чанк сборки Next) распознаётся по имени', () => {
+    // Тот же класс, объявленный второй раз, — так выглядит модуль, попавший в два чанка
+    class UserAdminErrorCopy extends Error {
+      override name = 'UserAdminError';
+      readonly kind = 'login-taken';
+    }
+    const foreign = new UserAdminErrorCopy('Логин уже занят');
+    expect(foreign instanceof UserAdminError).toBe(false);
+    expect(isUserAdminError(foreign)).toBe(true);
+    expect(isUserAdminError(new UserAdminError('not-found', 'нет'))).toBe(true);
+    expect(isUserAdminError(new Error('UserAdminError'))).toBe(false);
+    expect(isUserAdminError({ name: 'UserAdminError', kind: 'not-found' })).toBe(false);
   });
 });
 

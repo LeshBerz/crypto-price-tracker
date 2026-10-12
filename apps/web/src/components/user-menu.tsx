@@ -1,6 +1,7 @@
 'use client';
 
-import { ChevronDown, LogOut, User } from 'lucide-react';
+import { ChevronDown, LogOut, User, UserCog } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +14,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { PROFILE_HREF } from '@/lib/navigation';
 import type { Role } from '@/server/users';
 
 const ROLE_LABELS: Record<Role, string> = { viewer: 'Viewer', operator: 'Operator' };
@@ -42,13 +44,17 @@ export function UserMenu({ login, role }: { login: string; role: Role }) {
         </Badge>
         <ChevronDown aria-hidden="true" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
+      <DropdownMenuContent align="end" className="w-52">
         {/* На узком экране логин и роль в шапку не помещаются — они показаны здесь */}
         <DropdownMenuGroup className="sm:hidden">
           <DropdownMenuLabel>
             {login} · {ROLE_LABELS[role]}
           </DropdownMenuLabel>
         </DropdownMenuGroup>
+        <DropdownMenuItem render={<Link href={PROFILE_HREF} />}>
+          <UserCog aria-hidden="true" />
+          Профиль и сессии
+        </DropdownMenuItem>
         <DropdownMenuItem disabled={pending} onClick={logout}>
           <LogOut aria-hidden="true" />
           Выйти

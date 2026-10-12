@@ -20,6 +20,16 @@ export class UserAdminError extends Error {
   }
 }
 
+/**
+ * Проверка по имени, а не `instanceof`: сервисы создаются один раз на процесс и лежат в `globalThis`
+ * (container.ts), а сборка Next кладёт этот модуль в несколько чанков — у каждого свой экземпляр класса.
+ * Ошибка, брошенная сервисом из одного чанка, для `instanceof` в другом — чужая (найдено на собранном образе:
+ * занятый логин давал 500 вместо 409, хотя тесты в Jest, где модуль один, проходили).
+ */
+export function isUserAdminError(error: unknown): error is UserAdminError {
+  return error instanceof Error && error.name === 'UserAdminError' && 'kind' in error;
+}
+
 export type PasswordChangeResult =
   | { ok: true; revokedSessions: number }
   | { ok: false; reason: 'weak-password' | 'same-password' | 'wrong-password' }

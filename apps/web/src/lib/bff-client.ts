@@ -171,8 +171,15 @@ export type BffClient = {
   ): Promise<WriteResponse<M, P>>;
 };
 
-export function createBffClient(deps: BffClientDeps): BffClient {
-  async function request<T>(url: string, init: RequestInit): Promise<T> {
+/** Запрос к маршруту web с разбором ответа: JSON, 204 или ошибка RFC 9457 */
+export type JsonRequest = <T>(url: string, init: RequestInit) => Promise<T>;
+
+/**
+ * Общая часть клиентов web: BFF (`/api/bff/*`) и маршрутов пользователей и сессий (`/api/admin/*`, `/api/me/*`).
+ * Формат ошибок у них один, поэтому один и разбор: `BffError` с Problem, 401 → `onUnauthorized`.
+ */
+export function createJsonRequest(deps: BffClientDeps): JsonRequest {
+  return async function request<T>(url: string, init: RequestInit): Promise<T> {
     let response: Response;
     try {
       response = await deps.fetch(url, { ...init, credentials: 'same-origin' });
@@ -193,7 +200,11 @@ export function createBffClient(deps: BffClientDeps): BffClient {
     const error = await toError(response);
     if (response.status === 401) deps.onUnauthorized();
     throw error;
-  }
+  };
+}
+
+export function createBffClient(deps: BffClientDeps): BffClient {
+  const request = createJsonRequest(deps);
 
   return {
     get(path, options) {
@@ -225,8 +236,11 @@ export function createBffClient(deps: BffClientDeps): BffClient {
   };
 }
 
-/** Клиент для компонентов. В тестах создаётся свой — с подставным fetch */
-export const bff: BffClient = createBffClient({
+/** Зависимости браузера: настоящий fetch и переход на страницу входа, когда сессии больше нет */
+export const browserDeps: BffClientDeps = {
   fetch: (input, init) => globalThis.fetch(input, init),
   onUnauthorized: () => window.location.assign(SESSION_EXPIRED_URL),
-});
+};
+
+/** Клиент для компонентов. В тестах создаётся свой — с подставным fetch */
+export const bff: BffClient = createBffClient(browserDeps);
