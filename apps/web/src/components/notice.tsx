@@ -2,11 +2,12 @@ import type { LucideIcon } from 'lucide-react';
 import { cn } from 'cn';
 import type { ReactNode } from 'react';
 
-export type NoticeTone = 'warn' | 'info';
+export type NoticeTone = 'warn' | 'info' | 'error';
 
 const TONE: Record<NoticeTone, string> = {
   warn: 'border-warn-border bg-warn-bg text-warn',
   info: 'border-info-border bg-info-bg text-info',
+  error: 'border-destructive/30 bg-error-bg text-destructive',
 };
 
 /** Полоса сообщения над содержимым экрана: значок и заголовок несут смысл и без цвета */
