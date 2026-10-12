@@ -137,7 +137,7 @@ function QuotaSection({
   const percent = quota ? quotaPercent(quota) : 0;
   const low = forecast ? !forecast.enough : percent >= 90;
   return (
-    <section aria-labelledby="quota-title" className={cn(CARD, 'flex flex-col gap-3')}>
+    <section data-tour="system-quota" aria-labelledby="quota-title" className={cn(CARD, 'flex flex-col gap-3')}>
       <h2 id="quota-title" className="text-base font-semibold">
         Квота CoinMarketCap
       </h2>
@@ -207,7 +207,7 @@ const SCHEDULER: Record<Readiness['checks']['scheduler'], { tone: Tone; text: st
 function HealthSection({ readiness }: { readiness: Readiness }) {
   const { database, migrations, scheduler } = readiness.checks;
   return (
-    <section aria-labelledby="health-title" className={cn(CARD, 'flex flex-col gap-3')}>
+    <section data-tour="system-health" aria-labelledby="health-title" className={cn(CARD, 'flex flex-col gap-3')}>
       <h2 id="health-title" className="text-base font-semibold">
         Здоровье сервиса <code className="font-mono text-xs font-normal text-muted-foreground">/health/ready</code>
       </h2>
@@ -276,7 +276,7 @@ export function SystemPanel() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div data-tour="system-tiles" className="grid gap-4 sm:grid-cols-3">
         <Tile
           title="CoinMarketCap"
           state={

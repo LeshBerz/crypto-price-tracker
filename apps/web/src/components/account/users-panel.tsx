@@ -322,7 +322,7 @@ export function UsersPanel({ currentLogin }: { currentLogin: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <Panel aria-labelledby="create-title" className="flex flex-col gap-3 p-4">
+      <Panel data-tour="users-create" aria-labelledby="create-title" className="flex flex-col gap-3 p-4">
         <h2 id="create-title" className="font-semibold">
           Создать пользователя
         </h2>

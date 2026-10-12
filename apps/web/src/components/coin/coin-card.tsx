@@ -40,7 +40,7 @@ function isNotFound(error: unknown): boolean {
 function CoinHeader({ coin, flash, now }: { coin: Cryptocurrency; flash: Flash | undefined; now: number }) {
   const latest = coin.latestPrice;
   return (
-    <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+    <div data-tour="coin-head" className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
       <div className="flex items-center gap-3">
         <CoinAvatar symbol={coin.symbol} size="lg" />
         <div className="flex flex-col gap-1">
@@ -64,7 +64,10 @@ function CoinHeader({ coin, flash, now }: { coin: Cryptocurrency; flash: Flash |
             </span>
           )}
         </div>
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        <span
+          data-tour="coin-fresh"
+          className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground"
+        >
           <StateTag paused={coin.isPaused} stale={latest?.isStale ?? false} />
           {latest && (
             <>
@@ -194,7 +197,7 @@ export function CoinCard({ id }: { id: number }) {
       </div>
 
       <section aria-labelledby="chart-title" className={CARD}>
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b px-4 py-3">
+        <div data-tour="chart-controls" className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b px-4 py-3">
           <h2 id="chart-title" className="sr-only">
             График цены
           </h2>
@@ -214,7 +217,7 @@ export function CoinCard({ id }: { id: number }) {
         <p role="status" className="px-4 pt-2 text-xs text-muted-foreground empty:hidden">
           {blocked}
         </p>
-        <div className="pt-3" aria-busy={aggregates.isFetching}>
+        <div data-tour="chart" className="pt-3" aria-busy={aggregates.isFetching}>
           {!buckets && aggregates.isError && (
             <LoadError title="Не удалось загрузить график" error={aggregates.error} onRetry={retry} />
           )}
@@ -235,7 +238,7 @@ export function CoinCard({ id }: { id: number }) {
         </div>
       </section>
 
-      <section aria-labelledby="summary-title" className="flex flex-col gap-2">
+      <section data-tour="coin-summary" aria-labelledby="summary-title" className="flex flex-col gap-2">
         <h2 id="summary-title" className="font-semibold">
           Сводка{shownPeriod ? ` за ${PERIOD_LABEL[shownPeriod]}` : ''}
         </h2>
@@ -243,7 +246,7 @@ export function CoinCard({ id }: { id: number }) {
       </section>
 
       <section aria-labelledby="history-title" className={CARD}>
-        <div className="flex flex-wrap items-baseline gap-x-3 border-b px-4 py-3">
+        <div data-tour="coin-history" className="flex flex-wrap items-baseline gap-x-3 border-b px-4 py-3">
           <h2 id="history-title" className="font-semibold">
             История цен
           </h2>

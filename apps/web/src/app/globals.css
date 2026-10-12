@@ -189,6 +189,30 @@
     background: hsl(var(--coin-hue) 70% 60% / 0.18);
     color: hsl(var(--coin-hue) 80% 76%);
   }
+
+  /*
+   * Прожектор гида: прозрачное окно над целью, затемнение вокруг — его же тень на весь экран. Один элемент
+   * вместо четырёх полос: при переходе к следующему шагу окно переезжает и меняет размер одной анимацией.
+   */
+  .tour-spot {
+    position: fixed;
+    z-index: 80;
+    border-radius: 12px;
+    pointer-events: none;
+    box-shadow:
+      0 0 0 3px var(--ring),
+      0 0 0 200vmax rgb(2 6 23 / 0.58);
+    transition:
+      left var(--duration-slow) var(--ease-out),
+      top var(--duration-slow) var(--ease-out),
+      width var(--duration-slow) var(--ease-out),
+      height var(--duration-slow) var(--ease-out),
+      opacity var(--duration-base) var(--ease-out);
+  }
+  /* Цели нет на экране: рамки нет, остаётся одно затемнение */
+  .tour-spot[data-target='false'] {
+    box-shadow: 0 0 0 200vmax rgb(2 6 23 / 0.58);
+  }
 }
 
 /* Анимации отключаются по настройке ОС (WCAG 2.3.3) */

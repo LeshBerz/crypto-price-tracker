@@ -112,6 +112,7 @@ export function AddCoinForm() {
         >
           <Input
             id={symbolId}
+            data-tour="add-coin-symbol"
             name="symbol"
             value={symbol}
             onChange={(event) => {
@@ -127,7 +128,12 @@ export function AddCoinForm() {
             className="font-mono uppercase placeholder:normal-case"
           />
         </Field>
-        <Button type="submit" className={FIELD_LABEL_OFFSET} disabled={add.isPending || retryIn > 0}>
+        <Button
+          type="submit"
+          data-tour="add-coin-submit"
+          className={FIELD_LABEL_OFFSET}
+          disabled={add.isPending || retryIn > 0}
+        >
           {add.isPending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <Plus aria-hidden="true" />}
           {add.isPending ? 'Проверка в CoinMarketCap…' : retryIn > 0 ? `Повторить через ${retryIn} с` : 'Добавить'}
         </Button>

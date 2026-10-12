@@ -60,7 +60,7 @@ export function ChangeValue({ change }: { change: string | null }) {
   if (change === null) {
     return (
       <Hint text="Истории меньше суток">
-        <span className="text-muted-foreground">
+        <span data-tour="change" className="text-muted-foreground">
           —<span className="sr-only">нет данных: истории меньше суток</span>
         </span>
       </Hint>
@@ -70,7 +70,7 @@ export function ChangeValue({ change }: { change: string | null }) {
   const { className, Icon } = CHANGE_STYLE[direction];
   return (
     <Hint text={`${change} %`}>
-      <span className={cn('inline-flex items-center gap-0.5 font-mono tabular-nums', className)}>
+      <span data-tour="change" className={cn('inline-flex items-center gap-0.5 font-mono tabular-nums', className)}>
         <Icon className="size-3.5" aria-hidden="true" />
         {text}
       </span>
@@ -85,12 +85,17 @@ const SPARK_HEIGHT = 30;
 export function Sparkline({ points, label }: { points: readonly SparklinePoint[]; label: string }) {
   const geometry = sparklineGeometry(points, SPARK_WIDTH, SPARK_HEIGHT);
   if (!geometry) {
-    return <span className="text-xs text-muted-foreground">нет данных</span>;
+    return (
+      <span data-tour="sparkline" className="text-xs text-muted-foreground">
+        нет данных
+      </span>
+    );
   }
   const first = points[0]?.close ?? '0';
   const last = points[points.length - 1]?.close ?? '0';
   return (
     <svg
+      data-tour="sparkline"
       width={SPARK_WIDTH}
       height={SPARK_HEIGHT}
       viewBox={`0 0 ${SPARK_WIDTH} ${SPARK_HEIGHT}`}
@@ -116,7 +121,7 @@ export function StateTag({ paused, stale }: { paused: boolean; stale: boolean })
   if (paused) {
     return (
       <Hint text="Синхронизация приостановлена оператором">
-        <span className={cn(TAG, 'bg-muted text-muted-foreground')}>
+        <span data-tour="paused-tag" className={cn(TAG, 'bg-muted text-muted-foreground')}>
           <Pause className="size-3" aria-hidden="true" />
           пауза
         </span>
@@ -137,10 +142,16 @@ export function StateTag({ paused, stale }: { paused: boolean; stale: boolean })
 }
 
 export function UpdatedAt({ latest, now }: { latest: LatestPrice | null; now: number }) {
-  if (!latest) return <span className="text-muted-foreground">—</span>;
+  if (!latest) {
+    return (
+      <span data-tour="updated" className="text-muted-foreground">
+        —
+      </span>
+    );
+  }
   return (
     <Hint text={`Получено ${latest.fetchedAt} · котировка CoinMarketCap ${latest.sourceUpdatedAt} (UTC)`}>
-      <time dateTime={latest.fetchedAt} className="text-muted-foreground tabular-nums">
+      <time data-tour="updated" dateTime={latest.fetchedAt} className="text-muted-foreground tabular-nums">
         {formatRelative(latest.fetchedAt, now)}
       </time>
     </Hint>

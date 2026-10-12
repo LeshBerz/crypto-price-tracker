@@ -5,6 +5,7 @@ import { LogoMark } from '@/components/logo';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getCurrentSession } from '@/server/current-session';
 import { LoginForm } from './login-form';
+import { LoginTour } from './login-tour';
 
 export const metadata: Metadata = { title: 'Вход' };
 
@@ -15,7 +16,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
   return (
     <div className="flex min-h-dvh flex-col bg-surface">
-      <div className="flex justify-end p-3">
+      <div className="flex items-center justify-end gap-1 p-3">
+        <LoginTour />
         <ThemeToggle />
       </div>
       <div className="flex flex-1 items-start justify-center px-4 pt-[8vh] pb-12">
@@ -28,7 +30,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             </p>
           </div>
           <LoginForm expired={reason === 'expired'} />
-          <p className="mt-5 flex items-start justify-center gap-2 text-center text-xs text-muted-foreground">
+          <p
+            data-tour="login-no-signup"
+            className="mt-5 flex items-start justify-center gap-2 text-center text-xs text-muted-foreground"
+          >
             <Lock aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
             Нет доступа или забыли пароль — обратитесь к оператору: самостоятельной регистрации нет.
           </p>
