@@ -38,6 +38,55 @@ npm run dev -w @cpt/web
 
 Приложение — на http://localhost:3000. Если порт занят api, задайте другой: `npm run dev -w @cpt/web -- -p 3100`.
 
+### Локальный стенд со стабом CoinMarketCap
+
+Три процесса: стаб CoinMarketCap, api и web. Ключ CoinMarketCap и интернет не нужны. Все команды — из корня репозитория, каждая в своём терминале.
+
+**Один раз.** Сгенерировать два ключа api — команду выполнить дважды, значения должны различаться:
+
+```bash
+node -e "console.log('cpt_' + require('node:crypto').randomBytes(32).toString('base64url'))"
+```
+
+Создать `apps/api/.env`: api при старте примет эти ключи и будет ходить в стаб.
+
+```
+CMC_API_KEY=stub-cmc-key
+CMC_BASE_URL=http://localhost:4010
+BOOTSTRAP_VIEWER_KEY=cpt_…
+BOOTSTRAP_OPERATOR_KEY=cpt_…
+```
+
+Создать `apps/web/.env.local` из `apps/web/.env.example`: те же два ключа в `API_VIEWER_KEY` и `API_OPERATOR_KEY`, логин в `WEB_BOOTSTRAP_LOGIN` и хэш пароля из `npm run hash-password -w @cpt/web` в `WEB_BOOTSTRAP_PASSWORD_HASH` (знаки `$` экранируются: `scrypt\$17\$…`). Оба файла в git не попадают.
+
+**Каждый раз.** Порядок запуска: стаб → api → web.
+
+```bash
+node apps/api/scripts/cmc-stub-server.ts
+```
+
+```bash
+npm run dev -w @cpt/api
+```
+
+```bash
+npm run dev -w @cpt/web -- -p 3100
+```
+
+| Процесс | Адрес | База |
+|---|---|---|
+| Стаб CoinMarketCap | http://localhost:4010 | — |
+| api | http://localhost:3000, Swagger — `/docs` | `apps/api/data/cpt.db` |
+| web | http://localhost:3100 | `apps/web/data/web.db` |
+
+Что нужно знать:
+
+- **Стаб знает три монеты:** BTC, ETH и MEME. Остальные символы api отклонит с 422.
+- **Цены появляются после синхронизации:** по расписанию раз в 5 минут или кнопкой «Запустить» в `/operator/sync`.
+- **Запускать web нужно одной и той же командой.** Путь к базе относительный: запуск из другого каталога создаст вторую базу с другим набором пользователей.
+- **Начать заново:** остановить процессы и удалить каталоги `apps/api/data` и `apps/web/data`. Базы и первый оператор создадутся при следующем старте.
+- **Настоящий CoinMarketCap:** в `apps/api/.env` указать свой `CMC_API_KEY` и убрать строку `CMC_BASE_URL` — стаб тогда не нужен. Подробности — в [README проекта](../../README.md#запуск).
+
 ## Переменные окружения
 
 Полный список с валидацией — [`src/server/config.ts`](src/server/config.ts), шаблон — [`.env.example`](.env.example).
