@@ -307,6 +307,29 @@ describe('[bff] /api/bff/[...path]', () => {
       expect(JSON.stringify(ctx.logs)).not.toContain('cpt_');
     });
 
+    it('❌ 401 от api — ключ web отклонён: 502, а не 401, иначе клиент уйдёт на вход по кругу', async () => {
+      apiReplies(
+        () =>
+          new Response(JSON.stringify({ type: 'urn:cpt:problem:unauthorized', title: 'Unauthorized', status: 401 }), {
+            status: 401,
+            headers: { 'content-type': 'application/problem+json', 'www-authenticate': 'Bearer' },
+          }),
+      );
+      const response = await handleBff(request('/api/v1/prices', { token: tokens.viewer }), ctx);
+
+      expect(response.status).toBe(502);
+      const body = (await response.json()) as { type: string; requestId: string };
+      expect(body.type).toBe('urn:cpt:web:problem:upstream-rejected-key');
+      expect(ctx.logs).toEqual([
+        {
+          level: 'error',
+          msg: 'api rejected web key',
+          fields: { requestId: body.requestId, target: 'GET /api/v1/prices' },
+        },
+      ]);
+      expect(JSON.stringify(ctx.logs)).not.toContain('cpt_');
+    });
+
     it('❌ 504: api не ответил за API_TIMEOUT_MS, запрос отменён', async () => {
       ctx = createTestContext({ api: { ...TEST_API, timeoutMs: 20 } });
       const token = ctx.sessions.create(await ctx.addUser('vera', 'correct horse battery'), {

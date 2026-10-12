@@ -12,6 +12,7 @@ export type ProblemSlug =
   | 'payload-too-large'
   | 'upstream-unavailable'
   | 'upstream-timeout'
+  | 'upstream-rejected-key'
   | 'login-taken'
   | 'last-operator'
   | 'own-password-reset'
@@ -29,6 +30,7 @@ const TITLES: Record<ProblemSlug, string> = {
   'payload-too-large': 'Тело запроса слишком большое',
   'upstream-unavailable': 'Сервис данных недоступен',
   'upstream-timeout': 'Сервис данных не ответил вовремя',
+  'upstream-rejected-key': 'Сервис данных отклонил ключ веб-клиента',
   'login-taken': 'Логин уже занят',
   'last-operator': 'Нельзя оставить систему без оператора',
   'own-password-reset': 'Свой пароль меняется в профиле',

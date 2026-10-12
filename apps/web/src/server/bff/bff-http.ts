@@ -41,6 +41,18 @@ export function relay(upstream: Response, requestId: string): Response {
   });
 }
 
+/**
+ * 401 от api — это отказ ключу web, а не пользователю: сессия к этому моменту уже проверена. Отдать его браузеру
+ * как 401 нельзя: клиент решит, что сессия истекла, уйдёт на вход, а страница входа вернёт его обратно —
+ * сессия-то жива. Поэтому ошибка настройки становится 502 с собственным типом и строкой в логе.
+ */
+export function relayOrRejectKey(upstream: Response, requestId: string, services: Services, target: string): Response {
+  if (upstream.status !== 401) return relay(upstream, requestId);
+  void upstream.body?.cancel();
+  services.log('error', 'api rejected web key', { requestId, target });
+  return problem(502, 'upstream-rejected-key', { requestId }, { 'X-Request-Id': requestId });
+}
+
 export function upstreamProblem(error: unknown, requestId: string, services: Services, target: string): Response {
   if (!(error instanceof UpstreamError)) throw error;
   if (error.failure === 'client-closed') return new Response(null, { status: 499 });
@@ -96,7 +108,7 @@ export async function handleBff(request: Request, services: Services): Promise<R
       body,
       signal: request.signal,
     });
-    return relay(upstream, requestId);
+    return relayOrRejectKey(upstream, requestId, services, `${route.method} ${route.path}`);
   } catch (error) {
     return upstreamProblem(error, requestId, services, `${route.method} ${route.path}`);
   }
