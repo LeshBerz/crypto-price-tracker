@@ -6,12 +6,15 @@ import { QueryProvider } from '@/components/query-provider';
 import { StreamProvider } from '@/components/stream-provider';
 import { Toaster } from '@/components/ui/toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { PASSWORD_CHANGE_HREF } from '@/lib/navigation';
 import { getCurrentSession } from '@/server/current-session';
 
 /** Всё внутри группы (app) — только после входа. Проверка — в БД на каждый запрос, а не по наличию cookie */
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const { session, hadCookie } = await getCurrentSession();
   if (!session) redirect(hadCookie ? '/login?reason=expired' : '/login');
+  // Вход с временным паролем: единственный доступный экран — смена пароля
+  if (session.mustChangePassword) redirect(PASSWORD_CHANGE_HREF);
 
   return (
     <div className="flex min-h-dvh flex-col">

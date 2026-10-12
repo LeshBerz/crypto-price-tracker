@@ -81,7 +81,7 @@ export class UserAdminService {
     // Пока считался scrypt, тот же логин мог занять другой запрос: вторая проверка — на стороне UNIQUE
     let id: number;
     try {
-      id = users.create(login, passwordHash, role, now());
+      id = users.create(login, passwordHash, role, now(), true);
     } catch (error) {
       if (users.findByLogin(login)) throw taken(login);
       throw error;
@@ -138,7 +138,7 @@ export class UserAdminService {
     const temporaryPassword = generatePassword();
     const passwordHash = await hashPassword(temporaryPassword);
     const revokedSessions = inTransaction(db, () => {
-      users.setPassword(id, passwordHash, now());
+      users.setPassword(id, passwordHash, now(), true);
       return sessions.revokeAllForUser(id, 'password_changed');
     });
     return { user: this.require(id), temporaryPassword, revokedSessions };
@@ -173,7 +173,7 @@ export class UserAdminService {
 
     const passwordHash = await hashPassword(newPassword);
     const revokedSessions = inTransaction(db, () => {
-      users.setPassword(userId, passwordHash, now());
+      users.setPassword(userId, passwordHash, now(), false);
       return sessions.revokeAllForUser(userId, 'password_changed');
     });
     throttle.reset(key, address);

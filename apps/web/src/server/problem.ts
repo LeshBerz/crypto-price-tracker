@@ -16,7 +16,8 @@ export type ProblemSlug =
   | 'login-taken'
   | 'last-operator'
   | 'own-password-reset'
-  | 'invalid-current-password';
+  | 'invalid-current-password'
+  | 'password-change-required';
 
 const TITLES: Record<ProblemSlug, string> = {
   'validation-error': 'Некорректный запрос',
@@ -35,6 +36,7 @@ const TITLES: Record<ProblemSlug, string> = {
   'last-operator': 'Нельзя оставить систему без оператора',
   'own-password-reset': 'Свой пароль меняется в профиле',
   'invalid-current-password': 'Текущий пароль указан неверно',
+  'password-change-required': 'Сначала смените временный пароль',
 };
 
 /** Клиентский код разбирает ответы BFF и api одинаково: type, title, status и дополнительные поля */

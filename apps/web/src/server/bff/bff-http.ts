@@ -80,6 +80,8 @@ export async function handleBff(request: Request, services: Services): Promise<R
   const background = request.method === 'GET' && request.headers.get(BACKGROUND_HEADER) === '1';
   const session = services.sessions.validate(readSessionToken(request), { touch: !background });
   if (!session) return fail(401, 'unauthorized');
+  // С временным паролем данные api недоступны, пока пароль не сменён (ADR 0016, поправка 35)
+  if (session.mustChangePassword) return fail(403, 'password-change-required');
 
   // URL уже нормализован: сегментов `..` и `.` в pathname нет, выйти за пределы таблицы ими нельзя
   const url = new URL(request.url);
