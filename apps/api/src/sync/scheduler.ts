@@ -14,6 +14,7 @@ export class SyncScheduler {
   /** Ожидание следующего запуска можно прервать — аналог сохранённого таймера для clearTimeout (C6) */
   private controller: AbortController | null = null;
   private loop: Promise<void> = Promise.resolve();
+  private nextAt: number | null = null;
 
   constructor(deps: SchedulerDeps) {
     this.deps = deps;
@@ -21,6 +22,14 @@ export class SyncScheduler {
 
   get state(): 'running' | 'stopped' {
     return this.controller ? 'running' : 'stopped';
+  }
+
+  /**
+   * Время следующего запуска по расписанию, epoch ms (ADR 0017, 1D). `null` — запуск идёт или планировщик остановлен:
+   * следующий запуск отсчитывается от завершения текущего, поэтому до завершения его время неизвестно.
+   */
+  get nextRunAt(): number | null {
+    return this.nextAt;
   }
 
   /**
@@ -49,6 +58,7 @@ export class SyncScheduler {
   async stop(): Promise<void> {
     this.controller?.abort(new Error('scheduler stopped'));
     this.controller = null;
+    this.nextAt = null;
     await this.loop;
   }
 
@@ -57,11 +67,13 @@ export class SyncScheduler {
     let delayMs = firstDelayMs;
     let trigger = firstTrigger;
     while (!signal.aborted) {
+      this.nextAt = clock.now() + delayMs;
       try {
         await clock.sleep(delayMs, signal);
       } catch {
         return;
       }
+      this.nextAt = null;
       try {
         await sync.run(trigger);
       } catch (error) {

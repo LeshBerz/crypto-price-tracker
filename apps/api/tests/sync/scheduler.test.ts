@@ -59,6 +59,29 @@ describe('SyncScheduler', () => {
     expect(runs(db)).toHaveLength(2);
   });
 
+  it('✅ nextRunAt: время ожидаемого запуска; null — до старта, пока запуск идёт и после остановки', async () => {
+    let release: () => void = () => {};
+    const { scheduler, clock, db } = await setup(() => new Promise((resolve) => (release = () => resolve(EMPTY))));
+    insertCoin(db, T0 - 2 * MINUTE);
+    expect(scheduler.nextRunAt).toBeNull();
+
+    await scheduler.start();
+    expect(scheduler.nextRunAt).toBe(T0 + 3 * MINUTE);
+
+    // Запуск начался и ждёт CMC: следующий отсчитывается от завершения, поэтому его время ещё неизвестно
+    await clock.advance(3 * MINUTE);
+    expect(runs(db)).toEqual([{ trigger: 'schedule', status: 'running', started_at: T0 + 3 * MINUTE }]);
+    expect(scheduler.nextRunAt).toBeNull();
+
+    await clock.advance(MINUTE);
+    release();
+    await clock.advance(0);
+    expect(scheduler.nextRunAt).toBe(T0 + 4 * MINUTE + SYNC_INTERVAL_MS);
+
+    await scheduler.stop();
+    expect(scheduler.nextRunAt).toBeNull();
+  });
+
   it('✅ цены свежие → первый запуск через остаток интервала: частые рестарты не тратят квоту', async () => {
     const { scheduler, clock, db } = await setup();
     insertCoin(db, T0 - 2 * MINUTE);

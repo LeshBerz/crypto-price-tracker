@@ -233,7 +233,8 @@ export interface paths {
         };
         /**
          * Состояние интеграции с CoinMarketCap и квоты
-         * @description Последний успех и последняя ошибка обращения к CMC, использование кредитов (по данным CMC `key/info`, кэшируется).
+         * @description Последний успех и последняя ошибка обращения к CMC, использование кредитов (по данным CMC `key/info`, кэшируется)
+         *     и расписание синхронизации: состояние планировщика, интервал и время следующего запуска.
          */
         get: operations["getCmcStatus"];
         put?: never;
@@ -466,6 +467,18 @@ export interface components {
                 creditsUsedToday: number;
                 fetchedAt: components["schemas"]["Timestamp"];
             } | null;
+            /** @description Расписание синхронизации — единственный источник для «следующего запуска» и прогноза квоты */
+            schedule: {
+                /**
+                 * @description То же значение, что `checks.scheduler` в `/health/ready`
+                 * @enum {string}
+                 */
+                state: "running" | "stopped" | "disabled";
+                /** @description Пауза между завершением запуска и началом следующего (`SYNC_INTERVAL_MS`) */
+                intervalMs: number;
+                /** @description `null`: запуск по расписанию идёт прямо сейчас либо планировщик остановлен или выключен */
+                nextRunAt: (string & components["schemas"]["Timestamp"]) | null;
+            };
         };
         /**
          * @description RFC 9457 Problem Details. `errors` — только для validation-error.

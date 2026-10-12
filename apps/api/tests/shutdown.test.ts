@@ -171,7 +171,11 @@ describe('остановка настоящего http-сервера (лову�
   it('SSE-клиент получает shutdown, keep-alive сокет закрыт, readiness 503 — без ожидания grace', async () => {
     let coordinator: ShutdownCoordinator | null = null;
     const { app, db, clock, logger, sync, sse } = await createTestApp({
-      lifecycle: { isShuttingDown: () => coordinator?.isShuttingDown() ?? false, schedulerState: () => 'stopped' },
+      lifecycle: {
+        isShuttingDown: () => coordinator?.isShuttingDown() ?? false,
+        schedulerState: () => 'stopped',
+        nextRunAt: () => null,
+      },
     });
     const server = app.listen(0);
     await new Promise((resolve) => server.once('listening', resolve));
