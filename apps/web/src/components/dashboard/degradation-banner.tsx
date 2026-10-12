@@ -1,17 +1,10 @@
 import { Info, RefreshCw, TriangleAlert, WifiOff, type LucideIcon } from 'lucide-react';
-import { cn } from 'cn';
+import { Notice, type NoticeTone } from '@/components/notice';
 import { Button } from '@/components/ui/button';
 import type { Degradation } from '@/lib/dashboard/degradation';
 import { formatClock, formatRelative, plural } from '@/lib/format';
 
-type Tone = 'warn' | 'info';
-
-const TONE: Record<Tone, string> = {
-  warn: 'border-warn-border bg-warn-bg text-warn',
-  info: 'border-info-border bg-info-bg text-info',
-};
-
-type Content = { tone: Tone; Icon: LucideIcon; title: string; body: string };
+type Content = { tone: NoticeTone; Icon: LucideIcon; title: string; body: string };
 
 const COINS = ['монеты', 'монет', 'монет'] as const;
 
@@ -92,23 +85,25 @@ export function DegradationBanner({
   const { tone, Icon, title, body } = describe(degradation, now);
   const requestId = degradation.kind === 'api-unavailable' ? degradation.requestId : null;
   return (
-    <div className={cn('flex items-start gap-3 rounded-lg border px-4 py-3 text-sm', TONE[tone])}>
-      <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <strong className="font-semibold">{title}</strong>
-        <span>{body}</span>
-        {requestId && (
-          <span className="text-xs">
-            Идентификатор запроса: <code className="font-mono break-all">{requestId}</code>
-          </span>
-        )}
-      </div>
-      {degradation.kind === 'api-unavailable' && (
-        <Button variant="outline" size="sm" onClick={onRetry}>
-          <RefreshCw aria-hidden="true" />
-          Повторить
-        </Button>
+    <Notice
+      tone={tone}
+      Icon={Icon}
+      title={title}
+      action={
+        degradation.kind === 'api-unavailable' && (
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            <RefreshCw aria-hidden="true" />
+            Повторить
+          </Button>
+        )
+      }
+    >
+      <span>{body}</span>
+      {requestId && (
+        <span className="text-xs">
+          Идентификатор запроса: <code className="font-mono break-all">{requestId}</code>
+        </span>
       )}
-    </div>
+    </Notice>
   );
 }

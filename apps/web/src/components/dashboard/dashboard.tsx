@@ -1,9 +1,10 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ChartSpline, CircleX, RefreshCw } from 'lucide-react';
-import { cn } from 'cn';
+import { ChartSpline } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { LoadError } from '@/components/load-error';
+import { StreamIndicator } from '@/components/stream-indicator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { bff, BffError } from '@/lib/bff-client';
@@ -15,7 +16,6 @@ import {
   type LatestPriceList,
   type SparklineWindow,
 } from '@/lib/dashboard/queries';
-import type { StreamStatus } from '@/lib/dashboard/stream-connection';
 import { useNow, usePriceStream } from '@/lib/dashboard/use-price-stream';
 import { formatClock, plural } from '@/lib/format';
 import type { Role } from '@/server/users';
@@ -48,23 +48,6 @@ function SyncLine({ lastSync }: { lastSync: LatestPriceList['lastSync'] }) {
   );
 }
 
-const STREAM: Record<StreamStatus, { text: string; dot: string }> = {
-  open: { text: 'Обновляется в реальном времени', dot: 'bg-up' },
-  connecting: { text: 'Подключение…', dot: 'bg-muted-foreground' },
-  reconnecting: { text: 'Переподключение…', dot: 'border border-muted-foreground' },
-};
-
-/** Точка закрашена — поток открыт, пустая — нет: состояние читается и без цвета */
-function StreamIndicator({ status }: { status: StreamStatus }) {
-  const { text, dot } = STREAM[status];
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <span className={cn('size-2 rounded-full', dot)} aria-hidden="true" />
-      {text}
-    </span>
-  );
-}
-
 function WindowToggle({ value, onChange }: { value: SparklineWindow; onChange: (window: SparklineWindow) => void }) {
   return (
     <div className="flex items-center gap-2">
@@ -84,35 +67,6 @@ function WindowToggle({ value, onChange }: { value: SparklineWindow; onChange: (
           </Button>
         ))}
       </div>
-    </div>
-  );
-}
-
-function errorText(error: unknown): string {
-  if (!(error instanceof BffError)) return 'Неизвестная ошибка.';
-  if (error.source === 'network') return 'Нет связи с сервером. Проверьте подключение к сети.';
-  if (error.isUnavailable) return 'API не отвечает. Попробуйте ещё раз через минуту.';
-  return error.problem?.detail ?? error.problem?.title ?? `Ошибка ${error.status}.`;
-}
-
-function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
-  const requestId = error instanceof BffError ? error.requestId : null;
-  return (
-    <div role="alert" className="flex flex-col items-center gap-3 px-4 py-10 text-center text-sm">
-      <CircleX className="size-6 text-destructive" aria-hidden="true" />
-      <div className="flex flex-col gap-1">
-        <strong className="font-semibold">Не удалось загрузить цены</strong>
-        <span className="text-muted-foreground">{errorText(error)}</span>
-        {requestId && (
-          <span className="text-xs text-muted-foreground">
-            Идентификатор запроса: <code className="font-mono break-all">{requestId}</code>
-          </span>
-        )}
-      </div>
-      <Button variant="outline" size="sm" onClick={onRetry}>
-        <RefreshCw aria-hidden="true" />
-        Повторить
-      </Button>
     </div>
   );
 }
@@ -202,7 +156,9 @@ export function Dashboard({ role }: { role: Role }) {
             <StreamIndicator status={streamStatus} />
           </span>
         </div>
-        {!items && prices.isError && <LoadError error={prices.error} onRetry={retry} />}
+        {!items && prices.isError && (
+          <LoadError title="Не удалось загрузить цены" error={prices.error} onRetry={retry} />
+        )}
         {!items && !prices.isError && <PriceTableSkeleton />}
         {items?.length === 0 && <EmptyState role={role} />}
         {items && items.length > 0 && (
