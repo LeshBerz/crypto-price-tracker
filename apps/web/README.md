@@ -14,88 +14,98 @@
 npm ci
 ```
 
-Создать первого оператора. Команда спросит пароль (от 12 символов) и напечатает его хэш:
+Web читает общий файл окружения — `.env` в корне репозитория, тот же, что api и `docker compose`. Шаблон со всеми переменными — [`.env.example`](../../.env.example):
 
 ```bash
-npm run hash-password -w @cpt/web
+cp .env.example .env
 ```
 
-Выпустить два ключа api — по одному на роль (ключ печатается один раз):
+В нём нужно заполнить четыре значения.
 
-```bash
-npm run keys:create -w @cpt/api -- --name web-viewer --role viewer
-```
-
-```bash
-npm run keys:create -w @cpt/api -- --name web-operator --role operator
-```
-
-Скопировать `apps/web/.env.example` в `apps/web/.env.local`, вписать ключи, логин и хэш. Без ключей web не стартует. **В файле `.env.local` каждый знак `$` в хэше экранируется:** `scrypt\$17\$8\$1\$…`. Иначе загрузчик окружения Next примет `$17` за подстановку переменной, и сервер остановится на старте с ошибкой конфига.
-
-```bash
-npm run dev -w @cpt/web
-```
-
-Приложение — на http://localhost:3000. Если порт занят api, задайте другой: `npm run dev -w @cpt/web -- -p 3100`.
-
-### Локальный стенд со стабом CoinMarketCap
-
-Три процесса: стаб CoinMarketCap, api и web. Ключ CoinMarketCap и интернет не нужны. Все команды — из корня репозитория, каждая в своём терминале.
-
-**Один раз.** Сгенерировать два ключа api — команду выполнить дважды, значения должны различаться:
+Два ключа api — команду выполнить дважды, значения должны различаться. api примет их при старте, web будет ходить с ними в api:
 
 ```bash
 node -e "console.log('cpt_' + require('node:crypto').randomBytes(32).toString('base64url'))"
 ```
 
-Создать `apps/api/.env`: api при старте примет эти ключи и будет ходить в стаб.
-
-```
-CMC_API_KEY=stub-cmc-key
-CMC_BASE_URL=http://localhost:4010
+```dotenv
 BOOTSTRAP_VIEWER_KEY=cpt_…
 BOOTSTRAP_OPERATOR_KEY=cpt_…
 ```
 
-Создать `apps/web/.env.local` из `apps/web/.env.example`: те же два ключа в `API_VIEWER_KEY` и `API_OPERATOR_KEY`, логин в `WEB_BOOTSTRAP_LOGIN` и хэш пароля из `npm run hash-password -w @cpt/web` в `WEB_BOOTSTRAP_PASSWORD_HASH` (знаки `$` экранируются: `scrypt\$17\$…`). Оба файла в git не попадают.
-
-**Каждый раз.** Порядок запуска: стаб → api → web.
+Первый оператор: логин и хэш пароля. Команда спросит пароль (от 12 символов) и напечатает хэш:
 
 ```bash
-node apps/api/scripts/cmc-stub-server.ts
+npm run hash-password -w @cpt/web
 ```
+
+```dotenv
+WEB_BOOTSTRAP_LOGIN=admin
+WEB_BOOTSTRAP_PASSWORD_HASH='scrypt$17$8$1$…'
+```
+
+Хэш — в одинарных кавычках, знаки `$` не экранируются. Без ключей web не стартует и называет переменную, которой не хватает.
+
+### Локальный стенд
+
+Три процесса: источник цен, api и web. Все команды — из корня репозитория, каждая в своём терминале, в этом порядке.
+
+Источник цен — на выбор:
+
+- **стаб CoinMarketCap** (ключ и интернет не нужны): в `.env` задать `CMC_API_KEY=stub-cmc-key` и `CMC_BASE_URL=http://localhost:4010`, затем запустить стаб:
+
+  ```bash
+  node apps/api/scripts/cmc-stub-server.ts
+  ```
+
+- **настоящий CoinMarketCap**: в `.env` задать свой `CMC_API_KEY`, строку `CMC_BASE_URL` убрать или закомментировать. Стаб не запускается.
+
+api:
 
 ```bash
 npm run dev -w @cpt/api
 ```
 
+web:
+
 ```bash
-npm run dev -w @cpt/web -- -p 3100
+npm run dev -w @cpt/web
 ```
 
 | Процесс | Адрес | База |
 |---|---|---|
 | Стаб CoinMarketCap | http://localhost:4010 | — |
 | api | http://localhost:3000, Swagger — `/docs` | `apps/api/data/cpt.db` |
-| web | http://localhost:3100 | `apps/web/data/web.db` |
+| web | http://localhost:3001 | `apps/web/data/web.db` |
 
 Что нужно знать:
 
 - **Стаб знает три монеты:** BTC, ETH и MEME. Остальные символы api отклонит с 422.
 - **Цены появляются после синхронизации:** по расписанию раз в 5 минут или кнопкой «Запустить» в `/operator/sync`.
+- **С настоящим CoinMarketCap тратится квота:** 1 кредит на синхронизацию всего списка, расход виден в `/operator/system`.
 - **Запускать web нужно одной и той же командой.** Путь к базе относительный: запуск из другого каталога создаст вторую базу с другим набором пользователей.
 - **Начать заново:** остановить процессы и удалить каталоги `apps/api/data` и `apps/web/data`. Базы и первый оператор создадутся при следующем старте.
-- **Настоящий CoinMarketCap:** в `apps/api/.env` указать свой `CMC_API_KEY` и убрать строку `CMC_BASE_URL` — стаб тогда не нужен. Подробности — в [README проекта](../../README.md#запуск).
+- **`CMC_BASE_URL=http://localhost:4010` годится только для локального запуска.** Перед `docker compose up` строку нужно закомментировать: в контейнере `localhost` — это сам контейнер.
+
+### Откуда берутся значения
+
+| Источник | Приоритет | Когда нужен |
+|---|---|---|
+| Переменные процесса | высший | Docker, CI, разовое переопределение в терминале |
+| `apps/web/.env.local` | выше общего файла | Значения только для web на этой машине. Этот файл читает сам Next и подставляет переменные: знаки `$` в хэше здесь экранируются (`scrypt\$17\$…`) |
+| `.env` в корне | базовый | Обычный случай: один файл на весь проект |
+
+Из общего файла web берёт только свои переменные; ключ CoinMarketCap в процесс web не попадает.
 
 ## Переменные окружения
 
-Полный список с валидацией — [`src/server/config.ts`](src/server/config.ts), шаблон — [`.env.example`](.env.example).
+Полный список с валидацией — [`src/server/config.ts`](src/server/config.ts), шаблон — [`.env.example`](../../.env.example) в корне репозитория.
 
 | Переменная | По умолчанию | Назначение |
 |---|---|---|
 | `API_BASE_URL` | `http://localhost:3000` | Адрес api: только origin, без пути |
-| `API_VIEWER_KEY` | — (обязательна) | Ключ api роли viewer: им BFF ходит за ценами и в поток событий |
-| `API_OPERATOR_KEY` | — (обязательна) | Ключ api роли operator. Должен отличаться от ключа viewer |
+| `API_VIEWER_KEY` | значение `BOOTSTRAP_VIEWER_KEY` | Ключ api роли viewer: им BFF ходит за ценами и в поток событий. Один из двух обязателен |
+| `API_OPERATOR_KEY` | значение `BOOTSTRAP_OPERATOR_KEY` | Ключ api роли operator. Должен отличаться от ключа viewer |
 | `API_TIMEOUT_MS` | `10000` | Сколько ждать ответа api; дольше — 504 |
 | `WEB_DATABASE_PATH` | `./data/web.db` | SQLite с пользователями и сессиями. Отдельный файл, не БД api |
 | `WEB_BOOTSTRAP_LOGIN` | — | Логин первого оператора. Создаётся при старте, если такого логина ещё нет |

@@ -4,6 +4,7 @@ import { loadConfig, type WebConfig } from './config';
 import type { ApiFetch } from './bff/upstream';
 import { migrate, openDatabase, type Database } from './db';
 import { consoleLog, type Log } from './log';
+import { readRootEnv } from './root-env';
 import { LoginThrottle } from './login-throttle';
 import { hashPassword, verifyPassword } from './passwords';
 import { SessionService } from './sessions';
@@ -57,5 +58,6 @@ export function createServices(config: WebConfig, now: () => number = Date.now):
 const holder = globalThis as typeof globalThis & { __cptWebServices?: Services };
 
 export function getServices(): Services {
-  return (holder.__cptWebServices ??= createServices(loadConfig()));
+  // Приоритет: переменные процесса (в том числе `.env.local`, который загрузил Next) → общий `.env` в корне
+  return (holder.__cptWebServices ??= createServices(loadConfig({ ...readRootEnv(), ...process.env })));
 }

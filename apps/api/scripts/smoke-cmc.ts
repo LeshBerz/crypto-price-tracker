@@ -1,5 +1,5 @@
 // Проверка формата живого ответа CoinMarketCap (риск ADR 0006: тесты идут против стаба, а формат задаёт CMC).
-// Запуск: npm run smoke:cmc -w @cpt/api (нужен CMC_API_KEY в apps/api/.env). Тратит 2 кредита из 10 000 в месяц.
+// Запуск: npm run smoke:cmc -w @cpt/api (нужен CMC_API_KEY в .env в корне репозитория). Тратит 2 кредита из 15 000 в месяц.
 // В CI не запускается: ключа там нет, а сборка не должна зависеть от внешнего сервиса.
 import { SystemClock } from '../src/common/clock.ts';
 import { CmcMarketDataProvider } from '../src/market-data/cmc-provider.ts';

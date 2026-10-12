@@ -1,9 +1,11 @@
-import { readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ConfigError, loadConfig } from '@/server/config';
 import { createServices } from '@/server/container';
 import { migrate, MIGRATIONS, openDatabase, type Database } from '@/server/db';
 import { hashPassword } from '@/server/passwords';
+import { findRootEnvFile, readRootEnv } from '@/server/root-env';
 import { FAST_PARAMS, START, TEST_API } from './helpers';
 
 const HASH = `scrypt$10$8$1$${'A'.repeat(22)}$${'A'.repeat(43)}`;
@@ -146,6 +148,33 @@ describe('конфиг', () => {
     });
   });
 
+  it('✅ общий .env: без API_*_KEY web берёт ключи, которые api принимает при старте (BOOTSTRAP_*_KEY)', () => {
+    const shared = { BOOTSTRAP_VIEWER_KEY: VIEWER_KEY, BOOTSTRAP_OPERATOR_KEY: OPERATOR_KEY };
+    expect(loadConfig(shared).api).toMatchObject({ viewerKey: VIEWER_KEY, operatorKey: OPERATOR_KEY });
+    // Пустое значение своей переменной (так её передаёт compose без ключей) — тоже «не задана»
+    expect(loadConfig({ ...shared, API_VIEWER_KEY: '', API_OPERATOR_KEY: ' ' }).api.viewerKey).toBe(VIEWER_KEY);
+  });
+
+  it('✅ своя переменная web важнее общей: web можно выдать отдельные ключи', () => {
+    const own = `cpt_${'w'.repeat(43)}`;
+    const config = loadConfig({
+      BOOTSTRAP_VIEWER_KEY: VIEWER_KEY,
+      BOOTSTRAP_OPERATOR_KEY: OPERATOR_KEY,
+      API_VIEWER_KEY: own,
+    });
+    expect(config.api).toMatchObject({ viewerKey: own, operatorKey: OPERATOR_KEY });
+  });
+
+  it('❌ ключа нет ни под одним именем; общий ключ не того формата назван своим именем', () => {
+    expect(() => loadConfig({ BOOTSTRAP_OPERATOR_KEY: OPERATOR_KEY })).toThrow(/API_VIEWER_KEY.*BOOTSTRAP_VIEWER_KEY/);
+    expect(() => loadConfig({ BOOTSTRAP_VIEWER_KEY: 'cpt_short', BOOTSTRAP_OPERATOR_KEY: OPERATOR_KEY })).toThrow(
+      /^BOOTSTRAP_VIEWER_KEY: ожидается ключ/,
+    );
+    expect(() => loadConfig({ BOOTSTRAP_VIEWER_KEY: VIEWER_KEY, BOOTSTRAP_OPERATOR_KEY: VIEWER_KEY })).toThrow(
+      'должны быть разными',
+    );
+  });
+
   it('✅ адрес api приводится к origin, таймаут читается из окружения', () => {
     const config = loadConfig({ ...API_ENV, API_BASE_URL: 'http://api:3000/', API_TIMEOUT_MS: '2500' });
     expect(config.api).toMatchObject({ baseUrl: 'http://api:3000', timeoutMs: 2500 });
@@ -183,5 +212,54 @@ describe('конфиг', () => {
     expect(() => loadConfig({ ...API_ENV, WEB_BOOTSTRAP_LOGIN: 'root', WEB_BOOTSTRAP_PASSWORD_HASH: secret })).toThrow(
       expect.not.objectContaining({ message: expect.stringContaining(secret) }),
     );
+  });
+});
+
+describe('общий .env в корне репозитория', () => {
+  const sep = (path: string) => path.split('\\').join('/');
+  const world = (files: string[]) => (path: string) => files.includes(sep(path));
+
+  it('✅ найден при запуске из apps/web и из корня', () => {
+    const exists = world(['/repo/docker-compose.yml', '/repo/.env']);
+    expect(sep(findRootEnvFile('/repo/apps/web', exists) ?? '')).toBe('/repo/.env');
+    expect(sep(findRootEnvFile('/repo', exists) ?? '')).toBe('/repo/.env');
+  });
+
+  it('✅ файла нет или это не репозиторий (Docker-образ) — ничего не читается', () => {
+    expect(findRootEnvFile('/repo/apps/web', world(['/repo/docker-compose.yml']))).toBeNull();
+    expect(findRootEnvFile('/app', world(['/app/.env']))).toBeNull();
+    // Корень дальше двух уровней не ищется: чужой .env выше по дереву не подхватится
+    expect(findRootEnvFile('/repo/a/b/c', world(['/repo/docker-compose.yml', '/repo/.env']))).toBeNull();
+    expect(readRootEnv(join(tmpdir(), 'cpt-no-such-dir'))).toEqual({});
+  });
+
+  it('✅ хэш пароля в одинарных кавычках читается без экранирования $; process.env не меняется', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cpt-env-'));
+    const hash = await hashPassword('correct horse battery', FAST_PARAMS);
+    writeFileSync(join(dir, 'docker-compose.yml'), 'services: {}\n');
+    writeFileSync(
+      join(dir, '.env'),
+      [
+        '# общий файл',
+        'CMC_API_KEY=secret-cmc-key',
+        `BOOTSTRAP_VIEWER_KEY=${VIEWER_KEY}`,
+        `BOOTSTRAP_OPERATOR_KEY=${OPERATOR_KEY}`,
+        'WEB_BOOTSTRAP_LOGIN=root',
+        `WEB_BOOTSTRAP_PASSWORD_HASH='${hash}'`,
+      ].join('\n'),
+    );
+    mkdirSync(join(dir, 'apps', 'web'), { recursive: true });
+    try {
+      const env = readRootEnv(join(dir, 'apps', 'web'));
+      const config = loadConfig({ ...env, WEB_BOOTSTRAP_LOGIN: 'alice' });
+      // Переменная процесса важнее файла; остальное взято из файла
+      expect(config.bootstrap).toEqual({ login: 'alice', passwordHash: hash });
+      expect(config.api.viewerKey).toBe(VIEWER_KEY);
+      // Ключ CoinMarketCap в конфиг web не попадает и в окружении процесса не появляется
+      expect(JSON.stringify(config)).not.toContain('secret-cmc-key');
+      expect(process.env.CMC_API_KEY).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
