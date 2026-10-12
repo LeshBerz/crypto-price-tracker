@@ -2,7 +2,7 @@
 
 > Файл сгенерирован: `npm run test:matrix -w @cpt/api` (отчёт Jest × операции `openapi.yaml`). Руками не править.
 
-Операций в контракте — **16**, тестов на них — **127** (✅ 33, ❌ 94).
+Операций в контракте — **16**, тестов на них — **128** (✅ 34, ❌ 94).
 Требование C8: у каждой операции есть хотя бы один позитивный и один негативный тест. Проверка входит в `npm run check` и CI.
 
 | Операция | Метод и путь | ✅ | ❌ |
@@ -21,7 +21,7 @@
 | [`listSyncRuns`](#listsyncruns) | `GET /api/v1/sync-runs` | 1 | 5 |
 | [`triggerSyncRun`](#triggersyncrun) | `POST /api/v1/sync-runs` | 1 | 6 |
 | [`getSyncRun`](#getsyncrun) | `GET /api/v1/sync-runs/{id}` | 1 | 4 |
-| [`getCmcStatus`](#getcmcstatus) | `GET /api/v1/system/cmc` | 3 | 4 |
+| [`getCmcStatus`](#getcmcstatus) | `GET /api/v1/system/cmc` | 4 | 4 |
 | [`streamEvents`](#streamevents) | `GET /api/v1/stream` | 5 | 6 |
 
 ## getLiveness
@@ -239,6 +239,7 @@
 |---|---|---|
 | ✅ | 200: до первого обращения к CMC — всё null; запуск с пустым watchlist успехом CMC не считается | `tests/sync/sync.test.ts` |
 | ✅ | 200: кредиты из стаба, последний успех и последняя ошибка | `tests/sync/sync.test.ts` |
+| ✅ | 200: schedule — состояние и время следующего запуска от планировщика, интервал из конфига | `tests/sync/sync.test.ts` |
 | ✅ | сбой key/info не портит запуск: quota остаётся null, предупреждение в логе | `tests/sync/sync.test.ts` |
 | ❌ | без ключа → 401, WWW-Authenticate: Bearer | `tests/http/auth-matrix.test.ts` |
 | ❌ | отозванный ключ → 401 invalid_token | `tests/http/auth-matrix.test.ts` |

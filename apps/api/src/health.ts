@@ -12,11 +12,14 @@ export type SchedulerState = Readiness['checks']['scheduler'];
 export type Lifecycle = {
   isShuttingDown(): boolean;
   schedulerState(): SchedulerState;
+  /** Время следующего запуска по расписанию, epoch ms; `null` — запуск идёт или планировщика нет */
+  nextRunAt(): number | null;
 };
 
 export const staticLifecycle: Lifecycle = {
   isShuttingDown: () => false,
   schedulerState: () => 'disabled',
+  nextRunAt: () => null,
 };
 
 export type ReadinessDeps = {

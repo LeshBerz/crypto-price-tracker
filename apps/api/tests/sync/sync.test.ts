@@ -10,7 +10,7 @@ import { INTERNAL_CODE, PARTIAL_CODE, SyncService } from '../../src/sync/sync-se
 import type { UnitOfWork } from '../../src/unit-of-work.ts';
 import { DEFAULT_COINS, startCmcStub, STUB_API_KEY, type CmcStub, type StubCoin } from '../../scripts/cmc-stub.ts';
 import { bearer, TOKENS } from '../helpers/auth.ts';
-import { createTestApp, unconfiguredMarketData } from '../helpers/app.ts';
+import { createTestApp, SYNC_INTERVAL_MS, unconfiguredMarketData } from '../helpers/app.ts';
 import { T0 } from '../helpers/db.ts';
 import { FakeClock } from '../helpers/fake-clock.ts';
 
@@ -488,13 +488,15 @@ describe(`[getSyncRun] GET ${RUNS}/{id}`, () => {
 
 describe('[getCmcStatus] GET /api/v1/system/cmc', () => {
   const URL = '/api/v1/system/cmc';
+  // Приложение в тестах собрано без планировщика (staticLifecycle)
+  const NO_SCHEDULER = { state: 'disabled', intervalMs: SYNC_INTERVAL_MS, nextRunAt: null };
 
   it('✅ 200: до первого обращения к CMC — всё null; запуск с пустым watchlist успехом CMC не считается', async () => {
     const { app, sync } = await setupWithStub();
     await sync.run('startup');
     const res = await request(app).get(URL).set(bearer(TOKENS.operator));
     expect(res).toMatchContract('getCmcStatus', 200);
-    expect(res.body).toEqual({ lastSuccessAt: null, lastError: null, quota: null });
+    expect(res.body).toEqual({ lastSuccessAt: null, lastError: null, quota: null, schedule: NO_SCHEDULER });
   });
 
   it('✅ 200: кредиты из стаба, последний успех и последняя ошибка', async () => {
@@ -511,7 +513,28 @@ describe('[getCmcStatus] GET /api/v1/system/cmc', () => {
       lastSuccessAt: iso(T0),
       lastError: { code: 'CMC_AUTH', message: expect.any(String), at: iso(T0 + 5 * MINUTE) },
       quota: { ...USAGE, fetchedAt: iso(T0) },
+      schedule: NO_SCHEDULER,
     });
+  });
+
+  it('✅ 200: schedule — состояние и время следующего запуска от планировщика, интервал из конфига', async () => {
+    let nextRunAt: number | null = T0 + 2 * MINUTE;
+    const { app } = await createTestApp({
+      lifecycle: { isShuttingDown: () => false, schedulerState: () => 'running', nextRunAt: () => nextRunAt },
+    });
+    const waiting = await request(app).get(URL).set(bearer(TOKENS.operator));
+    expect(waiting).toMatchContract('getCmcStatus', 200);
+    expect(waiting.body.schedule).toEqual({
+      state: 'running',
+      intervalMs: SYNC_INTERVAL_MS,
+      nextRunAt: iso(T0 + 2 * MINUTE),
+    });
+
+    // Запуск идёт: время следующего неизвестно до его завершения
+    nextRunAt = null;
+    const running = await request(app).get(URL).set(bearer(TOKENS.operator));
+    expect(running).toMatchContract('getCmcStatus', 200);
+    expect(running.body.schedule).toEqual({ state: 'running', intervalMs: SYNC_INTERVAL_MS, nextRunAt: null });
   });
 
   it('✅ сбой key/info не портит запуск: quota остаётся null, предупреждение в логе', async () => {
