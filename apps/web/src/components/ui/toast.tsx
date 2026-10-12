@@ -45,7 +45,7 @@ function ToastList() {
         key={item.id}
         toast={item}
         data-slot="toast"
-        className="flex items-start gap-3 rounded-lg bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/10 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0"
+        className="flex items-start gap-3 rounded-lg bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/10 animate-toast-in transition-[opacity,translate] duration-(--duration-base) data-ending-style:translate-x-4 data-ending-style:opacity-0"
       >
         <Icon className={cn('mt-0.5 size-4 shrink-0', className)} aria-hidden="true" />
         <ToastPrimitive.Content className="flex min-w-0 flex-1 flex-col gap-0.5">
