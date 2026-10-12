@@ -69,6 +69,16 @@ export type Profile = { login: string; role: Role; lastLoginAt: string | null; s
 /** PUT /api/me/password → 204, все сессии пользователя отозваны */
 export type ChangePasswordRequest = { currentPassword: string; newPassword: string };
 
+/**
+ * Туры гида, отметка о которых хранится на пользователя (ADR 0018). Тура экрана входа здесь нет: до входа
+ * пользователя нет, его отметка живёт в браузере. Список совпадает с CHECK в схеме web.db.
+ */
+export const TOUR_IDS = ['dashboard', 'coin', 'operator'] as const;
+export type TourId = (typeof TOUR_IDS)[number];
+/** Тур панели оператора Viewer отметить не может: раздел ему недоступен */
+export const TOUR_ROLE: Record<TourId, Role> = { dashboard: 'viewer', coin: 'viewer', operator: 'operator' };
+// PUT /api/me/tours/{tour} → 204: тур пройден или пропущен. DELETE /api/me/tours → 204: «пройти гид заново»
+
 /** Отказы, которые экран различает по `type` (без префикса `urn:cpt:web:problem:`) */
 export type AccountProblem =
   'login-taken' | 'last-operator' | 'own-password-reset' | 'invalid-current-password' | 'password-change-required';

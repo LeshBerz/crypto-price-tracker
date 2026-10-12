@@ -8,6 +8,7 @@ import { readRootEnv } from './root-env';
 import { LoginThrottle } from './login-throttle';
 import { hashPassword, verifyPassword } from './passwords';
 import { SessionService } from './sessions';
+import { TourRepository } from './tours';
 import { UserAdminService } from './user-admin';
 import { UserRepository } from './users';
 
@@ -19,6 +20,7 @@ export type Services = {
   throttle: LoginThrottle;
   auth: AuthService;
   userAdmin: UserAdminService;
+  tours: TourRepository;
   now: () => number;
   /** fetch для запросов в api: в тестах подменяется */
   apiFetch: ApiFetch;
@@ -48,6 +50,7 @@ export function createServices(config: WebConfig, now: () => number = Date.now):
     throttle,
     auth,
     userAdmin,
+    tours: new TourRepository(db),
     now,
     apiFetch: (input, init) => fetch(input, init),
     log: consoleLog,

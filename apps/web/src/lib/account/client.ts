@@ -9,6 +9,7 @@ import type {
   Profile,
   ResetPasswordResponse,
   SessionList,
+  TourId,
   UpdateUserRequest,
   UpdateUserResponse,
   UserList,
@@ -25,6 +26,8 @@ export type AccountClient = {
   revokeOwnSession(id: string): Promise<void>;
   logoutEverywhere(): Promise<void>;
   changePassword(body: ChangePasswordRequest): Promise<void>;
+  completeTour(tour: TourId): Promise<void>;
+  resetTours(): Promise<void>;
 };
 
 const ACCEPT = { accept: 'application/json' };
@@ -49,6 +52,8 @@ export function createAccountClient(deps: BffClientDeps): AccountClient {
     revokeOwnSession: (id) => remove(`/api/me/sessions/${encodeURIComponent(id)}`),
     logoutEverywhere: () => remove('/api/me/sessions'),
     changePassword: (body) => write('PUT', '/api/me/password', body),
+    completeTour: (tour) => write('PUT', `/api/me/tours/${tour}`),
+    resetTours: () => remove('/api/me/tours'),
   };
 }
 

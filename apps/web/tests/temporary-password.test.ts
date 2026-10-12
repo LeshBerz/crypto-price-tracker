@@ -178,7 +178,7 @@ describe('[migrations] 0003: признак временного пароля', 
        VALUES ('alice', ?, 'viewer', ?, ?, ?)`,
     ).run(`scrypt$10$8$1$${'A'.repeat(22)}$${'A'.repeat(43)}`, START, START, START);
 
-    expect(migrate(db, START)).toEqual([3]);
+    expect(migrate(db, START, MIGRATIONS.slice(0, 3))).toEqual([3]);
     expect(db.prepare('SELECT must_change_password FROM users').get()).toEqual({ must_change_password: 0 });
     expect(() => db.exec('UPDATE users SET must_change_password = 2')).toThrow(/CHECK/);
   });

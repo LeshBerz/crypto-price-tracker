@@ -28,12 +28,13 @@ function seeded(): Database {
 describe('миграции web.db', () => {
   it('✅ применяются один раз; повторный запуск ничего не делает', () => {
     const db = openDatabase(':memory:');
-    expect(migrate(db, START)).toEqual([1, 2, 3]);
+    expect(migrate(db, START)).toEqual([1, 2, 3, 4]);
     expect(migrate(db, START + 1)).toEqual([]);
     expect(db.prepare('SELECT version, name, applied_at FROM schema_migrations').all()).toEqual([
       { version: 1, name: 'auth', applied_at: START },
       { version: 2, name: 'session_id', applied_at: START },
       { version: 3, name: 'password_change', applied_at: START },
+      { version: 4, name: 'tours', applied_at: START },
     ]);
   });
 
@@ -51,7 +52,8 @@ describe('миграции web.db', () => {
     expect(MIGRATIONS[0]?.sql).toBe(documented('web_0001_auth.sql'));
     expect(MIGRATIONS[1]?.sql).toBe(documented('web_0002_session_id.sql'));
     expect(MIGRATIONS[2]?.sql).toBe(documented('web_0003_password_change.sql'));
-    expect(MIGRATIONS).toHaveLength(3);
+    expect(MIGRATIONS[3]?.sql).toBe(documented('web_0004_tours.sql'));
+    expect(MIGRATIONS).toHaveLength(4);
   });
 });
 

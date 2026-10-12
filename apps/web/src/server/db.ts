@@ -5,6 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { AUTH_0001 } from './migrations/0001-auth';
 import { SESSION_ID_0002 } from './migrations/0002-session-id';
 import { PASSWORD_CHANGE_0003 } from './migrations/0003-password-change';
+import { TOURS_0004 } from './migrations/0004-tours';
 
 export type Database = DatabaseSync;
 
@@ -18,6 +19,7 @@ export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: 'auth', sql: AUTH_0001 },
   { version: 2, name: 'session_id', sql: SESSION_ID_0002 },
   { version: 3, name: 'password_change', sql: PASSWORD_CHANGE_0003 },
+  { version: 4, name: 'tours', sql: TOURS_0004 },
 ];
 
 export function openDatabase(path: string): Database {
