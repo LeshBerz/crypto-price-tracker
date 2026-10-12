@@ -4,7 +4,7 @@ export const openapiDocument: unknown = {
   "openapi": "3.0.3",
   "info": {
     "title": "Crypto Price Tracker API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "REST API для отслеживания и агрегации цен криптовалют (CoinMarketCap).\n\n**Соглашения** (ADR 0014):\n- Аутентификация: `Authorization: Bearer <API key>`. Права — scope ключа, указаны в `x-required-scopes` каждой операции.\n- Цены и проценты — **строки** с точной десятичной записью (ADR 0006). Валюта одна на всё приложение — `USD`.\n- Время — ISO 8601 UTC (`2026-10-06T12:00:00.000Z`). Во входных параметрах зона обязательна.\n- Ошибки — RFC 9457 Problem Details (`application/problem+json`).\n- Каждый ответ содержит заголовок `X-Request-Id`; входящий валидный `X-Request-Id` переиспользуется.\n- Неизвестный query-параметр → 400 у любой операции. Неизвестный путь → 404 `not-found`. Известный путь с неподдерживаемым\n  методом → 405 `method-not-allowed` и заголовок `Allow` (RFC 9110). Эти ответы формирует роутер, а не операция.\n"
   },
   "servers": [
@@ -766,7 +766,7 @@ export const openapiDocument: unknown = {
         ],
         "operationId": "getCmcStatus",
         "summary": "Состояние интеграции с CoinMarketCap и квоты",
-        "description": "Последний успех и последняя ошибка обращения к CMC, использование кредитов (по данным CMC `key/info`, кэшируется).",
+        "description": "Последний успех и последняя ошибка обращения к CMC, использование кредитов (по данным CMC `key/info`, кэшируется)\nи расписание синхронизации: состояние планировщика, интервал и время следующего запуска.\n",
         "x-required-scopes": [
           "ops:read"
         ],
@@ -1790,7 +1790,8 @@ export const openapiDocument: unknown = {
         "required": [
           "lastSuccessAt",
           "lastError",
-          "quota"
+          "quota",
+          "schedule"
         ],
         "properties": {
           "lastSuccessAt": {
@@ -1855,6 +1856,42 @@ export const openapiDocument: unknown = {
               },
               "fetchedAt": {
                 "$ref": "#/components/schemas/Timestamp"
+              }
+            }
+          },
+          "schedule": {
+            "type": "object",
+            "description": "Расписание синхронизации — единственный источник для «следующего запуска» и прогноза квоты",
+            "additionalProperties": false,
+            "required": [
+              "state",
+              "intervalMs",
+              "nextRunAt"
+            ],
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "running",
+                  "stopped",
+                  "disabled"
+                ],
+                "description": "То же значение, что `checks.scheduler` в `/health/ready`"
+              },
+              "intervalMs": {
+                "type": "integer",
+                "minimum": 180000,
+                "description": "Пауза между завершением запуска и началом следующего (`SYNC_INTERVAL_MS`)"
+              },
+              "nextRunAt": {
+                "type": "string",
+                "nullable": true,
+                "description": "`null`: запуск по расписанию идёт прямо сейчас либо планировщик остановлен или выключен",
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Timestamp"
+                  }
+                ]
               }
             }
           }
