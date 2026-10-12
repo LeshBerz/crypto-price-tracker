@@ -6,7 +6,7 @@ import { problem } from '../problem';
 import { readSessionToken } from '../request';
 import { STREAM_PATH } from './allowlist';
 import { callApi } from './upstream';
-import { pickHeaders, relay, upstreamProblem } from './bff-http';
+import { pickHeaders, relayOrRejectKey, upstreamProblem } from './bff-http';
 
 /** api шлёт heartbeat раз в 25 с; два пропуска подряд — соединение с api считается зависшим */
 export const STREAM_IDLE_MS = 60_000;
@@ -104,8 +104,8 @@ export async function handleStream(request: Request, services: Services): Promis
   } catch (error) {
     return upstreamProblem(error, requestId, services, `GET ${STREAM_PATH}`);
   }
-  // Отказ api (401 по ключу, 503 при остановке) — обычный ответ с Problem, а не поток
-  if (!upstream.ok || !upstream.body) return relay(upstream, requestId);
+  // Отказ api (503 при остановке) — обычный ответ с Problem, а не поток; 401 по ключу становится 502
+  if (!upstream.ok || !upstream.body) return relayOrRejectKey(upstream, requestId, services, `GET ${STREAM_PATH}`);
 
   return new Response(guardStream(upstream.body, { isSessionValid, idleMs: STREAM_IDLE_MS }), {
     status: 200,

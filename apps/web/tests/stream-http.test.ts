@@ -242,6 +242,13 @@ describe('[stream] GET /api/stream', () => {
     expect(calls).toHaveLength(0);
   });
 
+  it('❌ 401 от api — ключ web отклонён: 502, поток не открывается', async () => {
+    ctx.setApi(() => Promise.resolve(new Response('{}', { status: 401 })));
+    const response = await handleStream(request(token), ctx);
+    expect(response.status).toBe(502);
+    expect(await response.json()).toMatchObject({ type: 'urn:cpt:web:problem:upstream-rejected-key' });
+  });
+
   it('❌ отказ api (503 при остановке) возвращается как Problem, а не как поток', async () => {
     const body = { type: 'urn:cpt:problem:service-unavailable', title: 'Сервис останавливается', status: 503 };
     ctx.setApi(() =>
