@@ -19,3 +19,5 @@ if (!isAcceptablePassword(password)) {
   process.exit(1);
 }
 process.stdout.write(`${await hashPassword(password)}\n`);
+// Подсказка — в stderr, чтобы stdout остался чистым хэшем
+process.stderr.write("В .env хэш записывается в одинарных кавычках: WEB_BOOTSTRAP_PASSWORD_HASH='scrypt$…'\n");

@@ -87,7 +87,10 @@ export function loadConfig(env: Env = process.env): WebConfig {
     throw new ConfigError('WEB_BOOTSTRAP_LOGIN: 3–32 символа из набора a-z, 0-9, точка, дефис, подчёркивание');
   }
   if (passwordHash !== '' && !isPasswordHash(passwordHash)) {
-    throw new ConfigError('WEB_BOOTSTRAP_PASSWORD_HASH: ожидается хэш из `npm run hash-password -w @cpt/web`');
+    throw new ConfigError(
+      'WEB_BOOTSTRAP_PASSWORD_HASH: ожидается хэш из `npm run hash-password -w @cpt/web`. ' +
+        "В .env хэш пишется в одинарных кавычках ('scrypt$…'): без них Docker Compose подставляет вместо $… пустые строки",
+    );
   }
   return {
     databasePath: env.WEB_DATABASE_PATH?.trim() || './data/web.db',
