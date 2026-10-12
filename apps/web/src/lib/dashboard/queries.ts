@@ -5,6 +5,7 @@ import type { components } from '@/generated/api-types';
 import type { BffClient } from '@/lib/bff-client';
 import type { Interval, Period } from '@/lib/coin/intervals';
 import { aggregatesQuery, coinKeys, coinQuery, historyQuery } from '@/lib/coin/queries';
+import { cmcStatusQuery, operatorKeys, readinessQuery, syncRunsQuery } from '@/lib/operator/queries';
 
 export type LatestPriceList = components['schemas']['LatestPriceList'];
 export type LatestPriceListItem = components['schemas']['LatestPriceListItem'];
@@ -41,10 +42,21 @@ export function coinsQuery(client: BffClient, background = false) {
   });
 }
 
-export type RefreshTarget = 'prices' | 'sparklines' | 'coins' | 'coin' | 'aggregates' | 'history';
+export type RefreshTarget =
+  'prices' | 'sparklines' | 'coins' | 'coin' | 'aggregates' | 'history' | 'syncRuns' | 'cmc' | 'readiness';
 
 /** Всё, что показывают экраны: перечитывается после переподключения потока */
-export const ALL_TARGETS: readonly RefreshTarget[] = ['prices', 'sparklines', 'coins', 'coin', 'aggregates', 'history'];
+export const ALL_TARGETS: readonly RefreshTarget[] = [
+  'prices',
+  'sparklines',
+  'coins',
+  'coin',
+  'aggregates',
+  'history',
+  'syncRuns',
+  'cmc',
+  'readiness',
+];
 
 /**
  * Фоновый перезапрос идёт всегда (staleTime: 0) и один раз (retry: false): повтор обеспечит следующее событие
@@ -90,6 +102,20 @@ const TARGETS: Record<
     // открытые страницы — это запрос на каждую. Остальные страницы пользователь догрузит кнопкой
     fetch: (queryClient, client, key) =>
       queryClient.fetchInfiniteQuery({ ...historyQuery(client, key[1] as number, true), ...BACKGROUND, pages: 1 }),
+  },
+  syncRuns: {
+    prefix: operatorKeys.syncRuns,
+    // Как у истории цен: перечитывается первая страница журнала — завершившийся запуск лежит в её начале
+    fetch: (queryClient, client) =>
+      queryClient.fetchInfiniteQuery({ ...syncRunsQuery(client, true), ...BACKGROUND, pages: 1 }),
+  },
+  cmc: {
+    prefix: operatorKeys.cmc,
+    fetch: (queryClient, client) => queryClient.fetchQuery({ ...cmcStatusQuery(client, true), ...BACKGROUND }),
+  },
+  readiness: {
+    prefix: operatorKeys.readiness,
+    fetch: (queryClient, client) => queryClient.fetchQuery({ ...readinessQuery(client, true), ...BACKGROUND }),
   },
 };
 
