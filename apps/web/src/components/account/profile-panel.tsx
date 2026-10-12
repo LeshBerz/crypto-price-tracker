@@ -1,10 +1,10 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { LoaderCircle, LogOut } from 'lucide-react';
-import { useId, useState, type FormEvent } from 'react';
-import { PriceTableSkeleton } from '@/components/dashboard/price-table';
+import { KeyRound, LogOut, MonitorSmartphone, UserRound } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 import { LoadError } from '@/components/load-error';
+import { Timestamp } from '@/components/timestamp';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,29 +15,45 @@ import {
   DialogFooter,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { InfoHint } from '@/components/ui/info-hint';
+import { Panel, PanelHeader } from '@/components/ui/panel';
+import { FieldsSkeleton, TableSkeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toast';
 import { account } from '@/lib/account/client';
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, type SessionDto } from '@/lib/account/contract';
-import {
-  countSessions,
-  describeAccountFailure,
-  parsePasswordForm,
-  problemSlug,
-  ROLE_LABELS,
-  type PasswordFields,
-} from '@/lib/account/forms';
+import type { SessionDto } from '@/lib/account/contract';
+import { countSessions, describeAccountFailure, ROLE_HINTS, ROLE_LABELS } from '@/lib/account/forms';
 import { applyOwnSessionRevoked, profileQuery, refreshAccount } from '@/lib/account/queries';
 import { useNow } from '@/lib/dashboard/use-price-stream';
-import { formatDateTime } from '@/lib/format';
+import { PasswordForm, toLogin } from './password-form';
 import { SessionsTable } from './sessions-table';
 
-const CARD = 'overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10';
+const SESSION_COLUMNS = [
+  { width: 'w-32' },
+  { width: 'w-20' },
+  { width: 'w-28' },
+  { width: 'w-20' },
+  { width: 'w-20', right: true },
+];
 
-/** Сервер уже отозвал сессию и стёр cookie: остаётся перейти на вход. Полный переход сбрасывает кэш запросов */
-function toLogin(): void {
-  window.location.assign('/login');
+/** Заголовок блока со значком: три блока профиля читаются как разделы одного экрана */
+function SectionTitle({ Icon, id, children }: { Icon: typeof KeyRound; id: string; children: ReactNode }) {
+  return (
+    <span className="flex items-center gap-2">
+      <span className="flex size-7 items-center justify-center rounded-md bg-primary-soft text-primary">
+        <Icon className="size-4" aria-hidden="true" />
+      </span>
+      <span id={id}>{children}</span>
+    </span>
+  );
+}
+
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="flex min-h-6 items-center gap-1.5 text-sm">{children}</dd>
+    </div>
+  );
 }
 
 function LogoutEverywhereDialog({
@@ -69,101 +85,6 @@ function LogoutEverywhereDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-/**
- * Смена своего пароля (ui-flows §3.4). Текущий пароль обязателен: одной открытой сессии для смены мало.
- * После смены сервер отзывает все сессии — форма сразу ведёт на вход.
- */
-function PasswordForm({ login }: { login: string }) {
-  const id = useId();
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [repeat, setRepeat] = useState('');
-  const [fields, setFields] = useState<PasswordFields>({});
-  const [failure, setFailure] = useState<string | null>(null);
-
-  const change = useMutation({
-    mutationFn: account.changePassword,
-    onSuccess: toLogin,
-    onError: (error) => {
-      const text = describeAccountFailure(error);
-      if (problemSlug(error) === 'invalid-current-password') setFields({ currentPassword: text });
-      else setFailure(text);
-    },
-  });
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (change.isPending) return;
-    setFailure(null);
-    const parsed = parsePasswordForm({ currentPassword, newPassword, repeat });
-    if (!parsed.ok) return setFields(parsed.fields);
-    setFields({});
-    change.mutate({ currentPassword, newPassword });
-  };
-
-  const field = (
-    name: keyof PasswordFields,
-    label: string,
-    value: string,
-    setValue: (value: string) => void,
-    autoComplete: string,
-    hint?: string,
-  ) => (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={`${id}-${name}`}>{label}</Label>
-      <Input
-        id={`${id}-${name}`}
-        name={name}
-        type="password"
-        value={value}
-        onChange={(event) => {
-          setValue(event.target.value);
-          setFields((old) => ({ ...old, [name]: undefined }));
-        }}
-        autoComplete={autoComplete}
-        maxLength={PASSWORD_MAX_LENGTH}
-        aria-invalid={fields[name] ? true : undefined}
-        aria-describedby={`${id}-${name}-hint ${id}-${name}-error`}
-      />
-      {hint && (
-        <span id={`${id}-${name}-hint`} className="text-xs text-muted-foreground">
-          {hint}
-        </span>
-      )}
-      <span id={`${id}-${name}-error`} role="alert" className="text-xs text-destructive empty:hidden">
-        {fields[name]}
-      </span>
-    </div>
-  );
-
-  return (
-    <form onSubmit={submit} noValidate className="flex max-w-sm flex-col gap-3">
-      {/* Скрытое поле логина — подсказка менеджеру паролей, к какой учётной записи относится новый пароль */}
-      <input type="text" name="username" value={login} autoComplete="username" readOnly hidden />
-      {field('currentPassword', 'Текущий пароль', currentPassword, setCurrentPassword, 'current-password')}
-      {field(
-        'newPassword',
-        'Новый пароль',
-        newPassword,
-        setNewPassword,
-        'new-password',
-        `Не короче ${PASSWORD_MIN_LENGTH} символов. Требований к составу нет: длина важнее.`,
-      )}
-      {field('repeat', 'Новый пароль ещё раз', repeat, setRepeat, 'new-password')}
-      <span role="alert" className="text-sm text-destructive empty:hidden">
-        {failure}
-      </span>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" disabled={change.isPending}>
-          {change.isPending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
-          {change.isPending ? 'Сохранение…' : 'Сменить пароль'}
-        </Button>
-        <span className="text-xs text-muted-foreground">После смены все сессии завершатся — нужно войти заново.</span>
-      </div>
-    </form>
   );
 }
 
@@ -207,63 +128,66 @@ export function ProfilePanel() {
       </div>
 
       {!data && profile.isError && (
-        <div className={CARD}>
+        <Panel>
           <LoadError
             title="Не удалось загрузить профиль"
             error={profile.error}
             onRetry={() => void profile.refetch()}
           />
-        </div>
+        </Panel>
       )}
       {!data && !profile.isError && (
-        <div className={CARD}>
-          <PriceTableSkeleton />
-        </div>
+        <>
+          <Panel className="p-4">
+            <FieldsSkeleton label="Загрузка учётной записи" />
+          </Panel>
+          <Panel>
+            <TableSkeleton label="Загрузка сессий" columns={SESSION_COLUMNS} rows={2} />
+          </Panel>
+        </>
       )}
 
       {data && (
         <>
-          <section aria-labelledby="account-title" className={`${CARD} flex flex-col gap-3 p-4`}>
-            <h2 id="account-title" className="font-semibold">
-              Учётная запись
-            </h2>
-            <dl className="grid grid-cols-[auto_1fr] items-center gap-x-6 gap-y-2 text-sm">
-              <dt className="text-muted-foreground">Логин</dt>
-              <dd className="font-mono font-semibold">{data.login}</dd>
-              <dt className="text-muted-foreground">Роль</dt>
-              <dd>
+          <Panel aria-labelledby="account-title">
+            <PanelHeader
+              title={
+                <SectionTitle Icon={UserRound} id="account-title">
+                  Учётная запись
+                </SectionTitle>
+              }
+            />
+            <dl className="grid gap-x-8 gap-y-4 p-4 sm:grid-cols-3">
+              <Fact label="Логин">
+                <span className="font-mono font-semibold">{data.login}</span>
+              </Fact>
+              <Fact label="Роль">
                 <Badge variant="secondary">{ROLE_LABELS[data.role]}</Badge>
-              </dd>
-              <dt className="text-muted-foreground">Последний вход</dt>
-              <dd>
-                {data.lastLoginAt ? (
-                  <time dateTime={data.lastLoginAt} title={`${data.lastLoginAt} (UTC)`}>
-                    {formatDateTime(data.lastLoginAt)}
-                  </time>
-                ) : (
-                  '—'
-                )}
-              </dd>
+                <InfoHint label="Что может роль">{ROLE_HINTS[data.role]}. Роль назначает оператор.</InfoHint>
+              </Fact>
+              <Fact label="Последний вход">{data.lastLoginAt ? <Timestamp iso={data.lastLoginAt} /> : '—'}</Fact>
             </dl>
-          </section>
+          </Panel>
 
-          <section aria-labelledby="my-sessions-title" className={CARD}>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-3">
-              <h2 id="my-sessions-title" className="font-semibold">
-                Мои сессии
-              </h2>
-              <Badge variant="secondary">{countSessions(data.sessions.length)}</Badge>
+          <Panel aria-labelledby="my-sessions-title">
+            <PanelHeader
+              title={
+                <SectionTitle Icon={MonitorSmartphone} id="my-sessions-title">
+                  Мои сессии
+                </SectionTitle>
+              }
+              meta={<Badge variant="secondary">{countSessions(data.sessions.length)}</Badge>}
+            >
               <Button
                 variant="destructive"
                 size="sm"
-                className="ml-auto"
                 disabled={logoutAll.isPending}
                 onClick={() => setConfirming(true)}
               >
                 <LogOut aria-hidden="true" />
                 Выйти на всех устройствах
               </Button>
-            </div>
+            </PanelHeader>
             <SessionsTable
               sessions={data.sessions}
               now={now}
@@ -272,14 +196,20 @@ export function ProfilePanel() {
               actionLabel="Завершить"
               onRevoke={(session) => revoke.mutate(session)}
             />
-          </section>
+          </Panel>
 
-          <section aria-labelledby="password-title" className={`${CARD} flex flex-col gap-3 p-4`}>
-            <h2 id="password-title" className="font-semibold">
-              Смена пароля
-            </h2>
-            <PasswordForm login={data.login} />
-          </section>
+          <Panel aria-labelledby="password-title">
+            <PanelHeader
+              title={
+                <SectionTitle Icon={KeyRound} id="password-title">
+                  Смена пароля
+                </SectionTitle>
+              }
+            />
+            <div className="p-4">
+              <PasswordForm login={data.login} />
+            </div>
+          </Panel>
 
           {confirming && (
             <LogoutEverywhereDialog

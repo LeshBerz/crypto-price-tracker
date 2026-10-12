@@ -1,13 +1,14 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CircleX, LoaderCircle, TriangleAlert } from 'lucide-react';
+import { CircleX, LoaderCircle, Plus, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { Notice } from '@/components/notice';
 import { Button } from '@/components/ui/button';
+import { Collapsible } from '@/components/ui/collapsible';
+import { Field, FIELD_LABEL_OFFSET, fieldDescribedBy } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toast';
 import { bff } from '@/lib/bff-client';
 import {
@@ -43,6 +44,7 @@ export function AddCoinForm() {
   const [fields, setFields] = useState<AddFields>({});
   const [failure, setFailure] = useState<AddFailure | null>(null);
   const [retryIn, setRetryIn] = useCountdown();
+  const [extraOpen, setExtraOpen] = useState(false);
 
   const add = useMutation({
     mutationFn: (request: AddRequest) => bff.send('post', '/api/v1/cryptocurrencies', { body: request }),
@@ -78,13 +80,38 @@ export function AddCoinForm() {
   };
 
   const alert = failure?.alert;
+  const symbolId = `${id}-symbol`;
+  const cmcFieldId = `${id}-cmc`;
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-3">
+    <form onSubmit={submit} noValidate className="flex flex-col gap-2">
       <div className="flex flex-wrap items-start gap-3">
-        <div className="flex min-w-56 flex-1 flex-col gap-1.5">
-          <Label htmlFor={`${id}-symbol`}>Символ</Label>
+        <Field
+          id={symbolId}
+          label="Символ"
+          className="min-w-56 flex-1"
+          info={{
+            label: 'Как ищется монета',
+            text: 'Монета ищется в CoinMarketCap по символу. Символы там не уникальны: без CMC ID выбирается активная монета с лучшим рангом. Какая монета выбрана, видно в уведомлении после добавления.',
+          }}
+          hint="Латинские буквы и цифры, до 15 символов"
+          error={
+            fields.symbol && (
+              <>
+                {fields.symbol}
+                {typeof failure?.conflictingId === 'number' && (
+                  <>
+                    {'. '}
+                    <Link href={`/coins/${failure.conflictingId}`} className="font-medium underline underline-offset-2">
+                      Открыть карточку
+                    </Link>
+                  </>
+                )}
+              </>
+            )
+          }
+        >
           <Input
-            id={`${id}-symbol`}
+            id={symbolId}
             name="symbol"
             value={symbol}
             onChange={(event) => {
@@ -96,41 +123,36 @@ export function AddCoinForm() {
             maxLength={15}
             placeholder="например, AVAX"
             aria-invalid={fields.symbol ? true : undefined}
-            aria-describedby={`${id}-symbol-hint ${id}-symbol-error`}
+            aria-describedby={fieldDescribedBy(symbolId)}
             className="font-mono uppercase placeholder:normal-case"
           />
-          <span id={`${id}-symbol-hint`} className="text-xs text-muted-foreground">
-            Латинские буквы и цифры, до 15 символов. Монета ищется в CoinMarketCap.
-          </span>
-          <span id={`${id}-symbol-error`} role="alert" className="text-xs text-destructive empty:hidden">
-            {fields.symbol}
-            {fields.symbol && typeof failure?.conflictingId === 'number' && (
-              <>
-                {'. '}
-                <Link href={`/coins/${failure.conflictingId}`} className="font-medium underline underline-offset-2">
-                  Открыть карточку
-                </Link>
-              </>
-            )}
-          </span>
-        </div>
-        <Button type="submit" className="sm:mt-5.5" disabled={add.isPending || retryIn > 0}>
-          {add.isPending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
+        </Field>
+        <Button type="submit" className={FIELD_LABEL_OFFSET} disabled={add.isPending || retryIn > 0}>
+          {add.isPending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <Plus aria-hidden="true" />}
           {add.isPending ? 'Проверка в CoinMarketCap…' : retryIn > 0 ? `Повторить через ${retryIn} с` : 'Добавить'}
         </Button>
       </div>
 
       {/* Открыт, если в поле есть значение или ошибка: иначе сообщение осталось бы под свёрнутым блоком */}
-      <details open={cmcId !== '' || Boolean(fields.cmcId) || undefined} className="text-sm">
-        <summary className="w-fit cursor-pointer rounded text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50">
-          Дополнительно
-        </summary>
-        <div className="mt-2 flex max-w-xs flex-col gap-1.5">
-          <Label htmlFor={`${id}-cmc`}>
-            CMC ID <span className="font-normal text-muted-foreground">(необязательно)</span>
-          </Label>
+      <Collapsible
+        label="Дополнительно"
+        open={extraOpen || cmcId !== '' || Boolean(fields.cmcId)}
+        onOpenChange={setExtraOpen}
+      >
+        <Field
+          id={cmcFieldId}
+          label="CMC ID"
+          optional
+          className="max-w-xs"
+          info={{
+            label: 'Зачем указывать CMC ID',
+            text: 'Идентификатор монеты в CoinMarketCap — число из адреса её страницы или из ответа API. Нужен, когда один символ носят несколько монет и требуется не та, у которой лучший ранг.',
+          }}
+          hint="Целое положительное число"
+          error={fields.cmcId}
+        >
           <Input
-            id={`${id}-cmc`}
+            id={cmcFieldId}
             name="cmcId"
             value={cmcId}
             onChange={(event) => {
@@ -140,17 +162,11 @@ export function AddCoinForm() {
             inputMode="numeric"
             autoComplete="off"
             aria-invalid={fields.cmcId ? true : undefined}
-            aria-describedby={`${id}-cmc-hint ${id}-cmc-error`}
+            aria-describedby={fieldDescribedBy(cmcFieldId)}
             className="font-mono"
           />
-          <span id={`${id}-cmc-hint`} className="text-xs text-muted-foreground">
-            Символы в CoinMarketCap не уникальны. Без ID выбирается активная монета с лучшим рангом.
-          </span>
-          <span id={`${id}-cmc-error`} role="alert" className="text-xs text-destructive empty:hidden">
-            {fields.cmcId}
-          </span>
-        </div>
-      </details>
+        </Field>
+      </Collapsible>
 
       <div role="alert" className="empty:hidden">
         {alert && (

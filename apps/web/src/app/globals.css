@@ -52,6 +52,23 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
+
+  /* Появление строки списка и уведомления: длительности — из токенов движения ниже */
+  --animate-row-in: row-in var(--duration-base) var(--ease-out) both;
+  --animate-toast-in: toast-in var(--duration-slow) var(--ease-out) both;
+
+  @keyframes row-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.98);
+    }
+  }
 }
 
 /* Значения токенов — из макетов (docs/project/design/mockups), контраст посчитан по WCAG 2.2 AA */
@@ -92,6 +109,15 @@
   --error-border: #f3b4b4;
   --skeleton: #e9edf3;
   --radius: 0.625rem;
+
+  /*
+   * Токены движения (ADR 0018): три длительности и одна кривая на весь интерфейс.
+   * fast — отклик на наведение и нажатие; base — раскрытие блока, появление строки, диалог; slow — уведомление.
+   */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 :root[data-theme='dark'] {

@@ -2,13 +2,18 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, CircleCheck, KeyRound, LoaderCircle, ShieldCheck, ShieldMinus, UserCheck, UserPlus } from 'lucide-react';
-import { useId, useState, type FormEvent } from 'react';
-import { PriceTableSkeleton } from '@/components/dashboard/price-table';
+import { useId, useState, type ComponentProps, type FormEvent } from 'react';
 import { LoadError } from '@/components/load-error';
+import { Timestamp } from '@/components/timestamp';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Field, FIELD_LABEL_OFFSET, fieldDescribedBy } from '@/components/ui/field';
+import { InfoHint } from '@/components/ui/info-hint';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Panel, PanelHeader, ROW, TD, TH } from '@/components/ui/panel';
+import { Select } from '@/components/ui/select';
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { Hint } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/toast';
 import { account } from '@/lib/account/client';
 import { ROLES, type Role, type SessionDto, type UpdateUserRequest, type UserDto } from '@/lib/account/contract';
@@ -22,16 +27,28 @@ import {
 } from '@/lib/account/forms';
 import { applySessionRevoked, applyUserSaved, refreshAccount, sessionsQuery, usersQuery } from '@/lib/account/queries';
 import { useNow } from '@/lib/dashboard/use-price-stream';
-import { formatRelative, plural } from '@/lib/format';
+import { plural } from '@/lib/format';
 import { SessionsTable } from './sessions-table';
 import { ConfirmUserDialog, IssuedPasswordDialog, type IssuedPassword, type UserAction } from './user-dialogs';
 
-const TH = 'px-4 py-2 text-xs font-medium text-muted-foreground';
-const TD = 'px-4 py-3 align-middle';
-const CARD = 'overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10';
 const USERS = ['пользователь', 'пользователя', 'пользователей'] as const;
-const SELECT =
-  'h-8 rounded-lg border border-input bg-transparent px-2 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 md:text-sm dark:bg-input/30';
+const ROLE_OPTIONS = ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role], description: ROLE_HINTS[role] }));
+const USER_COLUMNS = [
+  { width: 'w-28' },
+  { width: 'w-16' },
+  { width: 'w-20' },
+  { width: 'w-24' },
+  { width: 'w-6', right: true },
+  { width: 'w-64', right: true },
+];
+const SESSION_COLUMNS = [
+  { width: 'w-20' },
+  { width: 'w-32' },
+  { width: 'w-20' },
+  { width: 'w-28' },
+  { width: 'w-20' },
+  { width: 'w-20', right: true },
+];
 
 type Opened = { action: UserAction; id: number };
 type Change = { user: UserDto; body: UpdateUserRequest };
@@ -58,11 +75,7 @@ function StatusBadge({ active }: { active: boolean }) {
 
 function LastLogin({ user, now }: { user: UserDto; now: number }) {
   if (!user.lastLoginAt) return <span className="text-muted-foreground">не входил</span>;
-  return (
-    <time dateTime={user.lastLoginAt} title={`${user.lastLoginAt} (UTC)`} className="text-muted-foreground">
-      {formatRelative(user.lastLoginAt, now)}
-    </time>
-  );
+  return <Timestamp iso={user.lastLoginAt} format="relative" now={now} className="text-muted-foreground" />;
 }
 
 /**
@@ -99,8 +112,17 @@ function CreateUserForm({ onCreated }: { onCreated: (issued: IssuedPassword) => 
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-wrap items-start gap-3">
-      <div className="flex min-w-56 flex-1 flex-col gap-1.5">
-        <Label htmlFor={`${id}-login`}>Логин</Label>
+      <Field
+        id={`${id}-login`}
+        label="Логин"
+        className="min-w-56 flex-1"
+        info={{
+          label: 'Откуда берётся пароль',
+          text: 'Пароль создаёт сервер и показывает один раз после создания. При первом входе пользователь обязан его сменить.',
+        }}
+        hint="Латинские буквы, цифры, точка, дефис, подчёркивание; от 3 до 32 символов"
+        error={error}
+      >
         <Input
           id={`${id}-login`}
           name="login"
@@ -115,37 +137,15 @@ function CreateUserForm({ onCreated }: { onCreated: (issued: IssuedPassword) => 
           maxLength={32}
           placeholder="например, ivan.petrov"
           aria-invalid={error ? true : undefined}
-          aria-describedby={`${id}-login-hint ${id}-login-error`}
+          aria-describedby={fieldDescribedBy(`${id}-login`)}
           className="font-mono"
         />
-        <span id={`${id}-login-hint`} className="text-xs text-muted-foreground">
-          Латинские буквы, цифры, точка, дефис, подчёркивание; от 3 до 32 символов.
-        </span>
-        <span id={`${id}-login-error`} role="alert" className="text-xs text-destructive empty:hidden">
-          {error}
-        </span>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor={`${id}-role`}>Роль</Label>
-        <select
-          id={`${id}-role`}
-          name="role"
-          value={role}
-          onChange={(event) => setRole(event.target.value as Role)}
-          aria-describedby={`${id}-role-hint`}
-          className={SELECT}
-        >
-          {ROLES.map((item) => (
-            <option key={item} value={item}>
-              {ROLE_LABELS[item]}
-            </option>
-          ))}
-        </select>
-        <span id={`${id}-role-hint`} className="max-w-64 text-xs text-muted-foreground">
-          {ROLE_HINTS[role]}
-        </span>
-      </div>
-      <Button type="submit" className="sm:mt-5.5" disabled={create.isPending}>
+      </Field>
+      {/* Что может каждая роль, написано в самом списке — отдельной строки под полем нет */}
+      <Field id={`${id}-role`} label="Роль" className="max-sm:flex-1">
+        <Select id={`${id}-role`} name="role" value={role} onValueChange={setRole} options={ROLE_OPTIONS} />
+      </Field>
+      <Button type="submit" className={FIELD_LABEL_OFFSET} disabled={create.isPending}>
         {create.isPending ? (
           <LoaderCircle className="animate-spin" aria-hidden="true" />
         ) : (
@@ -155,6 +155,22 @@ function CreateUserForm({ onCreated }: { onCreated: (issued: IssuedPassword) => 
       </Button>
     </form>
   );
+}
+
+/**
+ * Кнопка действия в строке. Если действие запрещено правилом (последний оператор, свой пароль), кнопка остаётся
+ * в порядке Tab и объясняет причину подсказкой: у обычной отключённой кнопки нет ни фокуса, ни наведения.
+ */
+function ActionButton({
+  reason,
+  disabled,
+  variant = 'outline',
+  ...props
+}: Omit<ComponentProps<typeof Button>, 'size'> & { reason: string | null }) {
+  const button = (
+    <Button variant={variant} size="sm" disabled={disabled} focusableWhenDisabled={reason !== null} {...props} />
+  );
+  return reason === null ? button : <Hint text={reason}>{button}</Hint>;
 }
 
 function UserActions({
@@ -176,45 +192,40 @@ function UserActions({
   const isOperator = user.role === 'operator';
   return (
     <div className="flex flex-wrap gap-1.5 md:justify-end">
-      <Button
-        variant="outline"
-        size="sm"
+      <ActionButton
         disabled={busy || (isOperator && locked !== null)}
-        title={isOperator ? (locked ?? undefined) : undefined}
+        reason={isOperator ? locked : null}
         onClick={() => onAction(isOperator ? 'demote' : 'promote')}
         aria-label={`${isOperator ? `Перевести в ${ROLE_LABELS.viewer}` : 'Сделать оператором'}: ${user.login}`}
       >
         {isOperator ? <ShieldMinus aria-hidden="true" /> : <ShieldCheck aria-hidden="true" />}
         {isOperator ? `В ${ROLE_LABELS.viewer}` : `В ${ROLE_LABELS.operator}`}
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
+      </ActionButton>
+      <ActionButton
         disabled={busy || isSelf}
-        title={isSelf ? 'Свой пароль меняется в профиле' : undefined}
+        reason={isSelf ? 'Свой пароль меняется в профиле' : null}
         onClick={() => onAction('reset')}
         aria-label={`Сбросить пароль: ${user.login}`}
       >
         <KeyRound aria-hidden="true" />
         Сбросить пароль
-      </Button>
+      </ActionButton>
       {user.isActive ? (
-        <Button
+        <ActionButton
           variant="destructive"
-          size="sm"
           disabled={busy || locked !== null}
-          title={locked ?? undefined}
+          reason={locked}
           onClick={() => onAction('disable')}
           aria-label={`Отключить: ${user.login}`}
         >
           <Ban aria-hidden="true" />
           Отключить
-        </Button>
+        </ActionButton>
       ) : (
-        <Button variant="outline" size="sm" disabled={busy} onClick={onEnable} aria-label={`Включить: ${user.login}`}>
+        <ActionButton disabled={busy} reason={null} onClick={onEnable} aria-label={`Включить: ${user.login}`}>
           <UserCheck aria-hidden="true" />
           Включить
-        </Button>
+        </ActionButton>
       )}
     </div>
   );
@@ -303,24 +314,25 @@ export function UsersPanel({ currentLogin }: { currentLogin: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <section aria-labelledby="create-title" className={`${CARD} flex flex-col gap-3 p-4`}>
+      <Panel aria-labelledby="create-title" className="flex flex-col gap-3 p-4">
         <h2 id="create-title" className="font-semibold">
           Создать пользователя
         </h2>
         <CreateUserForm onCreated={setIssued} />
-      </section>
+      </Panel>
 
-      <section aria-labelledby="users-title" className={CARD}>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-3">
-          <h2 id="users-title" className="font-semibold">
-            Пользователи
-          </h2>
-          {items && (
-            <Badge variant="secondary">
-              {items.length} {plural(items.length, USERS)}
-            </Badge>
-          )}
-        </div>
+      <Panel aria-labelledby="users-title">
+        <PanelHeader
+          title="Пользователи"
+          titleId="users-title"
+          meta={
+            items && (
+              <Badge variant="secondary">
+                {items.length} {plural(items.length, USERS)}
+              </Badge>
+            )
+          }
+        />
 
         {!items && users.isError && (
           <LoadError
@@ -329,7 +341,7 @@ export function UsersPanel({ currentLogin }: { currentLogin: string }) {
             onRetry={() => void users.refetch()}
           />
         )}
-        {!items && !users.isError && <PriceTableSkeleton />}
+        {!items && !users.isError && <TableSkeleton label="Загрузка пользователей" columns={USER_COLUMNS} rows={3} />}
         {items && (
           <>
             <div className="hidden md:block">
@@ -359,7 +371,7 @@ export function UsersPanel({ currentLogin }: { currentLogin: string }) {
                 </thead>
                 <tbody>
                   {items.map((user) => (
-                    <tr key={user.id} className="border-b last:border-b-0">
+                    <tr key={user.id} className={ROW}>
                       <td className={TD}>{name(user)}</td>
                       <td className={TD}>
                         <Badge variant="secondary">{ROLE_LABELS[user.role]}</Badge>
@@ -370,7 +382,7 @@ export function UsersPanel({ currentLogin }: { currentLogin: string }) {
                       <td className={TD}>
                         <LastLogin user={user} now={now} />
                       </td>
-                      <td className={`${TD} text-right font-mono tabular-nums`}>{user.activeSessions}</td>
+                      <td className={`${TD} text-right tabular-nums`}>{user.activeSessions}</td>
                       <td className={TD}>{actions(user)}</td>
                     </tr>
                   ))}
@@ -380,7 +392,7 @@ export function UsersPanel({ currentLogin }: { currentLogin: string }) {
 
             <ul className="divide-y md:hidden" aria-label="Пользователи">
               {items.map((user) => (
-                <li key={user.id} className="flex flex-col gap-2 px-4 py-3 text-sm">
+                <li key={user.id} className="flex animate-row-in flex-col gap-2 px-4 py-3 text-sm">
                   <div className="flex items-start justify-between gap-3">
                     {name(user)}
                     <span className="flex gap-1.5">
@@ -397,16 +409,22 @@ export function UsersPanel({ currentLogin }: { currentLogin: string }) {
             </ul>
           </>
         )}
-      </section>
+      </Panel>
 
-      <section aria-labelledby="sessions-title" className={CARD}>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-3">
-          <h2 id="sessions-title" className="font-semibold">
-            Активные сессии
-          </h2>
-          {sessionItems && <Badge variant="secondary">{countSessions(sessionItems.length)}</Badge>}
-          <span className="ml-auto text-xs text-muted-foreground">бездействие 2 ч, не дольше 12 ч</span>
-        </div>
+      <Panel aria-labelledby="sessions-title">
+        <PanelHeader
+          title="Активные сессии"
+          titleId="sessions-title"
+          meta={
+            <>
+              {sessionItems && <Badge variant="secondary">{countSessions(sessionItems.length)}</Badge>}
+              <InfoHint label="Сколько живёт сессия">
+                Сессия завершается после 2 часов бездействия и не живёт дольше 12 часов. Отозванная сессия теряет доступ
+                сразу; открытая вкладка с потоком событий — в течение 25 секунд, на ближайшей проверке.
+              </InfoHint>
+            </>
+          }
+        />
         {!sessionItems && sessions.isError && (
           <LoadError
             title="Не удалось загрузить сессии"
@@ -414,7 +432,9 @@ export function UsersPanel({ currentLogin }: { currentLogin: string }) {
             onRetry={() => void sessions.refetch()}
           />
         )}
-        {!sessionItems && !sessions.isError && <PriceTableSkeleton />}
+        {!sessionItems && !sessions.isError && (
+          <TableSkeleton label="Загрузка сессий" columns={SESSION_COLUMNS} rows={2} />
+        )}
         {sessionItems && (
           <SessionsTable
             sessions={sessionItems}
@@ -425,7 +445,7 @@ export function UsersPanel({ currentLogin }: { currentLogin: string }) {
             onRevoke={(session) => revoke.mutate(session)}
           />
         )}
-      </section>
+      </Panel>
 
       {opened && openedUser && (
         <ConfirmUserDialog

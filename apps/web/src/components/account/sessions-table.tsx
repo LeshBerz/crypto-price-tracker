@@ -1,23 +1,22 @@
 import { LogOut } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Timestamp } from '@/components/timestamp';
 import { Button } from '@/components/ui/button';
+import { ROW, TD, TH } from '@/components/ui/panel';
+import { Hint } from '@/components/ui/tooltip';
 import type { SessionDto } from '@/lib/account/contract';
 import { describeUserAgent } from '@/lib/account/forms';
-import { formatDateTime, formatRelative } from '@/lib/format';
-
-const TH = 'px-4 py-2 text-xs font-medium text-muted-foreground';
-const TD = 'px-4 py-3 align-middle';
 
 function Browser({ session }: { session: SessionDto }) {
-  return <span title={session.userAgent ?? undefined}>{describeUserAgent(session.userAgent)}</span>;
+  return (
+    <Hint text={session.userAgent}>
+      <span>{describeUserAgent(session.userAgent)}</span>
+    </Hint>
+  );
 }
 
 function Activity({ session, now }: { session: SessionDto; now: number }) {
-  return (
-    <time dateTime={session.lastSeenAt} title={`${session.lastSeenAt} (UTC)`}>
-      {formatRelative(session.lastSeenAt, now)}
-    </time>
-  );
+  return <Timestamp iso={session.lastSeenAt} format="relative" now={now} />;
 }
 
 /**
@@ -87,16 +86,14 @@ export function SessionsTable({
           </thead>
           <tbody>
             {sessions.map((session) => (
-              <tr key={session.id} className="border-b last:border-b-0">
+              <tr key={session.id} className={ROW}>
                 {showLogin && <td className={`${TD} font-semibold`}>{session.login}</td>}
                 <td className={TD}>
                   <Browser session={session} />
                 </td>
                 <td className={`${TD} font-mono text-muted-foreground tabular-nums`}>{session.ip ?? '—'}</td>
-                <td className={`${TD} font-mono text-muted-foreground tabular-nums`}>
-                  <time dateTime={session.createdAt} title={`${session.createdAt} (UTC)`}>
-                    {formatDateTime(session.createdAt)}
-                  </time>
+                <td className={`${TD} text-muted-foreground`}>
+                  <Timestamp iso={session.createdAt} />
                 </td>
                 <td className={`${TD} text-muted-foreground`}>
                   <Activity session={session} now={now} />
@@ -110,14 +107,14 @@ export function SessionsTable({
 
       <ul className="divide-y md:hidden" aria-label="Действующие сессии">
         {sessions.map((session) => (
-          <li key={session.id} className="flex items-start justify-between gap-3 px-4 py-3 text-sm">
+          <li key={session.id} className="flex animate-row-in items-start justify-between gap-3 px-4 py-3 text-sm">
             <div className="flex min-w-0 flex-col gap-0.5">
               <div className="font-semibold">
                 {showLogin && `${session.login} · `}
                 <Browser session={session} />
               </div>
               <div className="text-xs text-muted-foreground">
-                Создана {formatDateTime(session.createdAt)} · активность <Activity session={session} now={now} />
+                Создана <Timestamp iso={session.createdAt} /> · активность <Activity session={session} now={now} />
                 {session.ip && ` · ${session.ip}`}
               </div>
             </div>
