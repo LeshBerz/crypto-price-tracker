@@ -56,6 +56,8 @@
   /* Появление строки списка и уведомления: длительности — из токенов движения ниже */
   --animate-row-in: row-in var(--duration-base) var(--ease-out) both;
   --animate-toast-in: toast-in var(--duration-slow) var(--ease-out) both;
+  /* Цифра «линзы точности», срезанная округлением: задержку задаёт компонент — цифры проявляются по очереди */
+  --animate-lens-reveal: lens-reveal var(--duration-slow) var(--ease-out) both;
 
   @keyframes row-in {
     from {
@@ -67,6 +69,13 @@
     from {
       opacity: 0;
       transform: translateY(12px) scale(0.98);
+    }
+  }
+  @keyframes lens-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+      filter: blur(2px);
     }
   }
 }
