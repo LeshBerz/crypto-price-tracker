@@ -1,15 +1,17 @@
 // События потока → изменения кэша запросов. Сеть и React здесь не участвуют: функции проверяются тестами напрямую.
 import type { QueryClient } from '@tanstack/react-query';
+import {
+  applyPriceToAggregates,
+  applyPriceToCoin,
+  nextLatest,
+  prependHistoryPoint,
+  type PriceUpdate,
+} from '@/lib/coin/live-updates';
+import { coinKeys, type Cryptocurrency, type PriceAggregates, type PriceHistory } from '@/lib/coin/queries';
 import { compareDecimal, type Direction } from '@/lib/format';
 import { dashboardKeys, type LatestPriceList, type RefreshTarget } from './queries';
 
-export type PriceUpdate = {
-  cryptocurrencyId: number;
-  price: string;
-  currency: string;
-  sourceUpdatedAt: string;
-  fetchedAt: string;
-};
+export type { PriceUpdate };
 
 export type StreamAction =
   { type: 'price'; update: PriceUpdate } | { type: 'refresh'; targets: readonly RefreshTarget[] } | { type: 'ignore' };
@@ -49,9 +51,10 @@ export function parseStreamEvent(name: string, raw: string): StreamAction {
     }
     // Изменение за 24 ч и признак «устарела» считает сервер: после синхронизации они перечитываются (решение Q5)
     case 'sync.finished':
-      return { type: 'refresh', targets: ['prices', 'sparklines'] };
+      return { type: 'refresh', targets: ['prices', 'sparklines', 'coin', 'aggregates'] };
+    // Карточка перечитывает монету: её могли переименовать, приостановить или удалить (тогда ответ — 404)
     case 'watchlist.changed':
-      return { type: 'refresh', targets: ['prices', 'sparklines', 'coins'] };
+      return { type: 'refresh', targets: ['prices', 'sparklines', 'coins', 'coin'] };
     default:
       return IGNORE;
   }
@@ -71,22 +74,17 @@ export function applyPriceUpdate(list: LatestPriceList, update: PriceUpdate): Ap
 
   const previous = current.latest;
   // События могут прийти не по порядку (переподключение): более старая цена новую не затирает
-  if (previous && Date.parse(update.fetchedAt) < Date.parse(previous.fetchedAt)) return { list, direction: 'flat' };
+  const latest = nextLatest(previous, update);
+  if (!latest) return { list, direction: 'flat' };
 
-  const comparison = previous ? compareDecimal(update.price, previous.price) : 0;
   const items = [...list.items];
-  items[index] = {
-    ...current,
-    latest: {
-      price: update.price,
-      currency: update.currency as LatestPriceList['currency'],
-      sourceUpdatedAt: update.sourceUpdatedAt,
-      fetchedAt: update.fetchedAt,
-      change24hPercent: previous?.change24hPercent ?? null,
-      isStale: false,
-    },
-  };
-  return { list: { ...list, items }, direction: comparison > 0 ? 'up' : comparison < 0 ? 'down' : 'flat' };
+  items[index] = { ...current, latest };
+  return { list: { ...list, items }, direction: directionOf(update.price, previous?.price) };
+}
+
+function directionOf(price: string, previous: string | undefined): Direction {
+  const comparison = previous === undefined ? 0 : compareDecimal(price, previous);
+  return comparison > 0 ? 'up' : comparison < 0 ? 'down' : 'flat';
 }
 
 export type StreamEventContext = {
@@ -96,18 +94,47 @@ export type StreamEventContext = {
   onPriceChange?: (cryptocurrencyId: number, direction: Exclude<Direction, 'flat'>) => void;
 };
 
+/** Список цен дашборда. Списка в кэше может не быть: открыта карточка монеты, а не дашборд */
+function applyToPriceList(context: StreamEventContext, update: PriceUpdate): Direction {
+  const list = context.queryClient.getQueryData<LatestPriceList>(dashboardKeys.prices);
+  // Список ещё не загружен: первый ответ принесёт эту же цену
+  if (!list) return 'flat';
+  const applied = applyPriceUpdate(list, update);
+  // Незнакомая монета: событие `watchlist.changed` потерялось — страховка перечитывает список
+  if (!applied) {
+    context.refresh(['prices', 'coins']);
+    return 'flat';
+  }
+  if (applied.list !== list) context.queryClient.setQueryData(dashboardKeys.prices, applied.list);
+  return applied.direction;
+}
+
+/** Данные карточки монеты: последняя цена, последняя свеча всех загруженных графиков и первая строка истории */
+function applyToCoinCard(queryClient: QueryClient, update: PriceUpdate): Direction {
+  const id = update.cryptocurrencyId;
+  let direction: Direction = 'flat';
+  const coin = queryClient.getQueryData<Cryptocurrency>(coinKeys.detail(id));
+  if (coin) {
+    const next = applyPriceToCoin(coin, update);
+    if (next !== coin) {
+      queryClient.setQueryData(coinKeys.detail(id), next);
+      direction = directionOf(update.price, coin.latestPrice?.price);
+    }
+  }
+  for (const query of queryClient.getQueryCache().findAll({ queryKey: coinKeys.aggregatesOf(id) })) {
+    queryClient.setQueryData<PriceAggregates>(query.queryKey, (old) => old && applyPriceToAggregates(old, update));
+  }
+  queryClient.setQueryData<PriceHistory>(coinKeys.history(id), (old) => old && prependHistoryPoint(old, update));
+  return direction;
+}
+
 export function handleStreamEvent(context: StreamEventContext, name: string, raw: string): void {
   const action = parseStreamEvent(name, raw);
   if (action.type === 'ignore') return;
   if (action.type === 'refresh') return context.refresh(action.targets);
 
-  const list = context.queryClient.getQueryData<LatestPriceList>(dashboardKeys.prices);
-  // Список ещё не загружен: первый ответ принесёт эту же цену
-  if (!list) return;
-  const applied = applyPriceUpdate(list, action.update);
-  // Незнакомая монета: событие `watchlist.changed` потерялось — страховка перечитывает список
-  if (!applied) return context.refresh(['prices', 'coins']);
-  if (applied.list === list) return;
-  context.queryClient.setQueryData(dashboardKeys.prices, applied.list);
-  if (applied.direction !== 'flat') context.onPriceChange?.(action.update.cryptocurrencyId, applied.direction);
+  const inList = applyToPriceList(context, action.update);
+  const inCard = applyToCoinCard(context.queryClient, action.update);
+  const direction = inList !== 'flat' ? inList : inCard;
+  if (direction !== 'flat') context.onPriceChange?.(action.update.cryptocurrencyId, direction);
 }

@@ -34,6 +34,16 @@ export function formatPrice(price: string): string {
   return `${whole}.${fraction.padEnd(2, '0')}`;
 }
 
+/**
+ * Подпись шкалы цен графика. Единственный формат, принимающий `number`: шкалу рисует библиотека графика
+ * по координатам, исходной строки у деления шкалы нет (ADR 0012). Правила те же, что у `formatPrice`.
+ */
+export function formatAxisPrice(value: number): string {
+  if (Math.abs(value) >= 1) return usdFixed.format(value);
+  const [whole = '', fraction = ''] = usdSignificant.format(value).split('.');
+  return `${whole}.${fraction.padEnd(2, '0')}`;
+}
+
 export type PriceParts = { head: string; zeros: string; tail: string };
 
 /**
@@ -72,6 +82,46 @@ export function compareDecimal(a: string, b: string): -1 | 0 | 1 {
 
 export function formatClock(iso: string, { seconds = false }: { seconds?: boolean } = {}): string {
   return (seconds ? clockSeconds : clock).format(Date.parse(iso));
+}
+
+const dateTime = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+const dateTimeSeconds = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+});
+const dateOnly = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+/** Дата и время в часовом поясе браузера: `12.10.2026, 15:04` */
+export function formatDateTime(time: string | number, { seconds = false }: { seconds?: boolean } = {}): string {
+  return (seconds ? dateTimeSeconds : dateTime).format(typeof time === 'string' ? Date.parse(time) : time);
+}
+
+const dateTimeUtc = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'UTC',
+});
+
+/** Начало бакета графика: бакеты выровнены по UTC, поэтому и подписаны в UTC — `12.10.2026, 14:00 UTC` */
+export function formatUtc(time: number): string {
+  return `${dateTimeUtc.format(time)} UTC`;
+}
+
+export function formatDate(time: string | number): string {
+  return dateOnly.format(typeof time === 'string' ? Date.parse(time) : time);
 }
 
 /** «2 мин назад» относительно `now`. Время из будущего (расхождение часов) показывается как «только что» */
