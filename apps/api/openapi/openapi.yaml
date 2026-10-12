@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Crypto Price Tracker API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     REST API для отслеживания и агрегации цен криптовалют (CoinMarketCap).
 
@@ -371,7 +371,9 @@ paths:
       tags: [Operations]
       operationId: getCmcStatus
       summary: Состояние интеграции с CoinMarketCap и квоты
-      description: Последний успех и последняя ошибка обращения к CMC, использование кредитов (по данным CMC `key/info`, кэшируется).
+      description: |
+        Последний успех и последняя ошибка обращения к CMC, использование кредитов (по данным CMC `key/info`, кэшируется)
+        и расписание синхронизации: состояние планировщика, интервал и время следующего запуска.
       x-required-scopes: ['ops:read']
       responses:
         '200':
@@ -842,7 +844,7 @@ components:
     CmcStatus:
       type: object
       additionalProperties: false
-      required: [lastSuccessAt, lastError, quota]
+      required: [lastSuccessAt, lastError, quota, schedule]
       properties:
         lastSuccessAt:
           type: string
@@ -869,6 +871,25 @@ components:
             creditsLeftMonth: { type: integer, minimum: 0 }
             creditsUsedToday: { type: integer, minimum: 0 }
             fetchedAt: { $ref: '#/components/schemas/Timestamp' }
+        schedule:
+          type: object
+          description: Расписание синхронизации — единственный источник для «следующего запуска» и прогноза квоты
+          additionalProperties: false
+          required: [state, intervalMs, nextRunAt]
+          properties:
+            state:
+              type: string
+              enum: [running, stopped, disabled]
+              description: То же значение, что `checks.scheduler` в `/health/ready`
+            intervalMs:
+              type: integer
+              minimum: 180000
+              description: Пауза между завершением запуска и началом следующего (`SYNC_INTERVAL_MS`)
+            nextRunAt:
+              type: string
+              nullable: true
+              description: '`null`: запуск по расписанию идёт прямо сейчас либо планировщик остановлен или выключен'
+              allOf: [{ $ref: '#/components/schemas/Timestamp' }]
 
     Problem:
       type: object

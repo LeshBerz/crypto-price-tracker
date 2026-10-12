@@ -31,7 +31,7 @@ describe('[getReadiness] GET /health/ready', () => {
   });
 
   it('❌ 503 во время остановки (readiness снята на шаге 0, ADR 0015)', async () => {
-    const lifecycle: Lifecycle = { isShuttingDown: () => true, schedulerState: () => 'stopped' };
+    const lifecycle: Lifecycle = { isShuttingDown: () => true, schedulerState: () => 'stopped', nextRunAt: () => null };
     const { app } = await createTestApp({ lifecycle });
     const res = await request(app).get('/health/ready');
     expect(res).toMatchContract('getReadiness', 503);

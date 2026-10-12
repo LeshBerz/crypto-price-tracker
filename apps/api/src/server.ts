@@ -67,7 +67,11 @@ async function main(): Promise<void> {
     sync,
     sse,
     syncIntervalMs: config.syncIntervalMs,
-    lifecycle: { isShuttingDown: () => shutdown?.isShuttingDown() ?? false, schedulerState: () => scheduler.state },
+    lifecycle: {
+      isShuttingDown: () => shutdown?.isShuttingDown() ?? false,
+      schedulerState: () => scheduler.state,
+      nextRunAt: () => scheduler.nextRunAt,
+    },
   });
   const server = app.listen(config.port, () => {
     logger.info('http server listening', { port: config.port, docs: `http://localhost:${config.port}/docs` });

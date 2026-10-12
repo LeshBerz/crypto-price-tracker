@@ -67,7 +67,14 @@ export function createApp(deps: AppDeps): Express {
       clock: deps.clock,
       syncIntervalMs: deps.syncIntervalMs,
     }),
-    ...syncHandlers({ sync: deps.sync }),
+    ...syncHandlers({
+      sync: deps.sync,
+      schedule: () => ({
+        state: lifecycle.schedulerState(),
+        intervalMs: deps.syncIntervalMs,
+        nextRunAt: lifecycle.nextRunAt(),
+      }),
+    }),
     ...streamHandlers({ sse: deps.sse }),
   } satisfies Handlers;
 
