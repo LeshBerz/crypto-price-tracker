@@ -1,0 +1,7 @@
+// Текст совпадает с docs/project/schema/web_0003_password_change.sql — это проверяет тест миграций.
+export const PASSWORD_CHANGE_0003 = `-- web 0003: обязательная смена временного пароля (ADR 0016, поправка 35). Пароль, который создал сервер
+-- при создании пользователя или сбросе, знает оператор: пока пользователь его не сменил, флаг равен 1 и web
+-- пускает только на экран смены пароля. Существующие строки получают 0: их пароли считаются постоянными.
+ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0
+  CHECK (must_change_password IN (0, 1));
+`;

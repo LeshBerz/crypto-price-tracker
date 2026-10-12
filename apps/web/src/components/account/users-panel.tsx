@@ -309,6 +309,14 @@ export function UsersPanel({ currentLogin }: { currentLogin: string }) {
     <span className="flex flex-wrap items-center gap-2">
       <span className="font-mono font-semibold">{user.login}</span>
       {user.login === currentLogin && <Badge variant="outline">это вы</Badge>}
+      {user.mustChangePassword && (
+        <Hint text="Пароль выдан оператором и ещё не сменён: после входа пользователь попадёт на экран смены пароля">
+          <Badge variant="outline" className="border-warn-border text-warn">
+            <KeyRound aria-hidden="true" />
+            временный пароль
+          </Badge>
+        </Hint>
+      )}
     </span>
   );
 

@@ -87,7 +87,11 @@ export async function handleStream(request: Request, services: Services): Promis
   const token = readSessionToken(request);
   // touch: false — открытая вкладка с потоком не считается активностью пользователя и не продлевает сессию
   const isSessionValid = () => services.sessions.validate(token, { touch: false }) !== null;
-  if (!isSessionValid()) return problem(401, 'unauthorized', { requestId }, { 'X-Request-Id': requestId });
+  const session = services.sessions.validate(token, { touch: false });
+  if (!session) return problem(401, 'unauthorized', { requestId }, { 'X-Request-Id': requestId });
+  if (session.mustChangePassword) {
+    return problem(403, 'password-change-required', { requestId }, { 'X-Request-Id': requestId });
+  }
 
   let upstream: Response;
   try {

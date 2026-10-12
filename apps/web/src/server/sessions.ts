@@ -20,6 +20,8 @@ export type Session = {
   role: Role;
   /** Раньше из двух сроков: бездействие или абсолютный предел */
   expiresAt: number;
+  /** Вход выполнен с временным паролем: доступна только смена пароля (ADR 0016, поправка 35) */
+  mustChangePassword: boolean;
 };
 
 /** Сессия для экранов «Мои сессии» и «Пользователи». `tokenHash` наружу не выдаётся: по нему помечается текущая */
@@ -63,6 +65,7 @@ type SessionRow = {
   user_id: number;
   login: string;
   role: string;
+  must_change_password: number;
   last_seen_at: number;
   idle_expires_at: number;
   absolute_expires_at: number;
@@ -112,7 +115,8 @@ export class SessionService {
     const now = this.now();
     const row = this.db
       .prepare(
-        `SELECT s.token_hash, s.user_id, u.login, u.role, s.last_seen_at, s.idle_expires_at, s.absolute_expires_at
+        `SELECT s.token_hash, s.user_id, u.login, u.role, u.must_change_password,
+                s.last_seen_at, s.idle_expires_at, s.absolute_expires_at
          FROM sessions s JOIN users u ON u.id = s.user_id
          WHERE s.token_hash = ? AND s.revoked_at IS NULL AND u.is_active = 1
            AND s.idle_expires_at > ? AND s.absolute_expires_at > ?`,
@@ -134,6 +138,7 @@ export class SessionService {
       login: row.login,
       role: row.role as Session['role'],
       expiresAt: Math.min(idleExpiresAt, absoluteExpiresAt),
+      mustChangePassword: row.must_change_password === 1,
     };
   }
 

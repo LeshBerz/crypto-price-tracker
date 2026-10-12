@@ -25,6 +25,8 @@ export type UserDto = {
   lastLoginAt: string | null;
   /** Действующие сессии: не отозваны и не истекли */
   activeSessions: number;
+  /** Пароль выдан оператором и ещё не сменён: после входа пользователь попадёт на экран смены пароля */
+  mustChangePassword: boolean;
 };
 
 export type SessionDto = {
@@ -68,4 +70,5 @@ export type Profile = { login: string; role: Role; lastLoginAt: string | null; s
 export type ChangePasswordRequest = { currentPassword: string; newPassword: string };
 
 /** Отказы, которые экран различает по `type` (без префикса `urn:cpt:web:problem:`) */
-export type AccountProblem = 'login-taken' | 'last-operator' | 'own-password-reset' | 'invalid-current-password';
+export type AccountProblem =
+  'login-taken' | 'last-operator' | 'own-password-reset' | 'invalid-current-password' | 'password-change-required';

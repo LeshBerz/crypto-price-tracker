@@ -33,6 +33,7 @@ const user = (overrides: Partial<UserDto> = {}): UserDto => ({
   createdAt: T0,
   lastLoginAt: T0,
   activeSessions: 1,
+  mustChangePassword: false,
   ...overrides,
 });
 

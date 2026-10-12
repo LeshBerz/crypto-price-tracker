@@ -201,6 +201,7 @@ describe('пользователи и сессии', () => {
           createdAt: new Date(START).toISOString(),
           lastLoginAt: null,
           activeSessions: 1,
+          mustChangePassword: false,
         },
         {
           id: bobId,
@@ -210,6 +211,7 @@ describe('пользователи и сессии', () => {
           createdAt: new Date(START).toISOString(),
           lastLoginAt: new Date(START + MINUTE).toISOString(),
           activeSessions: 2,
+          mustChangePassword: false,
         },
       ]);
     });
@@ -682,7 +684,7 @@ describe('[migrations] 0002: открытый идентификатор сес�
     insert.run('a'.repeat(64), START, START, START + 1, START + 2);
     insert.run('b'.repeat(64), START, START, START + 1, START + 2);
 
-    expect(migrate(db, START + 1)).toEqual([2]);
+    expect(migrate(db, START + 1, MIGRATIONS.slice(0, 2))).toEqual([2]);
     const ids = db
       .prepare('SELECT public_id FROM sessions ORDER BY token_hash')
       .all()

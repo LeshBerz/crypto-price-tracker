@@ -39,6 +39,8 @@ type Guard = {
   write?: boolean;
   /** Мутация с телом: Content-Type обязан быть application/json */
   body?: boolean;
+  /** Маршрут открыт и с временным паролем: только сама смена пароля */
+  temporaryPassword?: boolean;
 };
 
 /**
@@ -48,6 +50,8 @@ type Guard = {
 function enter(request: Request, services: Services, guard: Guard = {}): Session | Response {
   const session = services.sessions.validate(readSessionToken(request));
   if (!session) return problem(401, 'unauthorized');
+  // С временным паролем сессия годится только для его смены: ни данных, ни управления (поправка 35)
+  if (session.mustChangePassword && !guard.temporaryPassword) return problem(403, 'password-change-required');
   if (guard.role && !hasRole(session.role, guard.role)) return problem(403, 'forbidden');
   if (guard.body && !isJsonRequest(request)) return problem(415, 'unsupported-media-type');
   if (guard.write && !isSameOrigin(request, services.config.trustProxy)) return problem(403, 'forbidden-origin');
@@ -93,6 +97,7 @@ function toUserDto(user: UserSummary): UserDto {
     createdAt: iso(user.createdAt),
     lastLoginAt: user.lastLoginAt === null ? null : iso(user.lastLoginAt),
     activeSessions: user.activeSessions,
+    mustChangePassword: user.mustChangePassword,
   };
 }
 
@@ -259,7 +264,7 @@ export function handleLogoutEverywhere(request: Request, services: Services): Re
 }
 
 export async function handleChangePassword(request: Request, services: Services): Promise<Response> {
-  const session = enter(request, services, { write: true, body: true });
+  const session = enter(request, services, { write: true, body: true, temporaryPassword: true });
   if (session instanceof Response) return session;
   const body = await readObject(request, ['currentPassword', 'newPassword'] satisfies (keyof ChangePasswordRequest)[]);
   if (!body || typeof body.currentPassword !== 'string' || typeof body.newPassword !== 'string') {

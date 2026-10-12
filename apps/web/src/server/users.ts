@@ -27,6 +27,8 @@ export type UserSummary = {
   createdAt: number;
   lastLoginAt: number | null;
   activeSessions: number;
+  /** Пароль выдан оператором и ещё не сменён */
+  mustChangePassword: boolean;
 };
 
 type UserRow = { id: number; login: string; password_hash: string; role: string; is_active: number };
@@ -38,6 +40,7 @@ type SummaryRow = {
   created_at: number;
   last_login_at: number | null;
   active_sessions: number;
+  must_change_password: number;
 };
 
 function toUser(row: UserRow): User {
@@ -59,6 +62,7 @@ function toSummary(row: SummaryRow): UserSummary {
     createdAt: Number(row.created_at),
     lastLoginAt: row.last_login_at === null ? null : Number(row.last_login_at),
     activeSessions: Number(row.active_sessions),
+    mustChangePassword: row.must_change_password === 1,
   };
 }
 
@@ -67,7 +71,7 @@ function toSummary(row: SummaryRow): UserSummary {
  * весь список, без запроса на каждого пользователя. Условия те же, что в `SessionService.validate`.
  */
 const SUMMARY_SQL = `
-  SELECT u.id, u.login, u.role, u.is_active, u.created_at, u.last_login_at,
+  SELECT u.id, u.login, u.role, u.is_active, u.created_at, u.last_login_at, u.must_change_password,
          (SELECT count(*) FROM sessions s
            WHERE s.user_id = u.id AND s.revoked_at IS NULL
              AND s.idle_expires_at > ? AND s.absolute_expires_at > ?) AS active_sessions
@@ -124,13 +128,14 @@ export class UserRepository {
     return result.changes === 1;
   }
 
-  create(login: string, passwordHash: string, role: Role, now: number): number {
+  /** `temporary` — пароль создал сервер и его видел оператор: при первом входе пользователь обязан его сменить */
+  create(login: string, passwordHash: string, role: Role, now: number, temporary = false): number {
     const result = this.db
       .prepare(
-        `INSERT INTO users (login, password_hash, role, created_at, updated_at, password_changed_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO users (login, password_hash, role, created_at, updated_at, password_changed_at, must_change_password)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(login, passwordHash, role, now, now, now);
+      .run(login, passwordHash, role, now, now, now, temporary ? 1 : 0);
     return Number(result.lastInsertRowid);
   }
 
@@ -142,10 +147,14 @@ export class UserRepository {
     this.db.prepare('UPDATE users SET role = ?, updated_at = ? WHERE id = ?').run(role, now, id);
   }
 
-  setPassword(id: number, passwordHash: string, now: number): void {
+  /** `temporary: true` — сброс оператором; `false` — пользователь задал пароль сам, обязанность сменить снята */
+  setPassword(id: number, passwordHash: string, now: number, temporary: boolean): void {
     this.db
-      .prepare('UPDATE users SET password_hash = ?, password_changed_at = ?, updated_at = ? WHERE id = ?')
-      .run(passwordHash, now, now, id);
+      .prepare(
+        `UPDATE users SET password_hash = ?, password_changed_at = ?, updated_at = ?, must_change_password = ?
+         WHERE id = ?`,
+      )
+      .run(passwordHash, now, now, temporary ? 1 : 0, id);
   }
 
   markLogin(id: number, now: number): void {

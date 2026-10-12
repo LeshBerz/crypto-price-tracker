@@ -11,6 +11,9 @@ export const NAV_ITEMS: readonly NavItem[] = [
 /** Профиль доступен любой роли и открывается из меню пользователя, а не из основной навигации */
 export const PROFILE_HREF = '/profile';
 
+/** Экран обязательной смены временного пароля: вне основной оболочки, без навигации */
+export const PASSWORD_CHANGE_HREF = '/password';
+
 /** Разделы панели оператора; новые добавляются сюда по мере появления экранов (ROADMAP, C7) */
 export const OPERATOR_SECTIONS: readonly { href: string; label: string }[] = [
   { href: '/operator/watchlist', label: 'Watchlist' },
