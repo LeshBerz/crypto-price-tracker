@@ -1,7 +1,8 @@
 // Watchlist оператора: проверка формы, ответы api → сообщения (ui-flows §3.5) и запись результата в кэш запросов.
 // Чистые функции и работа с кэшем: сеть и React не участвуют, поэтому всё проверяется тестами напрямую.
-import type { QueryClient } from '@tanstack/react-query';
-import { BffError } from '@/lib/bff-client';
+import { queryOptions, type QueryClient } from '@tanstack/react-query';
+import { BffError, type BffClient } from '@/lib/bff-client';
+import { bucketStartOf } from '@/lib/coin/intervals';
 import { coinKeys, type Cryptocurrency } from '@/lib/coin/queries';
 import { dashboardKeys, type CryptocurrencyList } from '@/lib/dashboard/queries';
 
@@ -146,6 +147,32 @@ export function applyCoinSaved(queryClient: QueryClient, coin: Cryptocurrency): 
   queryClient.setQueryData(coinKeys.detail(coin.id), coin);
   void queryClient.invalidateQueries({ queryKey: dashboardKeys.prices });
   void queryClient.invalidateQueries({ queryKey: dashboardKeys.sparklinesAll });
+}
+
+/**
+ * Сколько точек истории удалится вместе с монетой (ADR 0017, пробел 3). Отдельного поля в контракте нет и не
+ * нужно: сводка агрегатов уже отдаёт `points` за период. Период — от добавления монеты до текущего момента,
+ * интервал недельный: 1000 бакетов хватает на 19 лет. Начало выравнивается по бакету — иначе часовая свёртка,
+ * начавшаяся раньше `createdAt`, в сумму не попала бы. Сводка `null` — точек нет.
+ *
+ * Корень ключа свой: фоновые перезапросы карточки монеты (`coin-aggregates`) этот запрос не трогают.
+ */
+export function pricePointsQuery(client: BffClient, coin: Pick<Cryptocurrency, 'id' | 'createdAt'>) {
+  return queryOptions({
+    queryKey: ['coin-points', coin.id] as const,
+    queryFn: async ({ signal }) => {
+      const from = new Date(bucketStartOf(Date.parse(coin.createdAt), '1w')).toISOString();
+      const aggregates = await client.get('/api/v1/cryptocurrencies/{id}/prices/aggregates', {
+        params: { id: coin.id },
+        query: { interval: '1w', from },
+        signal,
+      });
+      return aggregates.summary?.points ?? 0;
+    },
+    // Число показывается перед необратимым действием: кэш прошлого открытия диалога не годится
+    staleTime: 0,
+    gcTime: 0,
+  });
 }
 
 /** Успешное удаление → строки нет в списке, данных карточки нет в кэше: api удалил монету вместе с историей */

@@ -1,5 +1,6 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { useId, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,8 +13,10 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { bff } from '@/lib/bff-client';
 import type { Cryptocurrency } from '@/lib/coin/queries';
-import { NAME_MAX_LENGTH, parseName } from '@/lib/operator/watchlist';
+import { formatCount, plural } from '@/lib/format';
+import { NAME_MAX_LENGTH, parseName, pricePointsQuery } from '@/lib/operator/watchlist';
 
 /**
  * Диалоги монтируются с `key={coin.id}`: состояние полей живёт ровно столько, сколько открыт диалог одной
@@ -86,6 +89,8 @@ export function RenameDialog({
  * Удаление стирает историю цен и свёртки (ADR 0013), поэтому подтверждается вводом символа, а рядом
  * предлагается пауза — действие, которое историю сохраняет (ui-flows §3.5, §5).
  */
+const POINTS = ['точка', 'точки', 'точек'] as const;
+
 export function DeleteDialog({
   coin,
   pending,
@@ -102,6 +107,8 @@ export function DeleteDialog({
   const id = useId();
   const [typed, setTyped] = useState('');
   const confirmed = typed.trim().toUpperCase() === coin.symbol;
+  // Число — уточнение, а не условие: пока оно грузится или не получено, диалог говорит «вся история»
+  const points = useQuery(pricePointsQuery(bff, coin)).data;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -114,8 +121,12 @@ export function DeleteDialog({
         <form onSubmit={submit} noValidate className="flex flex-col gap-4">
           <DialogTitle>Удалить {coin.symbol} из watchlist?</DialogTitle>
           <DialogDescription>
-            Будет удалена <strong className="text-foreground">вся история цен {coin.symbol}</strong> и её свёртки.
-            Действие необратимо.{' '}
+            Будет удалена{' '}
+            <strong className="text-foreground">
+              вся история цен {coin.symbol}
+              {points !== undefined && ` — ${formatCount(points)} ${plural(points, POINTS)}`}
+            </strong>{' '}
+            и её свёртки. Действие необратимо.{' '}
             {coin.isPaused
               ? 'Монета уже на паузе: пока она в списке, история сохраняется.'
               : 'Чтобы сохранить историю, поставьте монету на паузу.'}
