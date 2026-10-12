@@ -4,6 +4,7 @@ import { AppFooter } from '@/components/app-footer';
 import { AppHeader } from '@/components/app-header';
 import { QueryProvider } from '@/components/query-provider';
 import { StreamProvider } from '@/components/stream-provider';
+import { Toaster } from '@/components/ui/toast';
 import { getCurrentSession } from '@/server/current-session';
 
 /** Всё внутри группы (app) — только после входа. Проверка — в БД на каждый запрос, а не по наличию cookie */
@@ -26,6 +27,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </QueryProvider>
       </main>
       <AppFooter />
+      <Toaster />
     </div>
   );
 }
