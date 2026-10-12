@@ -36,7 +36,7 @@ export default async function OperatorLayout({ children }: { children: ReactNode
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold tracking-tight">Панель оператора</h1>
         <p className="text-sm text-muted-foreground">
-          Управление watchlist, синхронизацией и состояние интеграции с CoinMarketCap
+          Управление watchlist, синхронизацией и пользователями, состояние интеграции с CoinMarketCap
         </p>
       </div>
       <OperatorNav />

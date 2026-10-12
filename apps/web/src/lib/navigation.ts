@@ -8,11 +8,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: '/operator', label: 'Оператор', roles: ['operator'] },
 ];
 
-/** Разделы панели оператора; новые добавляются сюда по мере появления экранов (ROADMAP, C6–C7) */
+/** Профиль доступен любой роли и открывается из меню пользователя, а не из основной навигации */
+export const PROFILE_HREF = '/profile';
+
+/** Разделы панели оператора; новые добавляются сюда по мере появления экранов (ROADMAP, C7) */
 export const OPERATOR_SECTIONS: readonly { href: string; label: string }[] = [
   { href: '/operator/watchlist', label: 'Watchlist' },
   { href: '/operator/sync', label: 'Синхронизация' },
   { href: '/operator/system', label: 'Система' },
+  { href: '/operator/users', label: 'Пользователи' },
 ];
 
 export function navItemsFor(role: Role): NavItem[] {
