@@ -1,11 +1,12 @@
 'use client';
 
-import { Eye, EyeOff } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PasswordInput } from '@/components/ui/password-input';
 
 type Notice = { kind: 'info' | 'error'; text: string };
 
@@ -27,7 +28,6 @@ async function describeFailure(response: Response): Promise<string> {
 export function LoginForm({ expired }: { expired: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(
     expired ? { kind: 'info', text: 'Сессия завершена. Войдите снова.' } : null,
   );
@@ -84,34 +84,21 @@ export function LoginForm({ expired }: { expired: boolean }) {
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="password">Пароль</Label>
-        <div className="flex gap-2">
-          <Input
-            id="password"
-            name="password"
-            type={showPassword ? 'text' : 'password'}
-            autoComplete="current-password"
-            required
-            aria-describedby="login-error"
-            className="h-10"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10"
-            aria-pressed={showPassword}
-            aria-controls="password"
-            onClick={() => setShowPassword((shown) => !shown)}
-          >
-            {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
-            {showPassword ? 'Скрыть' : 'Показать'}
-          </Button>
-        </div>
+        <PasswordInput
+          id="password"
+          name="password"
+          autoComplete="current-password"
+          required
+          aria-describedby="login-error"
+          className="h-10"
+        />
       </div>
       {/* role="alert" всегда в разметке: скринридер объявляет текст, когда он появляется */}
       <p id="login-error" role="alert" className="min-h-5 text-sm text-destructive">
         {notice?.kind === 'error' ? notice.text : ''}
       </p>
-      <Button type="submit" disabled={pending} className="h-10">
+      <Button type="submit" size="lg" disabled={pending}>
+        {pending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
         {pending ? 'Вход…' : 'Войти'}
       </Button>
     </form>
