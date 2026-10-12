@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { components } from '@/generated/api-types';
 import type { LatestPriceListItem, SparklineWindow } from '@/lib/dashboard/queries';
 import type { Flash } from '@/lib/dashboard/use-price-stream';
@@ -23,6 +24,8 @@ export type PriceTableProps = {
 
 const TH = 'px-4 py-2 text-xs font-medium text-muted-foreground';
 const TD = 'px-4 py-3 align-middle';
+/** Символ и название — ссылка на карточку монеты: цель нажатия шире одного слова */
+const COIN_LINK = 'group rounded outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
 
 /**
  * Список цен в двух раскладках: таблица на широком экране, карточки на узком (решение Q7 дизайна: ни одна
@@ -67,8 +70,10 @@ export function PriceTable({ items, sparklines, pausedIds, flashes, window, now 
             {rows.map(({ item, paused, flash, points, sparkLabel }) => (
               <tr key={item.cryptocurrencyId} className="border-b last:border-b-0">
                 <td className={TD}>
-                  <span className="font-semibold">{item.symbol}</span>{' '}
-                  <span className="text-muted-foreground">{item.name}</span>
+                  <Link href={`/coins/${item.cryptocurrencyId}`} className={COIN_LINK}>
+                    <span className="font-semibold group-hover:underline">{item.symbol}</span>{' '}
+                    <span className="text-muted-foreground">{item.name}</span>
+                  </Link>
                   <div>
                     <StateTag paused={paused} stale={item.latest?.isStale ?? false} />
                   </div>
@@ -94,10 +99,10 @@ export function PriceTable({ items, sparklines, pausedIds, flashes, window, now 
       <ul className="divide-y md:hidden" aria-label="Отслеживаемые монеты">
         {rows.map(({ item, paused, flash, points, sparkLabel }) => (
           <li key={item.cryptocurrencyId} className="grid grid-cols-2 gap-x-3 gap-y-2 px-4 py-3 text-sm">
-            <div>
-              <div className="font-semibold">{item.symbol}</div>
+            <Link href={`/coins/${item.cryptocurrencyId}`} className={COIN_LINK}>
+              <div className="font-semibold group-hover:underline">{item.symbol}</div>
               <div className="text-muted-foreground">{item.name}</div>
-            </div>
+            </Link>
             <div className="flex flex-col items-end gap-0.5">
               <PriceValue latest={item.latest} flash={flash} />
               {item.latest && <ChangeValue change={item.latest.change24hPercent} />}
