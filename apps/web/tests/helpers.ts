@@ -7,6 +7,7 @@ import { migrate, openDatabase } from '@/server/db';
 import { LoginThrottle } from '@/server/login-throttle';
 import { hashPassword, verifyPassword, type ScryptParams } from '@/server/passwords';
 import { SessionService } from '@/server/sessions';
+import { UserAdminService } from '@/server/user-admin';
 import { UserRepository, type Role } from '@/server/users';
 
 /** Параметры scrypt для тестов: тот же код, но N = 2^10 вместо 2^17 — миллисекунды вместо 285 мс на хэш */
@@ -56,6 +57,15 @@ export function createTestContext(config: Partial<WebConfig> = {}): TestContext 
     },
     dummyHash: () => dummy,
   });
+  const userAdmin = new UserAdminService({
+    db,
+    users,
+    sessions,
+    throttle,
+    now,
+    hashPassword: (password) => hashPassword(password, FAST_PARAMS),
+    verifyPassword,
+  });
   return {
     config: { databasePath: ':memory:', bootstrap: null, trustProxy: false, api: TEST_API, ...config },
     apiFetch: (input, init) => api(input, init),
@@ -69,6 +79,7 @@ export function createTestContext(config: Partial<WebConfig> = {}): TestContext 
     sessions,
     throttle,
     auth,
+    userAdmin,
     now,
     verifyCalls,
     advance: (ms) => {

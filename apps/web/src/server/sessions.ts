@@ -22,12 +22,41 @@ export type Session = {
   expiresAt: number;
 };
 
+/** Сессия для экранов «Мои сессии» и «Пользователи». `tokenHash` наружу не выдаётся: по нему помечается текущая */
+export type SessionInfo = {
+  id: string;
+  tokenHash: string;
+  userId: number;
+  login: string;
+  createdAt: number;
+  lastSeenAt: number;
+  expiresAt: number;
+  ip: string | null;
+  userAgent: string | null;
+};
+
+/** Открытый идентификатор сессии: 16 случайных байт в hex. С токеном не связан: отозвать по нему можно, войти нельзя */
+export const SESSION_ID_FORMAT = /^[0-9a-f]{32}$/;
+
 /** 32 случайных байта в base64url — ровно 43 символа */
 const TOKEN_FORMAT = /^[A-Za-z0-9_-]{43}$/;
 
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
+
+type InfoRow = {
+  public_id: string;
+  token_hash: string;
+  user_id: number;
+  login: string;
+  created_at: number;
+  last_seen_at: number;
+  idle_expires_at: number;
+  absolute_expires_at: number;
+  ip: string | null;
+  user_agent: string | null;
+};
 
 type SessionRow = {
   token_hash: string;
@@ -56,11 +85,12 @@ export class SessionService {
     const absolute = now + ABSOLUTE_TIMEOUT_MS;
     this.db
       .prepare(
-        `INSERT INTO sessions (token_hash, user_id, created_at, last_seen_at, idle_expires_at, absolute_expires_at, ip, user_agent)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO sessions (token_hash, public_id, user_id, created_at, last_seen_at, idle_expires_at, absolute_expires_at, ip, user_agent)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         hashToken(token),
+        randomBytes(16).toString('hex'),
         userId,
         now,
         now,
@@ -120,6 +150,51 @@ export class SessionService {
       .prepare('UPDATE sessions SET revoked_at = ?, revoke_reason = ? WHERE user_id = ? AND revoked_at IS NULL')
       .run(this.now(), reason, userId);
     return Number(result.changes);
+  }
+
+  /**
+   * Действующие сессии от новых к старым — одного пользователя или всех. Условия те же, что в `validate`:
+   * отозванная, истёкшая или принадлежащая отключённому пользователю сессия в список не попадает.
+   */
+  listActive(userId?: number): SessionInfo[] {
+    const now = this.now();
+    const rows = this.db
+      .prepare(
+        `SELECT s.public_id, s.token_hash, s.user_id, u.login, s.created_at, s.last_seen_at,
+                s.idle_expires_at, s.absolute_expires_at, s.ip, s.user_agent
+           FROM sessions s JOIN users u ON u.id = s.user_id
+          WHERE s.revoked_at IS NULL AND u.is_active = 1
+            AND s.idle_expires_at > ? AND s.absolute_expires_at > ?
+            AND (? IS NULL OR s.user_id = ?)
+          ORDER BY s.last_seen_at DESC, s.created_at DESC, s.public_id`,
+      )
+      .all(now, now, userId ?? null, userId ?? null) as InfoRow[];
+    return rows.map((row) => ({
+      id: row.public_id,
+      tokenHash: row.token_hash,
+      userId: Number(row.user_id),
+      login: row.login,
+      createdAt: Number(row.created_at),
+      lastSeenAt: Number(row.last_seen_at),
+      expiresAt: Math.min(Number(row.idle_expires_at), Number(row.absolute_expires_at)),
+      ip: row.ip,
+      userAgent: row.user_agent,
+    }));
+  }
+
+  /**
+   * Отзыв по открытому идентификатору. `userId` ограничивает отзыв сессиями одного пользователя: в профиле
+   * чужой идентификатор даёт тот же результат, что и несуществующий.
+   */
+  revokeById(id: string, reason: RevokeReason, userId?: number): boolean {
+    if (!SESSION_ID_FORMAT.test(id)) return false;
+    const result = this.db
+      .prepare(
+        `UPDATE sessions SET revoked_at = ?, revoke_reason = ?
+          WHERE public_id = ? AND revoked_at IS NULL AND (? IS NULL OR user_id = ?)`,
+      )
+      .run(this.now(), reason, id, userId ?? null, userId ?? null);
+    return result.changes === 1;
   }
 
   /** Удаляются сессии, чей срок вышел, — и действующие когда-то, и отозванные: до этого момента отзыв виден в аудите */

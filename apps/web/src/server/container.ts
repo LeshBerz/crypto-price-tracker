@@ -7,6 +7,7 @@ import { consoleLog, type Log } from './log';
 import { LoginThrottle } from './login-throttle';
 import { hashPassword, verifyPassword } from './passwords';
 import { SessionService } from './sessions';
+import { UserAdminService } from './user-admin';
 import { UserRepository } from './users';
 
 export type Services = {
@@ -16,6 +17,7 @@ export type Services = {
   sessions: SessionService;
   throttle: LoginThrottle;
   auth: AuthService;
+  userAdmin: UserAdminService;
   now: () => number;
   /** fetch для запросов в api: в тестах подменяется */
   apiFetch: ApiFetch;
@@ -36,6 +38,7 @@ export function createServices(config: WebConfig, now: () => number = Date.now):
   const dummyHash = () => (dummy ??= hashPassword('no such user'));
 
   const auth = new AuthService({ users, sessions, throttle, now, verifyPassword, dummyHash });
+  const userAdmin = new UserAdminService({ db, users, sessions, throttle, now, hashPassword, verifyPassword });
   return {
     config,
     db,
@@ -43,6 +46,7 @@ export function createServices(config: WebConfig, now: () => number = Date.now):
     sessions,
     throttle,
     auth,
+    userAdmin,
     now,
     apiFetch: (input, init) => fetch(input, init),
     log: consoleLog,
