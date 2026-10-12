@@ -18,7 +18,7 @@ export function AppNav({ items }: { items: NavItem[] }) {
             href={item.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'inline-flex items-center border-b-2 px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+              'inline-flex items-center border-b-2 px-2 text-sm sm:px-3 font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
               active
                 ? 'border-primary text-foreground'
                 : 'border-transparent text-muted-foreground hover:text-foreground',

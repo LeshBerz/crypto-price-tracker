@@ -9,7 +9,7 @@ import type { Role } from '@/server/users';
 export function AppHeader({ login, role }: { login: string; role: Role }) {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-stretch gap-4 px-4">
+      <div className="mx-auto flex h-14 max-w-6xl items-stretch gap-2 px-4 sm:gap-4">
         <Link
           href="/"
           aria-label="Crypto Price Tracker — на дашборд"

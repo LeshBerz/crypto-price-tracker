@@ -1,8 +1,10 @@
 import { Info, RefreshCw, TriangleAlert, WifiOff, type LucideIcon } from 'lucide-react';
+import Link from 'next/link';
 import { Notice, type NoticeTone } from '@/components/notice';
 import { Button } from '@/components/ui/button';
 import type { Degradation } from '@/lib/dashboard/degradation';
 import { formatClock, formatRelative, plural } from '@/lib/format';
+import type { Role } from '@/server/users';
 
 type Content = { tone: NoticeTone; Icon: LucideIcon; title: string; body: string };
 
@@ -73,13 +75,24 @@ function describe(degradation: Degradation, now: number): Content {
   }
 }
 
+/** Сбой источника или синхронизации: причину оператор смотрит на экране «Система» */
+function pointsToSource(degradation: Degradation): boolean {
+  return (
+    degradation.kind === 'sync-failed' ||
+    degradation.kind === 'partial' ||
+    (degradation.kind === 'stale' && degradation.all)
+  );
+}
+
 export function DegradationBanner({
   degradation,
   now,
+  role,
   onRetry,
 }: {
   degradation: Degradation;
   now: number;
+  role: Role;
   onRetry: () => void;
 }) {
   const { tone, Icon, title, body } = describe(degradation, now);
@@ -90,11 +103,21 @@ export function DegradationBanner({
       Icon={Icon}
       title={title}
       action={
-        degradation.kind === 'api-unavailable' && (
+        degradation.kind === 'api-unavailable' ? (
           <Button variant="outline" size="sm" onClick={onRetry}>
             <RefreshCw aria-hidden="true" />
             Повторить
           </Button>
+        ) : (
+          role === 'operator' &&
+          pointsToSource(degradation) && (
+            <Link
+              href="/operator/system"
+              className="shrink-0 rounded font-medium underline underline-offset-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              Состояние CMC
+            </Link>
+          )
         )
       }
     >
