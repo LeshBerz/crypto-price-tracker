@@ -14,6 +14,7 @@ import type {
   UserDto,
   UserList,
 } from '@/lib/account/contract';
+import { TOUR_ROLE } from '@/lib/account/contract';
 import { hasRole } from './bff/allowlist';
 import type { Services } from './container';
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from './passwords';
@@ -27,6 +28,7 @@ import {
   readSessionToken,
 } from './request';
 import { SESSION_ID_FORMAT, type Session, type SessionInfo } from './sessions';
+import { isTourId } from './tours';
 import { isUserAdminError } from './user-admin';
 import type { Role, UserSummary } from './users';
 
@@ -290,4 +292,25 @@ export async function handleChangePassword(request: Request, services: Services)
       ? 'Новый пароль совпадает с текущим'
       : `Новый пароль: от ${PASSWORD_MIN_LENGTH} до ${PASSWORD_MAX_LENGTH} символов`,
   );
+}
+
+/**
+ * Тур пройден или пропущен: гид больше не открывается сам. Тела нет — отметка задана путём, поэтому PUT
+ * идемпотентен. С временным паролем маршрут закрыт: до смены пароля гид не показывается.
+ */
+export function handleCompleteTour(request: Request, services: Services, tour: string): Response {
+  const session = enter(request, services, { write: true });
+  if (session instanceof Response) return session;
+  if (!isTourId(tour)) return problem(404, 'not-found');
+  if (!hasRole(session.role, TOUR_ROLE[tour])) return problem(403, 'forbidden');
+  services.tours.complete(session.userId, tour, services.now());
+  return NO_CONTENT();
+}
+
+/** «Пройти гид заново»: отметки сняты, туры снова открываются при первом открытии экранов */
+export function handleResetTours(request: Request, services: Services): Response {
+  const session = enter(request, services, { write: true });
+  if (session instanceof Response) return session;
+  services.tours.reset(session.userId);
+  return NO_CONTENT();
 }

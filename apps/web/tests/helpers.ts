@@ -7,6 +7,7 @@ import { migrate, openDatabase } from '@/server/db';
 import { LoginThrottle } from '@/server/login-throttle';
 import { hashPassword, verifyPassword, type ScryptParams } from '@/server/passwords';
 import { SessionService } from '@/server/sessions';
+import { TourRepository } from '@/server/tours';
 import { UserAdminService } from '@/server/user-admin';
 import { UserRepository, type Role } from '@/server/users';
 
@@ -80,6 +81,7 @@ export function createTestContext(config: Partial<WebConfig> = {}): TestContext 
     throttle,
     auth,
     userAdmin,
+    tours: new TourRepository(db),
     now,
     verifyCalls,
     advance: (ms) => {
