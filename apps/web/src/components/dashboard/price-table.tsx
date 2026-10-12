@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import type { components } from '@/generated/api-types';
 import type { LatestPriceListItem, SparklineWindow } from '@/lib/dashboard/queries';
+import { CoinAvatar } from '@/components/coin-avatar';
+import { ROW, TD, TH } from '@/components/ui/panel';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Flash } from '@/lib/dashboard/use-price-stream';
 import { ChangeValue, PriceValue, Sparkline, StateTag, UpdatedAt } from './cells';
 
@@ -22,10 +25,9 @@ export type PriceTableProps = {
   now: number;
 };
 
-const TH = 'px-4 py-2 text-xs font-medium text-muted-foreground';
-const TD = 'px-4 py-3 align-middle';
-/** Символ и название — ссылка на карточку монеты: цель нажатия шире одного слова */
-const COIN_LINK = 'group rounded outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
+/** Кружок, символ и название — одна ссылка на карточку монеты: цель нажатия шире одного слова */
+const COIN_LINK =
+  'group flex w-fit items-center gap-3 rounded outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
 
 /**
  * Список цен в двух раскладках: таблица на широком экране, карточки на узком (решение Q7 дизайна: ни одна
@@ -68,13 +70,16 @@ export function PriceTable({ items, sparklines, pausedIds, flashes, window, now 
           </thead>
           <tbody>
             {rows.map(({ item, paused, flash, points, sparkLabel }) => (
-              <tr key={item.cryptocurrencyId} className="border-b last:border-b-0">
+              <tr key={item.cryptocurrencyId} className={ROW}>
                 <td className={TD}>
-                  <Link href={`/coins/${item.cryptocurrencyId}`} className={COIN_LINK}>
-                    <span className="font-semibold group-hover:underline">{item.symbol}</span>{' '}
-                    <span className="text-muted-foreground">{item.name}</span>
-                  </Link>
-                  <div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <Link href={`/coins/${item.cryptocurrencyId}`} className={COIN_LINK}>
+                      <CoinAvatar symbol={item.symbol} />
+                      <span>
+                        <span className="font-semibold group-hover:underline">{item.symbol}</span>{' '}
+                        <span className="text-muted-foreground">{item.name}</span>
+                      </span>
+                    </Link>
                     <StateTag paused={paused} stale={item.latest?.isStale ?? false} />
                   </div>
                 </td>
@@ -98,10 +103,16 @@ export function PriceTable({ items, sparklines, pausedIds, flashes, window, now 
 
       <ul className="divide-y md:hidden" aria-label="Отслеживаемые монеты">
         {rows.map(({ item, paused, flash, points, sparkLabel }) => (
-          <li key={item.cryptocurrencyId} className="grid grid-cols-2 gap-x-3 gap-y-2 px-4 py-3 text-sm">
+          <li
+            key={item.cryptocurrencyId}
+            className="grid animate-row-in grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 px-4 py-3 text-sm"
+          >
             <Link href={`/coins/${item.cryptocurrencyId}`} className={COIN_LINK}>
-              <div className="font-semibold group-hover:underline">{item.symbol}</div>
-              <div className="text-muted-foreground">{item.name}</div>
+              <CoinAvatar symbol={item.symbol} />
+              <span>
+                <span className="block font-semibold group-hover:underline">{item.symbol}</span>
+                <span className="block text-muted-foreground">{item.name}</span>
+              </span>
             </Link>
             <div className="flex flex-col items-end gap-0.5">
               <PriceValue latest={item.latest} flash={flash} />
@@ -119,15 +130,18 @@ export function PriceTable({ items, sparklines, pausedIds, flashes, window, now 
   );
 }
 
-const SKELETON = 'inline-block h-4 animate-pulse rounded bg-skeleton';
-
+/** Заглушка по форме строки: кружок и название слева, цена, изменение, мини-график и время справа */
 export function PriceTableSkeleton() {
   return (
-    <ul className="divide-y" aria-busy="true" aria-label="Загрузка цен">
+    <ul className="divide-y" role="status" aria-busy="true" aria-label="Загрузка цен">
       {Array.from({ length: 5 }, (_, index) => (
-        <li key={index} className="flex items-center justify-between gap-4 px-4 py-3.5">
-          <span className={`${SKELETON} w-36`} />
-          <span className={`${SKELETON} w-24`} />
+        <li key={index} className="flex items-center gap-4 px-4 py-3" aria-hidden="true">
+          <Skeleton className="size-8 rounded-full" />
+          <Skeleton className="w-32" />
+          <Skeleton className="ml-auto w-24" />
+          <Skeleton className="w-14 max-md:hidden" />
+          <Skeleton className="h-7 w-26 max-md:hidden" />
+          <Skeleton className="w-16 max-md:hidden" />
         </li>
       ))}
     </ul>

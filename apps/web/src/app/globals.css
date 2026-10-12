@@ -170,6 +170,18 @@
   }
 }
 
+/* Кружок монеты: тон задаёт --coin-hue (lib/coin-hue.ts), насыщенность и светлота — тема */
+@layer components {
+  .coin-avatar {
+    background: hsl(var(--coin-hue) 75% 45% / 0.14);
+    color: hsl(var(--coin-hue) 70% 34%);
+  }
+  [data-theme='dark'] .coin-avatar {
+    background: hsl(var(--coin-hue) 70% 60% / 0.18);
+    color: hsl(var(--coin-hue) 80% 76%);
+  }
+}
+
 /* Анимации отключаются по настройке ОС (WCAG 2.3.3) */
 @media (prefers-reduced-motion: reduce) {
   *,

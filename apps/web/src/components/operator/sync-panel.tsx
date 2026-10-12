@@ -1,17 +1,19 @@
 'use client';
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { LoaderCircle, RefreshCw, WifiOff } from 'lucide-react';
+import { History, LoaderCircle, RefreshCw, WifiOff } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { PriceTableSkeleton } from '@/components/dashboard/price-table';
 import { LoadError } from '@/components/load-error';
 import { Notice } from '@/components/notice';
 import { SyncStatusBadge } from '@/components/sync-status-badge';
+import { Timestamp } from '@/components/timestamp';
 import { Button } from '@/components/ui/button';
+import { EmptyState, Panel, PanelHeader, TH } from '@/components/ui/panel';
+import { Skeleton, TableSkeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toast';
 import { bff, BffError } from '@/lib/bff-client';
 import { usePriceStream } from '@/lib/dashboard/use-price-stream';
-import { formatClock, formatDateTime, formatDuration, formatInterval } from '@/lib/format';
+import { formatClock, formatDuration, formatInterval } from '@/lib/format';
 import {
   cmcStatusQuery,
   mergeRunPages,
@@ -25,8 +27,20 @@ import { readSchedule, runDurationMs, type Schedule } from '@/lib/operator/syste
 import { describeFailure } from '@/lib/operator/watchlist';
 import { cn } from '@/lib/utils';
 
-const TH = 'px-4 py-2 text-xs font-medium text-muted-foreground';
+/** Журнал плотнее остальных таблиц: строк много, действий в строке нет */
 const TD = 'px-4 py-2.5 align-middle';
+const ROW = 'animate-row-in border-b transition-colors duration-(--duration-base) last:border-b-0';
+const COLUMNS = [
+  { width: 'w-8' },
+  { width: 'w-32' },
+  { width: 'w-10', right: true },
+  { width: 'w-24' },
+  { width: 'w-16' },
+  { width: 'w-8', right: true },
+  { width: 'w-6', right: true },
+  { width: 'w-6', right: true },
+  { width: 'w-10' },
+];
 
 const TRIGGER: Record<SyncRun['trigger'], string> = {
   schedule: 'по расписанию',
@@ -41,16 +55,12 @@ const SCHEDULER: Record<Schedule['state'], string> = {
 };
 
 function Started({ run }: { run: SyncRun }) {
-  return (
-    <time dateTime={run.startedAt} title={`${run.startedAt} (UTC)`} className="font-mono tabular-nums">
-      {formatDateTime(run.startedAt, { seconds: true })}
-    </time>
-  );
+  return <Timestamp iso={run.startedAt} seconds />;
 }
 
 function Duration({ run }: { run: SyncRun }) {
   const ms = runDurationMs(run);
-  return <span className="font-mono tabular-nums">{ms === null ? '—' : formatDuration(ms)}</span>;
+  return <span className="tabular-nums">{ms === null ? '—' : formatDuration(ms)}</span>;
 }
 
 function RunError({ run }: { run: SyncRun }) {
@@ -91,10 +101,7 @@ function NextRun({ schedule, running }: { schedule: Schedule; running: boolean }
   if (running || !schedule.nextRunAt) return <span>после завершения текущего</span>;
   return (
     <span>
-      ≈{' '}
-      <time dateTime={schedule.nextRunAt} title={`${schedule.nextRunAt} (UTC)`} className="font-mono tabular-nums">
-        {formatClock(schedule.nextRunAt, { seconds: true })}
-      </time>{' '}
+      ≈ <Timestamp iso={schedule.nextRunAt} format="clock" seconds />{' '}
       <span className="text-muted-foreground">({formatInterval(schedule.intervalMs)})</span>
     </span>
   );
@@ -138,15 +145,12 @@ export function SyncPanel() {
   const busy = trigger.isPending || running;
   return (
     <div className="flex flex-col gap-4">
-      <section
-        aria-labelledby="now-title"
-        className="flex flex-wrap items-start gap-x-6 gap-y-3 rounded-xl bg-card p-4 text-sm ring-1 ring-foreground/10"
-      >
+      <Panel aria-labelledby="now-title" className="flex flex-wrap items-start gap-x-6 gap-y-3 p-4 text-sm">
         <div className="flex min-w-56 flex-1 flex-col gap-2">
           <h2 id="now-title" className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             Сейчас
           </h2>
-          {runs ? <Now runs={runs} /> : <span className="text-muted-foreground">Загрузка…</span>}
+          {runs ? <Now runs={runs} /> : <Skeleton className="h-5 w-64" />}
           {schedule && (
             <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
               <dt className="text-muted-foreground">Следующий запуск</dt>
@@ -162,7 +166,7 @@ export function SyncPanel() {
           {busy ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
           {busy ? 'Идёт синхронизация…' : 'Синхронизировать сейчас'}
         </Button>
-      </section>
+      </Panel>
 
       <div role="status" aria-live="polite">
         {streamStatus === 'reconnecting' && (
@@ -174,23 +178,17 @@ export function SyncPanel() {
         )}
       </div>
 
-      <section aria-labelledby="runs-title" className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-3">
-          <h2 id="runs-title" className="font-semibold">
-            История запусков
-          </h2>
-          <span className="text-xs text-muted-foreground">от новых к старым</span>
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-            disabled={runsQuery.isFetching}
-            onClick={() => void runsQuery.refetch()}
-          >
+      <Panel aria-labelledby="runs-title">
+        <PanelHeader
+          title="История запусков"
+          titleId="runs-title"
+          meta={<span className="text-xs text-muted-foreground">от новых к старым</span>}
+        >
+          <Button variant="outline" size="sm" disabled={runsQuery.isFetching} onClick={() => void runsQuery.refetch()}>
             <RefreshCw className={cn(runsQuery.isRefetching && 'animate-spin')} aria-hidden="true" />
             Обновить
           </Button>
-        </div>
+        </PanelHeader>
 
         {!runs && runsQuery.isError && (
           <LoadError
@@ -199,9 +197,11 @@ export function SyncPanel() {
             onRetry={() => void runsQuery.refetch()}
           />
         )}
-        {!runs && !runsQuery.isError && <PriceTableSkeleton />}
+        {!runs && !runsQuery.isError && <TableSkeleton label="Загрузка журнала" columns={COLUMNS} rows={6} />}
         {runs?.length === 0 && (
-          <p className="px-4 py-8 text-center text-sm text-muted-foreground">Запусков ещё не было.</p>
+          <EmptyState Icon={History} title="Запусков ещё не было">
+            Первый запуск выполняется при старте сервиса, следующие — по расписанию или кнопкой выше.
+          </EmptyState>
         )}
         {runs && runs.length > 0 && (
           <>
@@ -243,12 +243,8 @@ export function SyncPanel() {
                 </thead>
                 <tbody>
                   {runs.map((run) => (
-                    <tr
-                      key={run.id}
-                      id={`run-${run.id}`}
-                      className={cn('border-b last:border-b-0', run.id === highlighted && 'bg-info-bg')}
-                    >
-                      <td className={`${TD} font-mono tabular-nums`}>#{run.id}</td>
+                    <tr key={run.id} id={`run-${run.id}`} className={cn(ROW, run.id === highlighted && 'bg-info-bg')}>
+                      <td className={`${TD} text-muted-foreground tabular-nums`}>#{run.id}</td>
                       <td className={TD}>
                         <Started run={run} />
                       </td>
@@ -259,11 +255,11 @@ export function SyncPanel() {
                       <td className={TD}>
                         <SyncStatusBadge status={run.status} />
                       </td>
-                      <td className={`${TD} text-right font-mono tabular-nums`}>
+                      <td className={`${TD} text-right tabular-nums`}>
                         {run.pricesSaved}/{run.coinsRequested}
                       </td>
-                      <td className={`${TD} text-right font-mono tabular-nums`}>{run.attempts}</td>
-                      <td className={`${TD} text-right font-mono tabular-nums`}>{run.creditsUsed ?? '—'}</td>
+                      <td className={`${TD} text-right tabular-nums`}>{run.attempts}</td>
+                      <td className={`${TD} text-right tabular-nums`}>{run.creditsUsed ?? '—'}</td>
                       <td className={`${TD} max-w-64`}>
                         <RunError run={run} />
                       </td>
@@ -277,10 +273,13 @@ export function SyncPanel() {
               {runs.map((run) => (
                 <li
                   key={run.id}
-                  className={cn('flex flex-col gap-1.5 px-4 py-3 text-sm', run.id === highlighted && 'bg-info-bg')}
+                  className={cn(
+                    'flex animate-row-in flex-col gap-1.5 px-4 py-3 text-sm transition-colors duration-(--duration-base)',
+                    run.id === highlighted && 'bg-info-bg',
+                  )}
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    <strong className="font-mono tabular-nums">#{run.id}</strong>
+                    <strong className="tabular-nums">#{run.id}</strong>
                     <SyncStatusBadge status={run.status} />
                     <span className="ml-auto text-xs text-muted-foreground">
                       <Started run={run} />
@@ -303,6 +302,7 @@ export function SyncPanel() {
                   onClick={() => void runsQuery.fetchNextPage()}
                   disabled={runsQuery.isFetchingNextPage}
                 >
+                  {runsQuery.isFetchingNextPage && <LoaderCircle className="animate-spin" aria-hidden="true" />}
                   {runsQuery.isFetchingNextPage ? 'Загрузка…' : 'Загрузить ещё'}
                 </Button>
               ) : (
@@ -311,7 +311,7 @@ export function SyncPanel() {
             </div>
           </>
         )}
-      </section>
+      </Panel>
     </div>
   );
 }
