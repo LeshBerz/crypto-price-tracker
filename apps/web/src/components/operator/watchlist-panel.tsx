@@ -1,27 +1,37 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CircleCheck, Pause, Pencil, Play, Trash2 } from 'lucide-react';
+import { CircleCheck, Coins, Pause, Pencil, Play, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import { PriceTableSkeleton } from '@/components/dashboard/price-table';
+import { CoinAvatar } from '@/components/coin-avatar';
 import { LoadError } from '@/components/load-error';
+import { Timestamp } from '@/components/timestamp';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { InfoHint } from '@/components/ui/info-hint';
+import { EmptyState, Panel, PanelHeader, ROW, TD, TH } from '@/components/ui/panel';
+import { TableSkeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toast';
 import { bff } from '@/lib/bff-client';
 import type { Cryptocurrency } from '@/lib/coin/queries';
 import { coinsQuery } from '@/lib/dashboard/queries';
 import { useNow } from '@/lib/dashboard/use-price-stream';
-import { formatDate, formatRelative, plural } from '@/lib/format';
+import { plural } from '@/lib/format';
 import { applyCoinDeleted, applyCoinSaved, describeFailure } from '@/lib/operator/watchlist';
 import { AddCoinForm } from './add-coin-form';
 import { DeleteDialog, RenameDialog } from './coin-dialogs';
 
-const TH = 'px-4 py-2 text-xs font-medium text-muted-foreground';
-const TD = 'px-4 py-3 align-middle';
 const COINS = ['монета', 'монеты', 'монет'] as const;
-const COIN_LINK = 'group rounded outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
+const COIN_LINK = 'group flex items-center gap-3 rounded outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
+const COLUMNS = [
+  { width: 'w-36' },
+  { width: 'w-8', right: true },
+  { width: 'w-20' },
+  { width: 'w-20' },
+  { width: 'w-20' },
+  { width: 'w-64', right: true },
+];
 
 type Patch = { coin: Cryptocurrency; body: { name: string } | { isPaused: boolean } };
 type Opened = { kind: 'rename' | 'delete'; id: number };
@@ -42,11 +52,7 @@ function StatusBadge({ paused }: { paused: boolean }) {
 
 function LastPrice({ coin, now }: { coin: Cryptocurrency; now: number }) {
   if (!coin.lastUpdatedAt) return <span className="text-muted-foreground">ожидает синхронизации</span>;
-  return (
-    <time dateTime={coin.lastUpdatedAt} title={`${coin.lastUpdatedAt} (UTC)`} className="text-muted-foreground">
-      {formatRelative(coin.lastUpdatedAt, now)}
-    </time>
-  );
+  return <Timestamp iso={coin.lastUpdatedAt} format="relative" now={now} className="text-muted-foreground" />;
 }
 
 function Actions({
@@ -151,28 +157,31 @@ export function WatchlistPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <section
-        aria-labelledby="add-title"
-        className="flex flex-col gap-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10"
-      >
+      <Panel aria-labelledby="add-title" className="flex flex-col gap-3 p-4">
         <h2 id="add-title" className="font-semibold">
           Добавить монету
         </h2>
         <AddCoinForm />
-      </section>
+      </Panel>
 
-      <section aria-labelledby="coins-title" className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-3">
-          <h2 id="coins-title" className="font-semibold">
-            Отслеживаемые монеты
-          </h2>
-          {items && (
-            <Badge variant="secondary">
-              {items.length} {plural(items.length, COINS)}
-            </Badge>
-          )}
-          <span className="ml-auto text-xs text-muted-foreground">лимит 100 (квота CoinMarketCap)</span>
-        </div>
+      <Panel aria-labelledby="coins-title">
+        <PanelHeader
+          title="Отслеживаемые монеты"
+          titleId="coins-title"
+          meta={
+            <>
+              {items && (
+                <Badge variant="secondary">
+                  {items.length} из 100 {plural(100, COINS)}
+                </Badge>
+              )}
+              <InfoHint label="Почему лимит 100 монет">
+                Одна синхронизация запрашивает цены всех монет одним обращением к CoinMarketCap; кредиты списываются за
+                каждые 100 монет в запросе. Лимит держит синхронизацию в одном кредите.
+              </InfoHint>
+            </>
+          }
+        />
 
         {!items && coins.isError && (
           <LoadError
@@ -181,11 +190,11 @@ export function WatchlistPanel() {
             onRetry={() => void coins.refetch()}
           />
         )}
-        {!items && !coins.isError && <PriceTableSkeleton />}
+        {!items && !coins.isError && <TableSkeleton label="Загрузка списка монет" columns={COLUMNS} />}
         {items?.length === 0 && (
-          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-            Список пуст. Добавьте первую монету — цена появится после ближайшей синхронизации.
-          </p>
+          <EmptyState Icon={Coins} title="Список пуст">
+            Добавьте первую монету в форме выше — цена появится после ближайшей синхронизации.
+          </EmptyState>
         )}
         {items && items.length > 0 && (
           <>
@@ -218,11 +227,14 @@ export function WatchlistPanel() {
                 </thead>
                 <tbody>
                   {items.map((coin) => (
-                    <tr key={coin.id} className="border-b last:border-b-0">
+                    <tr key={coin.id} className={ROW}>
                       <td className={TD}>
                         <Link href={`/coins/${coin.id}`} className={COIN_LINK}>
-                          <span className="font-semibold group-hover:underline">{coin.symbol}</span>{' '}
-                          <span className="text-muted-foreground">{coin.name}</span>
+                          <CoinAvatar symbol={coin.symbol} />
+                          <span>
+                            <span className="font-semibold group-hover:underline">{coin.symbol}</span>{' '}
+                            <span className="text-muted-foreground">{coin.name}</span>
+                          </span>
                         </Link>
                       </td>
                       <td className={`${TD} text-right font-mono tabular-nums`}>{coin.cmcId}</td>
@@ -232,8 +244,8 @@ export function WatchlistPanel() {
                       <td className={TD}>
                         <LastPrice coin={coin} now={now} />
                       </td>
-                      <td className={`${TD} font-mono text-muted-foreground tabular-nums`}>
-                        {formatDate(coin.createdAt)}
+                      <td className={`${TD} text-muted-foreground`}>
+                        <Timestamp iso={coin.createdAt} format="date" />
                       </td>
                       <td className={TD}>{actions(coin)}</td>
                     </tr>
@@ -244,18 +256,22 @@ export function WatchlistPanel() {
 
             <ul className="divide-y md:hidden" aria-label="Отслеживаемые монеты">
               {items.map((coin) => (
-                <li key={coin.id} className="flex flex-col gap-2 px-4 py-3 text-sm">
+                <li key={coin.id} className="flex animate-row-in flex-col gap-2 px-4 py-3 text-sm">
                   <div className="flex items-start justify-between gap-3">
                     <Link href={`/coins/${coin.id}`} className={COIN_LINK}>
-                      <div className="font-semibold group-hover:underline">{coin.symbol}</div>
-                      <div className="text-muted-foreground">
-                        {coin.name} · CMC #{coin.cmcId}
-                      </div>
+                      <CoinAvatar symbol={coin.symbol} />
+                      <span>
+                        <span className="block font-semibold group-hover:underline">{coin.symbol}</span>
+                        <span className="block text-muted-foreground">
+                          {coin.name} · CMC #{coin.cmcId}
+                        </span>
+                      </span>
                     </Link>
                     <StatusBadge paused={coin.isPaused} />
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Последняя цена: <LastPrice coin={coin} now={now} /> · добавлена {formatDate(coin.createdAt)}
+                    Последняя цена: <LastPrice coin={coin} now={now} /> · добавлена{' '}
+                    <Timestamp iso={coin.createdAt} format="date" />
                   </div>
                   {actions(coin)}
                 </li>
@@ -263,7 +279,7 @@ export function WatchlistPanel() {
             </ul>
           </>
         )}
-      </section>
+      </Panel>
 
       {opened?.kind === 'rename' && openedCoin && (
         <RenameDialog

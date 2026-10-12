@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Minus, Pause, TriangleAlert } from 'lucide-react';
 import { cn } from 'cn';
+import { Hint } from '@/components/ui/tooltip';
 import type { components } from '@/generated/api-types';
 import type { Flash } from '@/lib/dashboard/use-price-stream';
 import { formatChange, formatPrice, formatRelative, splitPrice } from '@/lib/format';
@@ -16,19 +17,20 @@ export function PriceValue({ latest, flash }: { latest: LatestPrice | null; flas
   const formatted = formatPrice(latest.price);
   const { head, zeros, tail } = splitPrice(formatted);
   return (
-    <span
-      title={`${latest.price} ${latest.currency}`}
-      className={cn(
-        '-mx-1 rounded px-1 font-mono tabular-nums transition-colors duration-700',
-        latest.isStale && 'text-stale',
-        flash && FLASH_CLASS[flash],
-      )}
-    >
-      {head}
-      {/* Ведущие нули приглушены, но остаются в тексте: число копируется и читается целиком */}
-      {zeros && <span className="opacity-45">{zeros}</span>}
-      {tail}
-    </span>
+    <Hint text={`${latest.price} ${latest.currency}`}>
+      <span
+        className={cn(
+          '-mx-1 rounded px-1 font-mono tabular-nums transition-colors duration-700',
+          latest.isStale && 'text-stale',
+          flash && FLASH_CLASS[flash],
+        )}
+      >
+        {head}
+        {/* Ведущие нули приглушены, но остаются в тексте: число копируется и читается целиком */}
+        {zeros && <span className="opacity-45">{zeros}</span>}
+        {tail}
+      </span>
+    </Hint>
   );
 }
 
@@ -36,11 +38,13 @@ export function PriceValue({ latest, flash }: { latest: LatestPrice | null; flas
 export function PriceText({ price, className }: { price: string; className?: string }) {
   const { head, zeros, tail } = splitPrice(formatPrice(price));
   return (
-    <span title={`${price} USD`} className={cn('font-mono tabular-nums', className)}>
-      {head}
-      {zeros && <span className="opacity-45">{zeros}</span>}
-      {tail}
-    </span>
+    <Hint text={`${price} USD`}>
+      <span className={cn('font-mono tabular-nums', className)}>
+        {head}
+        {zeros && <span className="opacity-45">{zeros}</span>}
+        {tail}
+      </span>
+    </Hint>
   );
 }
 
@@ -54,18 +58,22 @@ const CHANGE_STYLE = {
 export function ChangeValue({ change }: { change: string | null }) {
   if (change === null) {
     return (
-      <span className="text-muted-foreground" title="Истории меньше суток">
-        —<span className="sr-only">нет данных: истории меньше суток</span>
-      </span>
+      <Hint text="Истории меньше суток">
+        <span className="text-muted-foreground">
+          —<span className="sr-only">нет данных: истории меньше суток</span>
+        </span>
+      </Hint>
     );
   }
   const { text, direction } = formatChange(change);
   const { className, Icon } = CHANGE_STYLE[direction];
   return (
-    <span className={cn('inline-flex items-center gap-0.5 font-mono tabular-nums', className)} title={`${change} %`}>
-      <Icon className="size-3.5" aria-hidden="true" />
-      {text}
-    </span>
+    <Hint text={`${change} %`}>
+      <span className={cn('inline-flex items-center gap-0.5 font-mono tabular-nums', className)}>
+        <Icon className="size-3.5" aria-hidden="true" />
+        {text}
+      </span>
+    </Hint>
   );
 }
 
@@ -76,11 +84,7 @@ const SPARK_HEIGHT = 30;
 export function Sparkline({ points, label }: { points: readonly SparklinePoint[]; label: string }) {
   const geometry = sparklineGeometry(points, SPARK_WIDTH, SPARK_HEIGHT);
   if (!geometry) {
-    return (
-      <span className="text-muted-foreground" title="Данных для графика пока нет">
-        —
-      </span>
-    );
+    return <span className="text-xs text-muted-foreground">нет данных</span>;
   }
   const first = points[0]?.close ?? '0';
   const last = points[points.length - 1]?.close ?? '0';
@@ -104,24 +108,28 @@ export function Sparkline({ points, label }: { points: readonly SparklinePoint[]
   );
 }
 
-const TAG = 'inline-flex items-center gap-1 text-xs';
+const TAG = 'inline-flex h-5 items-center gap-1 rounded-full px-2 text-xs font-medium whitespace-nowrap';
 
 /** Пауза — штатное действие оператора: нейтральная метка без предупреждения (ADR 0017) */
 export function StateTag({ paused, stale }: { paused: boolean; stale: boolean }) {
   if (paused) {
     return (
-      <span className={cn(TAG, 'text-muted-foreground')} title="Синхронизация приостановлена оператором">
-        <Pause className="size-3" aria-hidden="true" />
-        пауза
-      </span>
+      <Hint text="Синхронизация приостановлена оператором">
+        <span className={cn(TAG, 'bg-muted text-muted-foreground')}>
+          <Pause className="size-3" aria-hidden="true" />
+          пауза
+        </span>
+      </Hint>
     );
   }
   if (stale) {
     return (
-      <span className={cn(TAG, 'text-warn')} title="Цена старше двух интервалов синхронизации">
-        <TriangleAlert className="size-3" aria-hidden="true" />
-        устарела
-      </span>
+      <Hint text="Цена старше двух интервалов синхронизации">
+        <span className={cn(TAG, 'bg-warn-bg text-warn')}>
+          <TriangleAlert className="size-3" aria-hidden="true" />
+          устарела
+        </span>
+      </Hint>
     );
   }
   return null;
@@ -130,12 +138,10 @@ export function StateTag({ paused, stale }: { paused: boolean; stale: boolean })
 export function UpdatedAt({ latest, now }: { latest: LatestPrice | null; now: number }) {
   if (!latest) return <span className="text-muted-foreground">—</span>;
   return (
-    <time
-      dateTime={latest.fetchedAt}
-      title={`Получено ${latest.fetchedAt} · котировка CoinMarketCap ${latest.sourceUpdatedAt} (UTC)`}
-      className="text-muted-foreground"
-    >
-      {formatRelative(latest.fetchedAt, now)}
-    </time>
+    <Hint text={`Получено ${latest.fetchedAt} · котировка CoinMarketCap ${latest.sourceUpdatedAt} (UTC)`}>
+      <time dateTime={latest.fetchedAt} className="text-muted-foreground tabular-nums">
+        {formatRelative(latest.fetchedAt, now)}
+      </time>
+    </Hint>
   );
 }

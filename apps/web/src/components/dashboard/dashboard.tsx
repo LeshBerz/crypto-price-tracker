@@ -8,7 +8,10 @@ import { LoadError } from '@/components/load-error';
 import { StreamIndicator } from '@/components/stream-indicator';
 import { SyncStatusBadge } from '@/components/sync-status-badge';
 import { Badge } from '@/components/ui/badge';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
+import { EmptyState, Panel, PanelHeader } from '@/components/ui/panel';
+import { Segmented } from '@/components/ui/segmented';
+import { Timestamp } from '@/components/timestamp';
 import { bff, BffError } from '@/lib/bff-client';
 import { detectDegradation } from '@/lib/dashboard/degradation';
 import {
@@ -19,7 +22,7 @@ import {
   type SparklineWindow,
 } from '@/lib/dashboard/queries';
 import { useNow, usePriceStream } from '@/lib/dashboard/use-price-stream';
-import { formatClock, plural } from '@/lib/format';
+import { plural } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { Role } from '@/server/users';
 import { DegradationBanner } from './degradation-banner';
@@ -30,11 +33,7 @@ function SyncLine({ lastSync }: { lastSync: LatestPriceList['lastSync'] }) {
   return (
     <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
       Последняя синхронизация:
-      {lastSync.finishedAt && (
-        <time dateTime={lastSync.finishedAt} title={`${lastSync.finishedAt} (UTC)`}>
-          {formatClock(lastSync.finishedAt, { seconds: true })}
-        </time>
-      )}
+      {lastSync.finishedAt && <Timestamp iso={lastSync.finishedAt} format="clock" seconds />}
       <SyncStatusBadge status={lastSync.status} />
     </p>
   );
@@ -46,40 +45,31 @@ function WindowToggle({ value, onChange }: { value: SparklineWindow; onChange: (
       <span id="window-label" className="text-xs text-muted-foreground">
         Мини-график
       </span>
-      <div role="group" aria-labelledby="window-label" className="flex gap-1">
-        {(['24h', '7d'] as const).map((window) => (
-          <Button
-            key={window}
-            size="sm"
-            variant={window === value ? 'secondary' : 'ghost'}
-            aria-pressed={window === value}
-            onClick={() => onChange(window)}
-          >
-            {WINDOW_LABEL[window].short}
-          </Button>
-        ))}
-      </div>
+      <Segmented labelledBy="window-label" value={value} onChange={onChange} options={WINDOW_OPTIONS} />
     </div>
   );
 }
 
-function EmptyState({ role }: { role: Role }) {
+const WINDOW_OPTIONS = (['24h', '7d'] as const).map((window) => ({ value: window, label: WINDOW_LABEL[window].short }));
+
+function NothingTracked({ role }: { role: Role }) {
   return (
-    <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-sm">
-      <ChartSpline className="size-6 text-muted-foreground" aria-hidden="true" />
-      <strong className="font-semibold">Пока ничего не отслеживается</strong>
-      <span className="text-muted-foreground">
-        {role === 'operator'
-          ? 'Цены появятся после добавления первой монеты и ближайшей синхронизации.'
-          : 'Оператор ещё не добавил монеты.'}
-      </span>
-      {role === 'operator' && (
-        <Link href="/operator/watchlist" className={cn(buttonVariants({ size: 'sm' }), 'mt-2')}>
-          <Plus aria-hidden="true" />
-          Добавить монету
-        </Link>
-      )}
-    </div>
+    <EmptyState
+      Icon={ChartSpline}
+      title="Пока ничего не отслеживается"
+      action={
+        role === 'operator' && (
+          <Link href="/operator/watchlist" className={cn(buttonVariants({ size: 'sm' }))}>
+            <Plus aria-hidden="true" />
+            Добавить монету
+          </Link>
+        )
+      }
+    >
+      {role === 'operator'
+        ? 'Цены появятся после добавления первой монеты и ближайшей синхронизации.'
+        : 'Оператор ещё не добавил монеты.'}
+    </EmptyState>
   );
 }
 
@@ -137,28 +127,25 @@ export function Dashboard({ role }: { role: Role }) {
         {degradation && <DegradationBanner degradation={degradation} now={now} role={role} onRetry={retry} />}
       </div>
 
-      <section
-        aria-labelledby="watchlist-title"
-        className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10"
-      >
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-3">
-          <h2 id="watchlist-title" className="font-semibold">
-            Watchlist
-          </h2>
-          {items && (
-            <Badge variant="secondary">
-              {items.length} {plural(items.length, COINS)}
-            </Badge>
-          )}
-          <span className="ml-auto">
-            <StreamIndicator status={streamStatus} />
-          </span>
-        </div>
+      <Panel aria-labelledby="watchlist-title">
+        <PanelHeader
+          title="Watchlist"
+          titleId="watchlist-title"
+          meta={
+            items && (
+              <Badge variant="secondary">
+                {items.length} {plural(items.length, COINS)}
+              </Badge>
+            )
+          }
+        >
+          <StreamIndicator status={streamStatus} />
+        </PanelHeader>
         {!items && prices.isError && (
           <LoadError title="Не удалось загрузить цены" error={prices.error} onRetry={retry} />
         )}
         {!items && !prices.isError && <PriceTableSkeleton />}
-        {items?.length === 0 && <EmptyState role={role} />}
+        {items?.length === 0 && <NothingTracked role={role} />}
         {items && items.length > 0 && (
           <PriceTable
             items={items}
@@ -169,7 +156,7 @@ export function Dashboard({ role }: { role: Role }) {
             now={now}
           />
         )}
-      </section>
+      </Panel>
     </div>
   );
 }
