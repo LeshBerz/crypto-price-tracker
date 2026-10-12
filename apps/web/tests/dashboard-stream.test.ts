@@ -54,14 +54,14 @@ describe('[stream-events] разбор события', () => {
     });
   });
 
-  it('✅ sync.finished → перечитать цены и мини-графики; watchlist.changed → ещё и список монет', () => {
+  it('✅ sync.finished → цены, мини-графики, монета и её график; watchlist.changed → списки и монета', () => {
     expect(parseStreamEvent('sync.finished', '{"id":11,"status":"failed"}')).toEqual({
       type: 'refresh',
-      targets: ['prices', 'sparklines'],
+      targets: ['prices', 'sparklines', 'coin', 'aggregates'],
     });
     expect(parseStreamEvent('watchlist.changed', '{"cryptocurrencyId":3,"change":"added"}')).toEqual({
       type: 'refresh',
-      targets: ['prices', 'sparklines', 'coins'],
+      targets: ['prices', 'sparklines', 'coins', 'coin'],
     });
   });
 
@@ -154,7 +154,7 @@ describe('[stream-events] событие → кэш запросов', () => {
     const { send, prices, refresh } = setup();
     send('sync.finished', { id: 11, status: 'succeeded' });
 
-    expect(refresh).toHaveBeenCalledWith(['prices', 'sparklines']);
+    expect(refresh).toHaveBeenCalledWith(['prices', 'sparklines', 'coin', 'aggregates']);
     expect(prices()).toEqual(priceList());
   });
 
@@ -183,12 +183,42 @@ describe('[queries] фоновый перезапрос', () => {
     return { seen, client, queryClient };
   }
 
+  /** Запрос на экране: у него есть наблюдатель */
+  function observe(queryClient: QueryClient, client: BffClient) {
+    return new QueryObserver(queryClient, { ...pricesQuery(client), staleTime: Infinity }).subscribe(() => {});
+  }
+
   it('✅ запрос идёт с признаком фона, результат попадает в тот же ключ кэша', async () => {
     const { seen, client, queryClient } = setup(() => Response.json(priceList()));
+    const unsubscribe = observe(queryClient, client);
+    await queryClient.fetchQuery(pricesQuery(client));
+    seen.length = 0;
+
     await refreshInBackground(queryClient, client, ['prices']);
+    unsubscribe();
 
     expect(seen).toEqual([{ url: '/api/bff/api/v1/prices', background: true }]);
     expect(queryClient.getQueryData(dashboardKeys.prices)).toEqual(priceList());
+  });
+
+  it('✅ данных нет на экране: запрос не уходит, загруженное помечается устаревшим', async () => {
+    const { seen, client, queryClient } = setup(() => Response.json(priceList()));
+    await refreshInBackground(queryClient, client, ['prices']);
+    expect(seen).toEqual([]);
+
+    await queryClient.fetchQuery(pricesQuery(client));
+    seen.length = 0;
+    await refreshInBackground(queryClient, client, ['prices', 'coins']);
+
+    expect(seen).toEqual([]);
+    expect(queryClient.getQueryState(dashboardKeys.prices)?.isInvalidated).toBe(true);
+  });
+
+  it('✅ проба: поток отказал, а на экране запросов нет — причину покажет запрос цен', async () => {
+    const { seen, client, queryClient } = setup(() => Response.json(priceList()));
+    await refreshInBackground(queryClient, client, ['prices', 'coin'], { probe: true });
+
+    expect(seen).toEqual([{ url: '/api/bff/api/v1/prices', background: true }]);
   });
 
   it('✅ наблюдатель запроса видит новые данные, а его собственный перезапрос остаётся обычным', async () => {
@@ -230,10 +260,12 @@ describe('[queries] фоновый перезапрос', () => {
           )
         : Response.json(priceList()),
     );
-    await refreshInBackground(queryClient, client, ['prices']);
+    const unsubscribe = observe(queryClient, client);
+    await queryClient.fetchQuery(pricesQuery(client));
     fail = true;
 
     await expect(refreshInBackground(queryClient, client, ['prices'])).resolves.toBeUndefined();
+    unsubscribe();
 
     const state = queryClient.getQueryState(dashboardKeys.prices);
     expect(state?.data).toEqual(priceList());
