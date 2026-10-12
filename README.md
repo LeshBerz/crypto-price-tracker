@@ -1,38 +1,54 @@
 # Crypto Price Tracker
 
 Backend-сервис, который ведёт список отслеживаемых криптовалют, в фоне забирает их цены из CoinMarketCap, хранит историю в SQLite и отдаёт актуальные цены, историю и агрегаты через REST API.
-Тестовое задание Evercode Lab Fast Track (Backend, Node.js). Сдаваемая часть — каталог [`apps/api`](apps/api).
+Тестовое задание Evercode Lab Fast Track (Backend, Node.js).
 
-## Что проверять
+## Проверяющему
 
-**Нужна реализация строго по ТЗ — это тег [`v1.0-submission`](https://github.com/LeshBerz/crypto-price-tracker/tree/v1.0-submission)** (коммит `9562598`): только `apps/api`, контракт `1.0.0`, ничего сверх задания.
+| Что нужно | Куда идти |
+|---|---|
+| **Реализация строго по ТЗ** — только `apps/api`, ничего сверх задания | Тег [`v1.0-submission`](https://github.com/LeshBerz/crypto-price-tracker/tree/v1.0-submission) → гайд [Сданная версия](docs/guides/submission.md) |
+| Запустить и убедиться, что работает | [Быстрый старт](#быстрый-старт) ниже: Docker, около пяти минут, без ключа CoinMarketCap |
+| Как каждое требование ТЗ закрыто кодом и тестами | [Требования → код и тесты](docs/project/requirements.md), [тесты по эндпоинтам](docs/project/test-matrix.md) |
+| Где ТЗ потребовало решения и какое принято | [Ограничения ТЗ](#ограничения-тз-и-как-они-соблюдены) ниже, [ADR](docs/adr/) |
 
-```bash
-git checkout v1.0-submission
+**Ветка `main` — текущее состояние проекта:** тот же api плюс то, что сделано после сдачи. Эндпоинты из ТЗ, схема БД и зависимости api после тега не менялись; полный список отличий — в гайде [Сданная версия](docs/guides/submission.md#чем-main-отличается-от-сданной-версии).
+
+## На этой странице
+
+1. [Что в репозитории](#что-в-репозитории)
+2. [Быстрый старт](#быстрый-старт)
+3. [Способы запуска](#способы-запуска) — ссылки на гайды
+4. [API](#api)
+5. [Тесты](#тесты)
+6. [Ограничения ТЗ и как они соблюдены](#ограничения-тз-и-как-они-соблюдены)
+7. [Команды](#команды)
+8. [Документация](#документация)
+
+## Что в репозитории
+
+```mermaid
+flowchart LR
+  B[Браузер] --> W["apps/web<br/>веб-клиент · сверх ТЗ"]
+  R[Swagger UI, curl] --> A
+  W -->|API-ключ по роли| A["apps/api<br/>REST API · сдаваемая версия"]
+  A --> DB[(SQLite)]
+  A -->|раз в 5 минут| C[CoinMarketCap<br/>или стаб из репозитория]
 ```
-
-**Ветка `main` — текущее состояние проекта:** тот же api плюс всё, что сделано после сдачи (веб-клиент, расширения api). Отличия api в `main` от сданной версии:
-
-| Изменение api после тега | Что затронуто | Где описано |
-|---|---|---|
-| Блок `schedule` (состояние планировщика, интервал, время следующего запуска) в ответе `GET /api/v1/system/cmc`, контракт `1.1.0` | Только операционный эндпоинт-расширение. Эндпоинты из ТЗ, схема БД и зависимости не менялись | [ADR 0014, поправка от 12.10](docs/adr/0014-api-contract.md#поправка-от-1210) |
-
-Разделы «Запуск», «API», «Тесты» и «Ограничения ТЗ» ниже верны для обеих версий, если не оговорено иное.
-
-Части репозитория:
 
 | Часть | Отношение к ТЗ | Состояние | Где |
 |---|---|---|---|
-| `apps/api` | **Сдаваемая версия**, строго по ТЗ | Готова, тег `v1.0-submission`. В `main` — она же с одним расширением (таблица выше) | [код](apps/api), [требования → код и тесты](docs/project/requirements.md) |
-| `apps/web` | Сверх ТЗ: веб-клиент (дашборд и панель оператора) | В работе. Готово: вход и сессии, серверная прослойка к api (BFF), дашборд с ценами в реальном времени, мини-графиками и баннером деградации, карточка монеты (график свечами или линией, сводка за период, история цен), панель оператора (watchlist: добавление, переименование, пауза, удаление с подтверждением; ручная синхронизация и журнал запусков; состояние CoinMarketCap, квота и готовность сервиса), пользователи и сессии (создание с временным паролем, роль, отключение, сброс пароля, отзыв сессий; профиль со своими сессиями и сменой пароля), Docker-образ. Далее — гид по интерфейсу и e2e-сценарии | [README web](apps/web/README.md), [макеты](docs/project/design/README.md) |
+| `apps/api` | **Сдаваемая версия**, строго по ТЗ | Готова, тег `v1.0-submission`. В `main` — она же с одним расширением операционного эндпоинта (контракт `1.1.0`) | [код](apps/api), [требования → код и тесты](docs/project/requirements.md) |
+| `apps/web` | Сверх ТЗ: веб-клиент | Готово: вход и сессии, дашборд с ценами в реальном времени, карточка монеты с графиком, панель оператора, пользователи и профиль, Docker-образ. Далее — гид по интерфейсу и e2e-сценарии | [README web](apps/web/README.md), [макеты](docs/project/design/README.md) |
 | Алерты, профиль `platform` | Сверх ТЗ | Спроектировано, не реализовано | [ROADMAP](ROADMAP.md), [ADR](docs/adr/) |
 
-Как это гарантируется:
+Как гарантируется, что дополнения не затрагивают сдаваемую версию:
+
 - `apps/api` не зависит от остального: его образ собирается и запускается без каталога `apps/web`, `docker compose up` поднимает только api и стаб CoinMarketCap. Веб-клиент включается отдельно: `docker compose --profile web up`.
 - Ограничение «только указанные библиотеки» проверяется для `apps/api` в CI на каждый коммит — зависимости `apps/web` в него не попадают.
 - Изменения контракта api после сдачи делаются отдельными версиями и описываются в ADR; что и когда изменилось — в [ROADMAP](ROADMAP.md) и [дейликах](docs/dailies.md).
 
-**Стек (строго по ТЗ):** Node.js 24 · TypeScript · Express 5 · SQLite на raw SQL (`node:sqlite`) · axios · Jest + Supertest · Swagger (OpenAPI 3.0) · Docker.
+**Стек api (строго по ТЗ):** Node.js 24 · TypeScript · Express 5 · SQLite на raw SQL (`node:sqlite`) · axios · Jest + Supertest · Swagger (OpenAPI 3.0) · Docker.
 В рантайме три зависимости: `express`, `axios`, `swagger-ui-express` — это проверяет CI.
 
 | | |
@@ -42,81 +58,82 @@ git checkout v1.0-submission
 | C8 | у каждой операции есть позитивный и негативный тест — [матрица](docs/project/test-matrix.md) (127 тестов) |
 | CI | lint, типы, зависимости, контракт, тесты, сборка образа, smoke в Docker, остановка по `SIGTERM` |
 
-## Запуск
+## Быстрый старт
 
-### Docker (рекомендуется)
+Нужен только Docker. Сервис ходит в **стаб CoinMarketCap** из того же compose: ключ CMC и интернет не нужны.
 
-Нужен только Docker. По умолчанию сервис ходит в **стаб CoinMarketCap** из того же compose — работает без ключа CMC и без интернета.
+**1. Запустить** (из корня репозитория):
 
 ```bash
 docker compose up --build
 ```
 
-API-ключ для запросов выпускается командой (ключ печатается один раз, в БД хранится только хэш):
+**2. Выпустить API-ключ** — во втором терминале. Ключ печатается один раз, в БД хранится только хэш:
 
 ```bash
 docker compose run --rm api node dist/cli/keys.js create --name reviewer --role operator
 ```
 
-Дальше — Swagger UI: <http://localhost:3000/docs> → **Authorize** → вставить ключ.
+**3. Проверить** в Swagger UI — <http://localhost:3000/docs> → **Authorize** → вставить ключ:
 
-**С настоящим CoinMarketCap.** Скопируйте [`.env.example`](.env.example) в `.env` рядом с `docker-compose.yml` и задайте:
+| Запрос | Ожидается |
+|---|---|
+| `POST /api/v1/cryptocurrencies` с телом `{"symbol":"BTC"}` | `201` |
+| `POST /api/v1/sync-runs` | `202` |
+| `GET /api/v1/prices` | BTC с ценой-строкой |
 
-```dotenv
-CMC_API_KEY=ваш-ключ
-CMC_BASE_URL=https://pro-api.coinmarketcap.com
+Ответ `GET /api/v1/prices` на стабе (сокращён):
+
+```json
+{
+  "currency": "USD",
+  "items": [
+    {
+      "cryptocurrencyId": 1,
+      "symbol": "BTC",
+      "name": "Bitcoin",
+      "latest": {
+        "price": "67123.451234567891",
+        "currency": "USD",
+        "sourceUpdatedAt": "2026-10-07T11:59:00.000Z",
+        "isStale": false
+      }
+    }
+  ]
+}
 ```
 
-### Локально через npm
+Цена — строка, а не число: так не теряются знаки после запятой. Стаб знает три монеты: BTC, ETH и MEME.
 
-Нужен Node.js ≥ 24.15 (версия — в `.nvmrc`).
+**4. Остановить** и удалить данные:
 
 ```bash
-npm ci
+docker compose down -v
 ```
 
-```bash
-cp .env.example .env
-```
+Если в корне уже есть файл `.env` со строкой `CMC_BASE_URL`, api пойдёт по этому адресу, а не в стаб, — подробности в [гайде по Docker](docs/guides/docker.md#api-на-стабе).
 
-Заполните в `.env` ключ `CMC_API_KEY`, затем:
+## Способы запуска
 
-```bash
-npm run dev -w @cpt/api
-```
+Каждый гайд самодостаточен: что нужно → шаги → как проверить → как остановить и начать заново.
 
-Ключ API: `npm run keys:create -w @cpt/api -- --name me --role operator`.
+| Способ | Нужно на машине | Источник цен | Гайд |
+|---|---|---|---|
+| Сданная версия, строго по ТЗ | Docker | стаб | [Сданная версия](docs/guides/submission.md) |
+| Docker: api | Docker | стаб | [api на стабе](docs/guides/docker.md#api-на-стабе) |
+| Docker: api с живыми ценами | Docker, ключ CMC | CoinMarketCap | [api с настоящим CoinMarketCap](docs/guides/docker.md#api-с-настоящим-coinmarketcap) |
+| Docker: api и веб-клиент | Docker | любой | [api и веб-клиент](docs/guides/docker.md#api-и-веб-клиент) |
+| Без Docker: api | Node.js ≥ 24.15 | стаб | [Локально: api на стабе](docs/guides/local.md#api-на-стабе) |
+| Без Docker: api с живыми ценами | Node.js ≥ 24.15, ключ CMC | CoinMarketCap | [Локально: api с настоящим CoinMarketCap](docs/guides/local.md#api-с-настоящим-coinmarketcap) |
+| Без Docker: веб-клиент | Node.js ≥ 24.15 | любой | [Локально: веб-клиент](docs/guides/local.md#веб-клиент) |
 
-**Файл окружения один — `.env` в корне репозитория.** Его читают и `docker compose`, и npm-скрипты api, и веб-клиент; шаблон со всеми переменными — [`.env.example`](.env.example). Файл `apps/api/.env`, если он есть, читается следом и переопределяет общий. В сданной версии (тег `v1.0-submission`) npm-скрипты читают только `apps/api/.env`: там шаблон копируется командой `cp .env.example apps/api/.env`.
+Справочные страницы:
 
-Проверить ключ и формат живого ответа CoinMarketCap (тратит 2 кредита): `npm run smoke:cmc -w @cpt/api`.
-Продакшен-сборка: `npm run build -w @cpt/api`, затем `npm start -w @cpt/api`.
+- [Окружение](docs/guides/environment.md) — файл `.env` один, в корне; все переменные, кто и как их читает, что будет, если переменной нет.
+- [Типовые поломки](docs/guides/troubleshooting.md) — сообщение об ошибке → причина → что сделать.
+- [Стаб и настоящий CoinMarketCap](docs/guides/README.md#стаб-и-настоящий-coinmarketcap) — чем отличаются и как переключать.
 
-### Проверка одной командой
-
-Скрипт проходит путь проверяющего: готовность → 401 без ключа → 403 с ролью viewer → добавить BTC → ручная синхронизация → цена → событие в SSE.
-Ему нужны ключи, с которыми поднят сервис (`BOOTSTRAP_*` — см. ниже):
-
-```bash
-node apps/api/scripts/smoke.ts http://localhost:3000
-```
-
-## Переменные окружения
-
-Полный список с валидацией — [`apps/api/src/config.ts`](apps/api/src/config.ts), шаблон — [`.env.example`](.env.example). Ошибка в конфиге останавливает старт с понятным сообщением, значения секретов в нём не печатаются.
-
-| Переменная | По умолчанию | Назначение |
-|---|---|---|
-| `CMC_API_KEY` | — (обязательна) | Ключ CoinMarketCap. Только из окружения (D-4), уходит только заголовком запроса |
-| `CMC_BASE_URL` | `https://pro-api.coinmarketcap.com` | Адрес CMC; в compose по умолчанию — стаб |
-| `CMC_TIMEOUT_MS` | `10000` | Таймаут запроса к CMC (C5) |
-| `SYNC_INTERVAL_MS` | `300000` | Интервал фоновой синхронизации, не меньше 180 000 (квота CMC Basic) |
-| `DATABASE_PATH` | `./data/cpt.db` | Файл SQLite; каталог `data/` в `.gitignore` (C3) |
-| `PORT` | `3000` | Порт HTTP |
-| `LOG_LEVEL` | `info` | `debug` · `info` · `warn` · `error`; логи — JSON в stdout |
-| `BOOTSTRAP_VIEWER_KEY`, `BOOTSTRAP_OPERATOR_KEY` | — | Необязательные готовые API-ключи: при старте в БД пишется их SHA-256 |
-
-Bootstrap-ключ — это `cpt_` + 43 символа base64url. Сгенерировать: `node -e "console.log('cpt_'+require('crypto').randomBytes(32).toString('base64url'))"`.
+**Проверка одной командой.** Скрипт проходит путь проверяющего: готовность → 401 без ключа → 403 с ролью viewer → добавить BTC → ручная синхронизация → цена → событие в SSE. Как запустить — [Автоматическая проверка](docs/guides/docker.md#автоматическая-проверка).
 
 ## API
 
@@ -144,7 +161,7 @@ Bootstrap-ключ — это `cpt_` + 43 символа base64url. Сгенер
 | `GET /api/v1/system/cmc` | Состояние интеграции с CMC и остаток квоты | `ops:read` |
 | `GET /api/v1/stream` | Поток событий SSE: `price.updated`, `sync.finished`, `watchlist.changed`, `heartbeat` | `prices:read` |
 
-Пример (ключ — в переменной `KEY`):
+Пример для bash (ключ — в переменной `KEY`). В Windows PowerShell `curl` — псевдоним другой команды: вызывать `curl.exe` или выполнять запросы из Swagger UI.
 
 ```bash
 curl -X POST localhost:3000/api/v1/cryptocurrencies -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{"symbol":"BTC"}'
@@ -230,7 +247,7 @@ npm run check
 
 ## Команды
 
-Все — с `-w @cpt/api` из корня или без него из `apps/api`.
+Все — с `-w @cpt/api` из корня или без него из `apps/api`. Нужны Node.js ≥ 24.15 и установленные зависимости — [Локально: подготовка](docs/guides/local.md#подготовка).
 
 | Команда | Что делает |
 |---|---|
@@ -239,6 +256,7 @@ npm run check
 | `npm run keys:revoke -- --name <имя>` | Отозвать ключ (действует со следующего запроса) |
 | `npm run rollups:rebuild` | Пересобрать часовые свёртки из сырой истории |
 | `npm run smoke:cmc` | Проверить формат живого ответа CMC (нужен `CMC_API_KEY`, тратит 2 кредита) |
+| `npm run smoke` | Дымовая проверка запущенного сервиса (нужны `BOOTSTRAP_*`-ключи, с которыми он поднят) |
 | `npm run test:cov`, `npm run test:matrix` | Тесты с покрытием; проверка C8 и генерация матрицы |
 | `npm run codegen` | Перегенерировать типы и встроенную спеку из `openapi.yaml` |
 
@@ -246,6 +264,7 @@ npm run check
 
 | Раздел | Что внутри |
 |---|---|
+| [docs/guides/](docs/guides/README.md) | Гайды по запуску: сданная версия, Docker, локально, окружение, типовые поломки |
 | [docs/project/requirements.md](docs/project/requirements.md) | Требования ТЗ → код и тесты |
 | [docs/project/test-matrix.md](docs/project/test-matrix.md) | Тесты по каждому эндпоинту |
 | [docs/adr/](docs/adr/) | Архитектурные решения: контекст, варианты, выбор, последствия |
