@@ -54,10 +54,10 @@ describe('[stream-events] разбор события', () => {
     });
   });
 
-  it('✅ sync.finished → цены, мини-графики, монета и её график; watchlist.changed → списки и монета', () => {
+  it('✅ sync.finished → цены, графики, монета и данные оператора; watchlist.changed → списки и монета', () => {
     expect(parseStreamEvent('sync.finished', '{"id":11,"status":"failed"}')).toEqual({
       type: 'refresh',
-      targets: ['prices', 'sparklines', 'coin', 'aggregates'],
+      targets: ['prices', 'sparklines', 'coin', 'aggregates', 'syncRuns', 'cmc', 'readiness'],
     });
     expect(parseStreamEvent('watchlist.changed', '{"cryptocurrencyId":3,"change":"added"}')).toEqual({
       type: 'refresh',
@@ -154,7 +154,7 @@ describe('[stream-events] событие → кэш запросов', () => {
     const { send, prices, refresh } = setup();
     send('sync.finished', { id: 11, status: 'succeeded' });
 
-    expect(refresh).toHaveBeenCalledWith(['prices', 'sparklines', 'coin', 'aggregates']);
+    expect(refresh).toHaveBeenCalledWith(expect.arrayContaining(['prices', 'sparklines', 'coin', 'aggregates']));
     expect(prices()).toEqual(priceList());
   });
 

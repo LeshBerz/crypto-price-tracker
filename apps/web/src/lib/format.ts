@@ -142,3 +142,27 @@ export function plural(count: number, [one, few, many]: readonly [string, string
   const rule = PLURAL.select(count);
   return rule === 'one' ? one : rule === 'few' ? few : many;
 }
+
+const integer = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
+
+/** Целое с разделителями разрядов: счётчики кредитов, строк, запусков — `15 000` */
+export function formatCount(value: number): string {
+  return integer.format(value);
+}
+
+const seconds = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** Длительность: `850 мс`, `2,1 с`, `1 мин 05 с` */
+export function formatDuration(ms: number): string {
+  if (ms < 1000) return `${Math.round(ms)} мс`;
+  if (ms < 60_000) return `${seconds.format(ms / 1000)} с`;
+  const total = Math.round(ms / 1000);
+  return `${Math.floor(total / 60)} мин ${String(total % 60).padStart(2, '0')} с`;
+}
+
+/** Интервал расписания словами: `каждые 5 мин`, `каждые 90 с`, `каждые 2 ч` */
+export function formatInterval(ms: number): string {
+  if (ms % 3_600_000 === 0) return `каждые ${ms / 3_600_000} ч`;
+  if (ms % 60_000 === 0) return `каждые ${ms / 60_000} мин`;
+  return `каждые ${Math.round(ms / 1000)} с`;
+}

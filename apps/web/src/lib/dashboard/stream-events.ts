@@ -9,7 +9,7 @@ import {
 } from '@/lib/coin/live-updates';
 import { coinKeys, type Cryptocurrency, type PriceAggregates, type PriceHistory } from '@/lib/coin/queries';
 import { compareDecimal, type Direction } from '@/lib/format';
-import { dashboardKeys, type LatestPriceList, type RefreshTarget } from './queries';
+import { dashboardKeys, type CryptocurrencyList, type LatestPriceList, type RefreshTarget } from './queries';
 
 export type { PriceUpdate };
 
@@ -50,8 +50,12 @@ export function parseStreamEvent(name: string, raw: string): StreamAction {
       return update ? { type: 'price', update } : IGNORE;
     }
     // Изменение за 24 ч и признак «устарела» считает сервер: после синхронизации они перечитываются (решение Q5)
+    // Панель оператора: журнал запусков, состояние CoinMarketCap с квотой и готовность сервиса
     case 'sync.finished':
-      return { type: 'refresh', targets: ['prices', 'sparklines', 'coin', 'aggregates'] };
+      return {
+        type: 'refresh',
+        targets: ['prices', 'sparklines', 'coin', 'aggregates', 'syncRuns', 'cmc', 'readiness'],
+      };
     // Карточка перечитывает монету: её могли переименовать, приостановить или удалить (тогда ответ — 404)
     case 'watchlist.changed':
       return { type: 'refresh', targets: ['prices', 'sparklines', 'coins', 'coin'] };
@@ -128,6 +132,23 @@ function applyToCoinCard(queryClient: QueryClient, update: PriceUpdate): Directi
   return direction;
 }
 
+/**
+ * Список монет (признак паузы на дашборде, таблица оператора): цена и время обновления правятся на месте.
+ * Перечитывать список после каждой синхронизации незачем — состав и паузу меняет только `watchlist.changed`.
+ */
+function applyToCoinList(queryClient: QueryClient, update: PriceUpdate): void {
+  queryClient.setQueryData<CryptocurrencyList>(dashboardKeys.coins, (old) => {
+    const index = old?.items.findIndex((coin) => coin.id === update.cryptocurrencyId) ?? -1;
+    const coin = old?.items[index];
+    if (!old || !coin) return old;
+    const next = applyPriceToCoin(coin, update);
+    if (next === coin) return old;
+    const items = [...old.items];
+    items[index] = next;
+    return { ...old, items };
+  });
+}
+
 export function handleStreamEvent(context: StreamEventContext, name: string, raw: string): void {
   const action = parseStreamEvent(name, raw);
   if (action.type === 'ignore') return;
@@ -135,6 +156,7 @@ export function handleStreamEvent(context: StreamEventContext, name: string, raw
 
   const inList = applyToPriceList(context, action.update);
   const inCard = applyToCoinCard(context.queryClient, action.update);
+  applyToCoinList(context.queryClient, action.update);
   const direction = inList !== 'flat' ? inList : inCard;
   if (direction !== 'flat') context.onPriceChange?.(action.update.cryptocurrencyId, direction);
 }
