@@ -60,7 +60,7 @@ docker compose run --rm api node dist/cli/keys.js create --name reviewer --role 
 
 Дальше — Swagger UI: <http://localhost:3000/docs> → **Authorize** → вставить ключ.
 
-**С настоящим CoinMarketCap.** Создайте `.env` рядом с `docker-compose.yml`:
+**С настоящим CoinMarketCap.** Скопируйте [`.env.example`](.env.example) в `.env` рядом с `docker-compose.yml` и задайте:
 
 ```dotenv
 CMC_API_KEY=ваш-ключ
@@ -76,16 +76,20 @@ npm ci
 ```
 
 ```bash
-cp .env.example apps/api/.env
+cp .env.example .env
 ```
 
-Заполните в `apps/api/.env` ключ `CMC_API_KEY`, затем:
+Заполните в `.env` ключ `CMC_API_KEY`, затем:
 
 ```bash
 npm run dev -w @cpt/api
 ```
 
 Ключ API: `npm run keys:create -w @cpt/api -- --name me --role operator`.
+
+**Файл окружения один — `.env` в корне репозитория.** Его читают и `docker compose`, и npm-скрипты api, и веб-клиент; шаблон со всеми переменными — [`.env.example`](.env.example). Файл `apps/api/.env`, если он есть, читается следом и переопределяет общий. В сданной версии (тег `v1.0-submission`) npm-скрипты читают только `apps/api/.env`: там шаблон копируется командой `cp .env.example apps/api/.env`.
+
+Проверить ключ и формат живого ответа CoinMarketCap (тратит 2 кредита): `npm run smoke:cmc -w @cpt/api`.
 Продакшен-сборка: `npm run build -w @cpt/api`, затем `npm start -w @cpt/api`.
 
 ### Проверка одной командой

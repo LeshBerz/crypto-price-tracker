@@ -37,10 +37,18 @@ function flag(env: Env, name: string): boolean {
   throw new ConfigError(`${name}: ожидается true или false`);
 }
 
-function apiKey(env: Env, name: string): string {
-  const value = env[name]?.trim() ?? '';
-  if (value === '') throw new ConfigError(`${name}: обязателен — ключ api этой роли (выпуск: npm run keys:create)`);
-  if (!API_KEY_FORMAT.test(value)) throw new ConfigError(`${name}: ожидается ключ вида cpt_ + 43 символа base64url`);
+/**
+ * Ключ api для роли. Своя переменная web — `API_*_KEY`; если её нет, берётся `BOOTSTRAP_*_KEY` — тот самый ключ,
+ * который api принимает при старте. Так в общем `.env` ключ записан один раз, а не дважды под разными именами.
+ */
+function apiKey(env: Env, name: string, fallback: string): string {
+  const own = env[name]?.trim() ?? '';
+  const source = own === '' ? fallback : name;
+  const value = own === '' ? (env[fallback]?.trim() ?? '') : own;
+  if (value === '') {
+    throw new ConfigError(`${name}: обязателен — ключ api этой роли (или ${fallback}, если ключ общий с api)`);
+  }
+  if (!API_KEY_FORMAT.test(value)) throw new ConfigError(`${source}: ожидается ключ вида cpt_ + 43 символа base64url`);
   return value;
 }
 
@@ -56,10 +64,10 @@ function loadApiConfig(env: Env): ApiConfig {
   if (!['http:', 'https:'].includes(url.protocol) || !bare) {
     throw new ConfigError('API_BASE_URL: только http(s)://host[:port], без пути, параметров и учётных данных');
   }
-  const viewerKey = apiKey(env, 'API_VIEWER_KEY');
-  const operatorKey = apiKey(env, 'API_OPERATOR_KEY');
+  const viewerKey = apiKey(env, 'API_VIEWER_KEY', 'BOOTSTRAP_VIEWER_KEY');
+  const operatorKey = apiKey(env, 'API_OPERATOR_KEY', 'BOOTSTRAP_OPERATOR_KEY');
   // Один ключ на обе роли — почти наверняка ошибка копирования: viewer получил бы права оператора
-  if (viewerKey === operatorKey) throw new ConfigError('API_VIEWER_KEY и API_OPERATOR_KEY должны быть разными ключами');
+  if (viewerKey === operatorKey) throw new ConfigError('Ключи api ролей viewer и operator должны быть разными');
 
   const timeoutRaw = env.API_TIMEOUT_MS?.trim() ?? '';
   const timeoutMs = timeoutRaw === '' ? DEFAULT_API_TIMEOUT_MS : Number(timeoutRaw);
