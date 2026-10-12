@@ -41,6 +41,13 @@ export function coinsQuery(client: BffClient, background = false) {
 export type RefreshTarget = 'prices' | 'sparklines' | 'coins';
 
 /**
+ * Фоновый перезапрос идёт всегда (staleTime: 0) и один раз (retry: false): повтор обеспечит следующее событие
+ * потока или его переподключение. Встроенный повтор к тому же ждёт, пока вкладка станет видимой, — ошибка
+ * не попала бы в состояние запроса, и баннер «нет связи с API» не появился бы.
+ */
+const BACKGROUND = { staleTime: 0, retry: false } as const;
+
+/**
  * Перечитывает данные по событию потока — фоновым запросом. `invalidateQueries` здесь не подходит: он запускает
  * обычный `queryFn` запроса, и BFF продлил бы сессию; открытая вкладка тогда не вышла бы по бездействию никогда.
  * `fetchQuery` выполняет запрос с признаком фона и кладёт результат (или ошибку) в тот же ключ кэша.
@@ -51,13 +58,13 @@ export function refreshInBackground(
   targets: readonly RefreshTarget[],
 ): Promise<void> {
   const fetches: Promise<unknown>[] = [];
-  if (targets.includes('prices')) fetches.push(queryClient.fetchQuery({ ...pricesQuery(client, true), staleTime: 0 }));
-  if (targets.includes('coins')) fetches.push(queryClient.fetchQuery({ ...coinsQuery(client, true), staleTime: 0 }));
+  if (targets.includes('prices')) fetches.push(queryClient.fetchQuery({ ...pricesQuery(client, true), ...BACKGROUND }));
+  if (targets.includes('coins')) fetches.push(queryClient.fetchQuery({ ...coinsQuery(client, true), ...BACKGROUND }));
   if (targets.includes('sparklines')) {
     for (const query of queryClient.getQueryCache().findAll({ queryKey: dashboardKeys.sparklinesAll })) {
       const window = query.queryKey[1] as SparklineWindow;
       if (query.getObserversCount() > 0) {
-        fetches.push(queryClient.fetchQuery({ ...sparklinesQuery(client, window, true), staleTime: 0 }));
+        fetches.push(queryClient.fetchQuery({ ...sparklinesQuery(client, window, true), ...BACKGROUND }));
       } else {
         // Окно, которого нет на экране, только помечается устаревшим — перечитается при переключении
         void queryClient.invalidateQueries({ queryKey: query.queryKey, refetchType: 'none' });
