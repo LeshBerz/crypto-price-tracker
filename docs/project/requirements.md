@@ -42,7 +42,7 @@
 | C10 | Обязательная валидация всех входных данных | ✅ path, query, body всех 16 операций из спеки; неизвестный параметр или поле → 400; 413/415; конфиг из env тоже валидируется | [`src/openapi/`](../../apps/api/src/openapi/), [`src/config.ts`](../../apps/api/src/config.ts) | [`tests/openapi/`](../../apps/api/tests/openapi/), [`tests/http/router.test.ts`](../../apps/api/tests/http/router.test.ts), [`tests/config.test.ts`](../../apps/api/tests/config.test.ts) |
 
 **Не сделано / не проверено:**
-- `npm run smoke:cmc` (формат живого ответа CMC) написан, но **не запускался**: на машине разработки нет ключа CMC. Все тесты идут против стаба, который повторяет формат CMC по документации (риск из [ADR 0006](../adr/0006-price-precision.md)). Закрывается одним запуском с настоящим ключом.
+- `npm run smoke:cmc` (прицельная проверка формата живого ответа CMC) написан, но **не запускался**: он тратит кредиты настоящего ключа. Автоматические тесты идут против стаба, который повторяет формат CMC по документации (риск из [ADR 0006](../adr/0006-price-precision.md)). На `main` сервис запускался в Docker с настоящим CoinMarketCap: добавление монеты и синхронизация по расписанию прошли без ошибок.
 
 **Стек:** Node.js 18+, Express, TypeScript, SQLite, Jest + Supertest, Swagger (OpenAPI 3.0), axios, Git; Docker — приветствуется.
 
