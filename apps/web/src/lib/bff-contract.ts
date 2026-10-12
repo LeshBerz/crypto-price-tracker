@@ -12,3 +12,6 @@ export const BACKGROUND_HEADER = 'x-cpt-background';
 export const STREAM_URL = '/api/stream';
 
 export const SESSION_EXPIRED_URL = '/login?reason=expired';
+
+/** Версия контракта api, под которую сгенерированы типы. Совпадение с `info.version` спеки проверяет тест */
+export const API_CONTRACT_VERSION = '1.1.0';

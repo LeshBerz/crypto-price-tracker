@@ -25,14 +25,17 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         К содержимому
       </a>
       <AppHeader login={session.login} role={session.role} />
-      <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-        <QueryProvider>
-          <StreamProvider>
-            <TooltipProvider>{children}</TooltipProvider>
-          </StreamProvider>
-        </QueryProvider>
-      </main>
-      <AppFooter />
+      {/* Футер показывает состояние системы из того же кэша запросов, поэтому стоит внутри провайдеров */}
+      <QueryProvider>
+        <StreamProvider>
+          <TooltipProvider>
+            <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+              {children}
+            </main>
+            <AppFooter role={session.role} />
+          </TooltipProvider>
+        </StreamProvider>
+      </QueryProvider>
       <Toaster />
     </div>
   );
