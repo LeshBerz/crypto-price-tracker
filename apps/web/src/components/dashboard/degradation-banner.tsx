@@ -32,6 +32,14 @@ function describe(degradation: Degradation, now: number): Content {
         body: `Последняя синхронизация завершилась частично: у ${degradation.staleCount} ${plural(degradation.staleCount, COINS)} цены устарели — они отмечены в таблице.`,
       };
     case 'stale': {
+      if (!degradation.all) {
+        return {
+          tone: 'warn',
+          Icon: TriangleAlert,
+          title: `Цены ${degradation.staleCount} ${plural(degradation.staleCount, COINS)} устарели`,
+          body: 'Они отмечены в таблице: новые цены по ним не сохранялись дольше двух интервалов синхронизации.',
+        };
+      }
       const last = degradation.lastFetchedAt
         ? ` Последнее обновление — ${formatClock(degradation.lastFetchedAt)} (${formatRelative(degradation.lastFetchedAt, now)}).`
         : '';
@@ -46,7 +54,7 @@ function describe(degradation: Degradation, now: number): Content {
             tone: 'warn',
             Icon: TriangleAlert,
             title: 'Цены устарели',
-            body: `Синхронизация не выполнялась дольше двух интервалов.${last}`,
+            body: `Новые цены не сохранялись дольше двух интервалов синхронизации.${last}`,
           };
     }
     case 'sync-failed': {

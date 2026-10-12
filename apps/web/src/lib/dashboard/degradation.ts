@@ -7,8 +7,11 @@ export type Degradation =
   | { kind: 'api-unavailable'; shownAt: number; requestId: string | null }
   /** Часть монет не обновилась в последнем запуске */
   | { kind: 'partial'; staleCount: number }
-  /** Цены старше двух интервалов синхронизации */
-  | { kind: 'stale'; staleCount: number; sourceFailed: boolean; lastFetchedAt: string | null }
+  /**
+   * Цены старше двух интервалов синхронизации. `all` — устарели все активные монеты: тогда есть смысл назвать
+   * время последнего обновления; иначе оно относится к свежим монетам и только запутает
+   */
+  | { kind: 'stale'; staleCount: number; all: boolean; sourceFailed: boolean; lastFetchedAt: string | null }
   /** Запуск не удался, но цены ещё в пределах допустимого возраста */
   | { kind: 'sync-failed'; status: 'failed' | 'partial'; finishedAt: string | null; lastFetchedAt: string | null }
   | { kind: 'stream-offline' };
@@ -43,7 +46,10 @@ export function detectDegradation(input: DegradationInput): Degradation | null {
     const status = prices.lastSync?.status;
 
     if (staleCount > 0 && status === 'partial') return { kind: 'partial', staleCount };
-    if (staleCount > 0) return { kind: 'stale', staleCount, sourceFailed: status === 'failed', lastFetchedAt };
+    if (staleCount > 0) {
+      const all = staleCount === active.length;
+      return { kind: 'stale', staleCount, all, sourceFailed: status === 'failed', lastFetchedAt };
+    }
     if (status === 'failed' || status === 'partial') {
       return { kind: 'sync-failed', status, finishedAt: prices.lastSync?.finishedAt ?? null, lastFetchedAt };
     }

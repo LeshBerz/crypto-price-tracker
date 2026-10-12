@@ -63,6 +63,7 @@ describe('[degradation] баннер дашборда', () => {
     expect(detectDegradation(input({ prices: list }))).toEqual({
       kind: 'stale',
       staleCount: 2,
+      all: true,
       sourceFailed: true,
       lastFetchedAt: FETCHED,
     });
@@ -72,6 +73,12 @@ describe('[degradation] баннер дашборда', () => {
     const list = prices('succeeded', [{ id: 1, stale: true }]);
 
     expect(detectDegradation(input({ prices: list }))).toMatchObject({ kind: 'stale', sourceFailed: false });
+  });
+
+  it('✅ устарела часть монет при успешном запуске: время последнего обновления к ним не относится', () => {
+    const list = prices('succeeded', [{ id: 1, stale: true, fetchedAt: OLDER }, { id: 2 }]);
+
+    expect(detectDegradation(input({ prices: list }))).toMatchObject({ kind: 'stale', staleCount: 1, all: false });
   });
 
   it('✅ частичная синхронизация с устаревшими ценами', () => {
