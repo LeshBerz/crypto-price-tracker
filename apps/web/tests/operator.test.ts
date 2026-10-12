@@ -36,6 +36,7 @@ import {
   describeFailure,
   parseAddForm,
   parseName,
+  pricePointsQuery,
   removeCoin,
   upsertCoin,
 } from '@/lib/operator/watchlist';
@@ -78,7 +79,10 @@ const run = (overrides: Partial<SyncRun> = {}): SyncRun => ({
   ...overrides,
 });
 
-const cmcStatus = (overrides: Partial<CmcStatus> = {}): CmcStatus => ({
+/** Без блока `schedule` — так отвечает api 1.0.0; тесты расписания добавляют блок сами */
+type LegacyCmcStatus = Omit<CmcStatus, 'schedule'>;
+
+const cmcStatus = (overrides: Partial<LegacyCmcStatus> = {}): LegacyCmcStatus => ({
   lastSuccessAt: T0,
   lastError: null,
   quota: {
@@ -402,6 +406,48 @@ describe('[operator/watchlist] результат мутации → кэш за
 
     expect(coins()?.items[1]).toMatchObject({ lastUpdatedAt: T1, latestPrice: { price: '2500.1', isStale: false } });
     expect(coins()?.items[0]).toEqual(coin());
+  });
+});
+
+describe('[operator/watchlist] число точек истории для диалога удаления (ADR 0017, пробел 3)', () => {
+  const aggregates = (points: number | null) =>
+    Response.json({
+      cryptocurrencyId: 1,
+      currency: 'USD',
+      interval: '1w',
+      from: T0,
+      to: T1,
+      summary:
+        points === null
+          ? null
+          : { open: '1', close: '2', min: '1', max: '2', avg: '1.5', changePercent: '100.0000', points },
+      buckets: [],
+    });
+
+  async function fetchPoints(reply: () => Response, createdAt = T0) {
+    const { client, calls } = setupClient(reply);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const result = await queryClient.fetchQuery(pricePointsQuery(client, coin({ createdAt }))).catch((e: unknown) => e);
+    return { result, url: new URL(calls[0]?.url ?? '', 'http://web.test') };
+  }
+
+  it('✅ число берётся из сводки агрегатов: недельный интервал от недели добавления монеты', async () => {
+    // 12.10.2026 — понедельник: неделя начинается в 00:00 UTC этого дня, а не в момент добавления (12:00)
+    const { result, url } = await fetchPoints(() => aggregates(4321));
+    expect(result).toBe(4321);
+    expect(url.pathname).toBe('/api/bff/api/v1/cryptocurrencies/1/prices/aggregates');
+    expect(url.searchParams.get('interval')).toBe('1w');
+    expect(url.searchParams.get('from')).toBe('2026-10-12T00:00:00.000Z');
+    expect(url.searchParams.has('to')).toBe(false);
+  });
+
+  it('✅ сводка null (синхронизаций ещё не было) → 0 точек', async () => {
+    expect((await fetchPoints(() => aggregates(null))).result).toBe(0);
+  });
+
+  it('❌ отказ api → ошибка запроса: диалог остаётся без числа', async () => {
+    const { result } = await fetchPoints(() => problem(503, 'upstream-unavailable'));
+    expect(result).toBeInstanceOf(BffError);
   });
 });
 
