@@ -1,12 +1,14 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ChartSpline } from 'lucide-react';
+import { ChartSpline, Plus } from 'lucide-react';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { LoadError } from '@/components/load-error';
 import { StreamIndicator } from '@/components/stream-indicator';
+import { SyncStatusBadge } from '@/components/sync-status-badge';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { bff, BffError } from '@/lib/bff-client';
 import { detectDegradation } from '@/lib/dashboard/degradation';
 import {
@@ -18,23 +20,13 @@ import {
 } from '@/lib/dashboard/queries';
 import { useNow, usePriceStream } from '@/lib/dashboard/use-price-stream';
 import { formatClock, plural } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import type { Role } from '@/server/users';
 import { DegradationBanner } from './degradation-banner';
 import { PriceTable, PriceTableSkeleton, WINDOW_LABEL } from './price-table';
 
-type SyncStatus = NonNullable<LatestPriceList['lastSync']>['status'];
-
-const SYNC_STATUS: Record<SyncStatus, { text: string; className: string }> = {
-  succeeded: { text: 'успешно', className: 'bg-up-bg text-up' },
-  partial: { text: 'частично', className: 'bg-warn-bg text-warn' },
-  failed: { text: 'не удалась', className: 'bg-error-bg text-destructive' },
-  running: { text: 'идёт', className: 'bg-info-bg text-info' },
-  interrupted: { text: 'прервана', className: 'bg-warn-bg text-warn' },
-};
-
 function SyncLine({ lastSync }: { lastSync: LatestPriceList['lastSync'] }) {
   if (!lastSync) return <p className="text-sm text-muted-foreground">Синхронизаций ещё не было</p>;
-  const status = SYNC_STATUS[lastSync.status];
   return (
     <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
       Последняя синхронизация:
@@ -43,7 +35,7 @@ function SyncLine({ lastSync }: { lastSync: LatestPriceList['lastSync'] }) {
           {formatClock(lastSync.finishedAt, { seconds: true })}
         </time>
       )}
-      <Badge className={status.className}>{status.text}</Badge>
+      <SyncStatusBadge status={lastSync.status} />
     </p>
   );
 }
@@ -81,6 +73,12 @@ function EmptyState({ role }: { role: Role }) {
           ? 'Цены появятся после добавления первой монеты и ближайшей синхронизации.'
           : 'Оператор ещё не добавил монеты.'}
       </span>
+      {role === 'operator' && (
+        <Link href="/operator/watchlist" className={cn(buttonVariants({ size: 'sm' }), 'mt-2')}>
+          <Plus aria-hidden="true" />
+          Добавить монету
+        </Link>
+      )}
     </div>
   );
 }
@@ -136,7 +134,7 @@ export function Dashboard({ role }: { role: Role }) {
 
       {/* aria-live только у баннера: тики цен скринридеру не зачитываются (ui-flows §5) */}
       <div role="status" aria-live="polite">
-        {degradation && <DegradationBanner degradation={degradation} now={now} onRetry={retry} />}
+        {degradation && <DegradationBanner degradation={degradation} now={now} role={role} onRetry={retry} />}
       </div>
 
       <section

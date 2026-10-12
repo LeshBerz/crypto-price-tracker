@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { Role } from '@/server/users';
@@ -35,10 +37,18 @@ export function UserMenu({ login, role }: { login: string; role: Role }) {
       <DropdownMenuTrigger render={<Button variant="ghost" size="sm" aria-label={`Меню пользователя ${login}`} />}>
         <User aria-hidden="true" />
         <span className="hidden max-w-32 truncate sm:inline">{login}</span>
-        <Badge variant="secondary">{ROLE_LABELS[role]}</Badge>
+        <Badge variant="secondary" className="max-sm:hidden">
+          {ROLE_LABELS[role]}
+        </Badge>
         <ChevronDown aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
+        {/* На узком экране логин и роль в шапку не помещаются — они показаны здесь */}
+        <DropdownMenuGroup className="sm:hidden">
+          <DropdownMenuLabel>
+            {login} · {ROLE_LABELS[role]}
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuItem disabled={pending} onClick={logout}>
           <LogOut aria-hidden="true" />
           Выйти
