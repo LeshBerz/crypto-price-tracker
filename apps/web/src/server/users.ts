@@ -18,7 +18,60 @@ export function normalizeLogin(input: string): string {
   return input.trim().toLowerCase();
 }
 
+/** Строка экрана «Пользователи»: без хэша пароля, с числом действующих сессий */
+export type UserSummary = {
+  id: number;
+  login: string;
+  role: Role;
+  isActive: boolean;
+  createdAt: number;
+  lastLoginAt: number | null;
+  activeSessions: number;
+};
+
 type UserRow = { id: number; login: string; password_hash: string; role: string; is_active: number };
+type SummaryRow = {
+  id: number;
+  login: string;
+  role: string;
+  is_active: number;
+  created_at: number;
+  last_login_at: number | null;
+  active_sessions: number;
+};
+
+function toUser(row: UserRow): User {
+  return {
+    id: Number(row.id),
+    login: row.login,
+    passwordHash: row.password_hash,
+    role: row.role as Role,
+    isActive: row.is_active === 1,
+  };
+}
+
+function toSummary(row: SummaryRow): UserSummary {
+  return {
+    id: Number(row.id),
+    login: row.login,
+    role: row.role as Role,
+    isActive: row.is_active === 1,
+    createdAt: Number(row.created_at),
+    lastLoginAt: row.last_login_at === null ? null : Number(row.last_login_at),
+    activeSessions: Number(row.active_sessions),
+  };
+}
+
+/**
+ * Число действующих сессий считается подзапросом по частичному индексу `sessions_user_active`: один запрос на
+ * весь список, без запроса на каждого пользователя. Условия те же, что в `SessionService.validate`.
+ */
+const SUMMARY_SQL = `
+  SELECT u.id, u.login, u.role, u.is_active, u.created_at, u.last_login_at,
+         (SELECT count(*) FROM sessions s
+           WHERE s.user_id = u.id AND s.revoked_at IS NULL
+             AND s.idle_expires_at > ? AND s.absolute_expires_at > ?) AS active_sessions
+    FROM users u`;
 
 export class UserRepository {
   private readonly db: Database;
@@ -31,14 +84,29 @@ export class UserRepository {
     const row = this.db
       .prepare('SELECT id, login, password_hash, role, is_active FROM users WHERE login = ?')
       .get(login) as UserRow | undefined;
-    if (!row) return null;
-    return {
-      id: Number(row.id),
-      login: row.login,
-      passwordHash: row.password_hash,
-      role: row.role as Role,
-      isActive: row.is_active === 1,
-    };
+    return row ? toUser(row) : null;
+  }
+
+  findById(id: number): User | null {
+    const row = this.db.prepare('SELECT id, login, password_hash, role, is_active FROM users WHERE id = ?').get(id) as
+      UserRow | undefined;
+    return row ? toUser(row) : null;
+  }
+
+  list(now: number): UserSummary[] {
+    const rows = this.db.prepare(`${SUMMARY_SQL} ORDER BY u.login`).all(now, now) as SummaryRow[];
+    return rows.map(toSummary);
+  }
+
+  summary(id: number, now: number): UserSummary | null {
+    const row = this.db.prepare(`${SUMMARY_SQL} WHERE u.id = ?`).get(now, now, id) as SummaryRow | undefined;
+    return row ? toSummary(row) : null;
+  }
+
+  /** Сколько операторов сейчас могут войти: по этому числу работает защита от потери доступа (ADR 0016) */
+  countActiveOperators(): number {
+    const row = this.db.prepare("SELECT count(*) AS n FROM users WHERE role = 'operator' AND is_active = 1").get();
+    return Number(row?.n ?? 0);
   }
 
   /**
@@ -68,6 +136,16 @@ export class UserRepository {
 
   setActive(id: number, isActive: boolean, now: number): void {
     this.db.prepare('UPDATE users SET is_active = ?, updated_at = ? WHERE id = ?').run(isActive ? 1 : 0, now, id);
+  }
+
+  setRole(id: number, role: Role, now: number): void {
+    this.db.prepare('UPDATE users SET role = ?, updated_at = ? WHERE id = ?').run(role, now, id);
+  }
+
+  setPassword(id: number, passwordHash: string, now: number): void {
+    this.db
+      .prepare('UPDATE users SET password_hash = ?, password_changed_at = ?, updated_at = ? WHERE id = ?')
+      .run(passwordHash, now, now, id);
   }
 
   markLogin(id: number, now: number): void {

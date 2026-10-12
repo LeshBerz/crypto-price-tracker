@@ -26,10 +26,11 @@ function seeded(): Database {
 describe('миграции web.db', () => {
   it('✅ применяются один раз; повторный запуск ничего не делает', () => {
     const db = openDatabase(':memory:');
-    expect(migrate(db, START)).toEqual([1]);
+    expect(migrate(db, START)).toEqual([1, 2]);
     expect(migrate(db, START + 1)).toEqual([]);
     expect(db.prepare('SELECT version, name, applied_at FROM schema_migrations').all()).toEqual([
       { version: 1, name: 'auth', applied_at: START },
+      { version: 2, name: 'session_id', applied_at: START },
     ]);
   });
 
@@ -42,8 +43,11 @@ describe('миграции web.db', () => {
   });
 
   it('✅ текст миграции совпадает с проверенным DDL из документации', () => {
-    const documented = readFileSync(join(__dirname, '../../../docs/project/schema/web_0001_auth.sql'), 'utf8');
-    expect(MIGRATIONS[0]?.sql).toBe(documented.replace(/\r\n/g, '\n'));
+    const documented = (file: string) =>
+      readFileSync(join(__dirname, '../../../docs/project/schema', file), 'utf8').replace(/\r\n/g, '\n');
+    expect(MIGRATIONS[0]?.sql).toBe(documented('web_0001_auth.sql'));
+    expect(MIGRATIONS[1]?.sql).toBe(documented('web_0002_session_id.sql'));
+    expect(MIGRATIONS).toHaveLength(2);
   });
 });
 

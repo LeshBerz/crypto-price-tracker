@@ -11,7 +11,11 @@ export type ProblemSlug =
   | 'not-found'
   | 'payload-too-large'
   | 'upstream-unavailable'
-  | 'upstream-timeout';
+  | 'upstream-timeout'
+  | 'login-taken'
+  | 'last-operator'
+  | 'own-password-reset'
+  | 'invalid-current-password';
 
 const TITLES: Record<ProblemSlug, string> = {
   'validation-error': 'Некорректный запрос',
@@ -21,10 +25,14 @@ const TITLES: Record<ProblemSlug, string> = {
   'too-many-attempts': 'Слишком много попыток входа',
   unauthorized: 'Требуется вход',
   forbidden: 'Недостаточно прав',
-  'not-found': 'Маршрут не найден',
+  'not-found': 'Не найдено',
   'payload-too-large': 'Тело запроса слишком большое',
   'upstream-unavailable': 'Сервис данных недоступен',
   'upstream-timeout': 'Сервис данных не ответил вовремя',
+  'login-taken': 'Логин уже занят',
+  'last-operator': 'Нельзя оставить систему без оператора',
+  'own-password-reset': 'Свой пароль меняется в профиле',
+  'invalid-current-password': 'Текущий пароль указан неверно',
 };
 
 /** Клиентский код разбирает ответы BFF и api одинаково: type, title, status и дополнительные поля */
