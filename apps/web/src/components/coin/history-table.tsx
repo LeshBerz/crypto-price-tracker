@@ -1,9 +1,10 @@
 import { PriceText } from '@/components/dashboard/cells';
 import { Button } from '@/components/ui/button';
 import type { PricePoint } from '@/lib/coin/queries';
-import { formatClock, formatDateTime } from '@/lib/format';
+import { Timestamp } from '@/components/timestamp';
+import { TH } from '@/components/ui/panel';
 
-const TH = 'px-4 py-2 text-xs font-medium text-muted-foreground';
+/** История плотнее остальных таблиц: строк много, действий в строке нет */
 const TD = 'px-4 py-2.5 align-middle';
 
 export type HistoryTableProps = {
@@ -39,23 +40,18 @@ export function HistoryTable({ points, hasMore, loadingMore, onLoadMore }: Histo
         </thead>
         <tbody>
           {points.map((point) => (
-            <tr key={point.sourceUpdatedAt} className="border-b last:border-b-0">
+            <tr
+              key={point.sourceUpdatedAt}
+              className="animate-row-in border-b transition-colors duration-(--duration-fast) last:border-b-0 hover:bg-muted/50"
+            >
               <td className={TD}>
-                <time dateTime={point.fetchedAt} title={`${point.fetchedAt} (UTC)`} className="font-mono tabular-nums">
-                  {formatDateTime(point.fetchedAt, { seconds: true })}
-                </time>
+                <Timestamp iso={point.fetchedAt} seconds />
               </td>
               <td className={`${TD} text-right`}>
                 <PriceText price={point.price} />
               </td>
               <td className={`${TD} text-right max-sm:hidden`}>
-                <time
-                  dateTime={point.sourceUpdatedAt}
-                  title={`${point.sourceUpdatedAt} (UTC)`}
-                  className="font-mono text-muted-foreground tabular-nums"
-                >
-                  {formatClock(point.sourceUpdatedAt, { seconds: true })}
-                </time>
+                <Timestamp iso={point.sourceUpdatedAt} format="clock" seconds className="text-muted-foreground" />
               </td>
             </tr>
           ))}

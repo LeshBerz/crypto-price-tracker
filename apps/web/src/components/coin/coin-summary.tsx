@@ -4,7 +4,11 @@ import type { AggregateStats } from '@/lib/coin/queries';
 
 function Stat({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1 rounded-lg bg-card px-3 py-2.5 ring-1 ring-foreground/10" title={hint}>
+    <div
+      className="flex flex-col gap-1 rounded-lg bg-card px-3 py-2.5 ring-1 ring-foreground/10"
+      // Пояснение короткое и вторичное; у плитки нет собственного действия, поэтому это атрибут, а не кнопка
+      title={hint}
+    >
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="text-sm">{children}</dd>
     </div>
@@ -35,7 +39,7 @@ export function CoinSummary({ summary }: { summary: AggregateStats | null }) {
         <ChangeValue change={summary.changePercent} />
       </Stat>
       <Stat label="Точек">
-        <span className="font-mono tabular-nums">{summary.points.toLocaleString('ru-RU')}</span>
+        <span className="tabular-nums">{summary.points.toLocaleString('ru-RU')}</span>
       </Stat>
     </dl>
   );

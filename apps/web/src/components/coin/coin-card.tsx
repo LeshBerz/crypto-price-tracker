@@ -20,7 +20,9 @@ import {
 } from '@/lib/coin/intervals';
 import { aggregatesQuery, coinQuery, historyQuery, mergeHistoryPages, type Cryptocurrency } from '@/lib/coin/queries';
 import { useNow, usePriceStream, type Flash } from '@/lib/dashboard/use-price-stream';
-import { formatClock, formatDate, formatRelative, plural } from '@/lib/format';
+import { CoinAvatar } from '@/components/coin-avatar';
+import { Timestamp } from '@/components/timestamp';
+import { formatClock, plural } from '@/lib/format';
 import { ChartControls } from './chart-controls';
 import { CoinSummary, CoinSummarySkeleton } from './coin-summary';
 import { HistoryTable } from './history-table';
@@ -39,13 +41,16 @@ function CoinHeader({ coin, flash, now }: { coin: Cryptocurrency; flash: Flash |
   const latest = coin.latestPrice;
   return (
     <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold tracking-tight">
-          {coin.symbol} <span className="font-medium text-muted-foreground">· {coin.name}</span>
-        </h1>
-        <span className="text-xs text-muted-foreground">
-          CMC #{coin.cmcId} · отслеживается с <time dateTime={coin.createdAt}>{formatDate(coin.createdAt)}</time>
-        </span>
+      <div className="flex items-center gap-3">
+        <CoinAvatar symbol={coin.symbol} size="lg" />
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-semibold tracking-tight">
+            {coin.symbol} <span className="font-medium text-muted-foreground">· {coin.name}</span>
+          </h1>
+          <span className="text-xs text-muted-foreground">
+            CMC #{coin.cmcId} · отслеживается с <Timestamp iso={coin.createdAt} format="date" />
+          </span>
+        </div>
       </div>
       <div className="flex flex-col gap-1 sm:items-end">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -63,12 +68,12 @@ function CoinHeader({ coin, flash, now }: { coin: Cryptocurrency; flash: Flash |
           <StateTag paused={coin.isPaused} stale={latest?.isStale ?? false} />
           {latest && (
             <>
-              <time dateTime={latest.fetchedAt} title={`${latest.fetchedAt} (UTC)`}>
-                Обновлено {formatRelative(latest.fetchedAt, now)}
-              </time>
-              <time dateTime={latest.sourceUpdatedAt} title={`${latest.sourceUpdatedAt} (UTC)`}>
-                · котировка CMC {formatClock(latest.sourceUpdatedAt, { seconds: true })}
-              </time>
+              <span>
+                Обновлено <Timestamp iso={latest.fetchedAt} format="relative" now={now} />
+              </span>
+              <span>
+                · котировка CMC <Timestamp iso={latest.sourceUpdatedAt} format="clock" seconds />
+              </span>
             </>
           )}
         </span>

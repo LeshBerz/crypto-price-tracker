@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { bff } from '@/lib/bff-client';
 import { useNow } from '@/lib/dashboard/use-price-stream';
-import { formatCount, formatDate, formatDateTime, formatInterval, formatRelative } from '@/lib/format';
+import { Timestamp } from '@/components/timestamp';
+import { formatCount, formatDate, formatInterval, formatRelative } from '@/lib/format';
 import {
   cmcStatusQuery,
   mergeRunPages,
@@ -65,10 +66,7 @@ function Tile({ title, state, hint }: { title: string; state: ReactNode; hint: R
 function Time({ iso, now }: { iso: string; now: number }) {
   return (
     <>
-      <time dateTime={iso} title={`${iso} (UTC)`} className="font-mono tabular-nums">
-        {formatDateTime(iso, { seconds: true })}
-      </time>{' '}
-      <span className="text-muted-foreground">({formatRelative(iso, now)})</span>
+      <Timestamp iso={iso} seconds /> <span className="text-muted-foreground">({formatRelative(iso, now)})</span>
     </>
   );
 }
@@ -154,10 +152,10 @@ function QuotaSection({
           <div className="flex flex-col gap-1.5">
             <div className="flex flex-wrap items-baseline gap-x-2">
               <span>Использовано за месяц</span>
-              <strong className="ml-auto font-mono tabular-nums">
+              <strong className="ml-auto tabular-nums">
                 {formatCount(quota.creditsUsedMonth)} / {formatCount(quota.creditLimitMonthly)}
               </strong>
-              <span className="font-mono text-muted-foreground tabular-nums">({percent} %)</span>
+              <span className="text-muted-foreground tabular-nums">({percent} %)</span>
             </div>
             <div
               role="progressbar"
@@ -176,9 +174,9 @@ function QuotaSection({
           </div>
           <dl className={DL}>
             <dt className={DT}>Осталось</dt>
-            <dd className="font-mono tabular-nums">{formatCount(quota.creditsLeftMonth)} кредитов</dd>
+            <dd className="tabular-nums">{formatCount(quota.creditsLeftMonth)} кредитов</dd>
             <dt className={DT}>Сегодня</dt>
-            <dd className="font-mono tabular-nums">{formatCount(quota.creditsUsedToday)} кредитов</dd>
+            <dd className="tabular-nums">{formatCount(quota.creditsUsedToday)} кредитов</dd>
             {forecast && (
               <>
                 <dt className={DT}>Прогноз</dt>
