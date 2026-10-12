@@ -29,9 +29,15 @@ import { DegradationBanner } from './degradation-banner';
 import { PriceTable, PriceTableSkeleton, WINDOW_LABEL } from './price-table';
 
 function SyncLine({ lastSync }: { lastSync: LatestPriceList['lastSync'] }) {
-  if (!lastSync) return <p className="text-sm text-muted-foreground">Синхронизаций ещё не было</p>;
+  if (!lastSync) {
+    return (
+      <p data-tour="sync-line" className="text-sm text-muted-foreground">
+        Синхронизаций ещё не было
+      </p>
+    );
+  }
   return (
-    <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
+    <p data-tour="sync-line" className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
       Последняя синхронизация:
       {lastSync.finishedAt && <Timestamp iso={lastSync.finishedAt} format="clock" seconds />}
       <SyncStatusBadge status={lastSync.status} />

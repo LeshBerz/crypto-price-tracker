@@ -82,6 +82,7 @@ export function PriceLens({
     <PopoverPrimitive.Root>
       <PopoverPrimitive.Trigger
         data-slot="price-lens"
+        data-tour="price"
         className={cn(
           '-mx-1 cursor-zoom-in rounded px-1 font-mono tabular-nums decoration-transparent decoration-dotted underline-offset-4 outline-none hover:underline hover:decoration-muted-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:bg-primary-soft',
           className,

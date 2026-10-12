@@ -85,12 +85,20 @@ function Actions({
         size="sm"
         disabled={busy}
         onClick={onTogglePause}
+        data-tour="coin-pause"
         aria-label={`${coin.isPaused ? 'Возобновить' : 'Приостановить'} ${coin.symbol}`}
       >
         {coin.isPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
         {coin.isPaused ? 'Возобновить' : 'Пауза'}
       </Button>
-      <Button variant="destructive" size="sm" disabled={busy} onClick={onDelete} aria-label={`Удалить ${coin.symbol}`}>
+      <Button
+        variant="destructive"
+        size="sm"
+        disabled={busy}
+        onClick={onDelete}
+        data-tour="coin-delete"
+        aria-label={`Удалить ${coin.symbol}`}
+      >
         <Trash2 aria-hidden="true" />
         Удалить
       </Button>
@@ -157,7 +165,7 @@ export function WatchlistPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Panel aria-labelledby="add-title" className="flex flex-col gap-3 p-4">
+      <Panel data-tour="add-coin" aria-labelledby="add-title" className="flex flex-col gap-3 p-4">
         <h2 id="add-title" className="font-semibold">
           Добавить монету
         </h2>

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CircleCheck, CircleDashed, CircleX, TriangleAlert, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo } from 'react';
+import { TourRestartLink } from '@/components/tour/tour-provider';
 import { Hint } from '@/components/ui/tooltip';
 import { bff, BffError } from '@/lib/bff-client';
 import { API_CONTRACT_VERSION } from '@/lib/bff-contract';
@@ -70,7 +71,7 @@ function SystemStatusLine({ role }: { role: Role }) {
 /** Атрибуция TradingView — требование лицензии Lightweight Charts (ADR 0012) */
 export function AppFooter({ role }: { role: Role }) {
   return (
-    <footer className="border-t">
+    <footer className="border-t" data-tour="footer">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3 text-xs text-muted-foreground">
         {/* Смена состояния объявляется скринридеру вежливо: это фон, а не событие, требующее действия */}
         <span role="status" aria-live="polite">
@@ -83,14 +84,15 @@ export function AppFooter({ role }: { role: Role }) {
           </a>{' '}
           · USD
         </span>
-        <span>
+        <span data-tour="tv-attribution">
           Графики:{' '}
           <a className={LINK} href="https://www.tradingview.com/" rel="noopener noreferrer" target="_blank">
             TradingView Lightweight Charts™
           </a>
         </span>
+        <TourRestartLink className={cn(LINK, 'sm:ml-auto')} />
         <Hint text="Версия контракта OpenAPI, с которой собран веб-клиент">
-          <span className="sm:ml-auto">API v{API_CONTRACT_VERSION}</span>
+          <span>API v{API_CONTRACT_VERSION}</span>
         </Hint>
       </div>
     </footer>

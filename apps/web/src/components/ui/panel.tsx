@@ -20,9 +20,12 @@ export function PanelHeader({
   meta,
   children,
   className,
+  tourTarget,
 }: {
   title: ReactNode;
   titleId?: string;
+  /** Имя цели гида (`data-tour`): шаг указывает на шапку, а не на весь блок — длинный список занял бы всё окно */
+  tourTarget?: string;
   /** Счётчик или пояснение сразу после заголовка */
   meta?: ReactNode;
   /** Действия и вторичные сведения — прижаты вправо */
@@ -30,7 +33,10 @@ export function PanelHeader({
   className?: string;
 }) {
   return (
-    <div className={cn('flex min-h-13 flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5', className)}>
+    <div
+      data-tour={tourTarget}
+      className={cn('flex min-h-13 flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5', className)}
+    >
       <h2 id={titleId} className="font-semibold">
         {title}
       </h2>

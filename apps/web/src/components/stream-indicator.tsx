@@ -11,7 +11,7 @@ const STREAM: Record<StreamStatus, { text: string; dot: string }> = {
 export function StreamIndicator({ status }: { status: StreamStatus }) {
   const { text, dot } = STREAM[status];
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+    <span data-tour="stream" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
       <span className={cn('size-2 rounded-full', dot)} aria-hidden="true" />
       {text}
     </span>

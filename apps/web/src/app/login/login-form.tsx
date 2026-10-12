@@ -64,7 +64,7 @@ export function LoginForm({ expired }: { expired: boolean }) {
 
   return (
     // method="post": если форму отправят до загрузки скрипта, браузер не положит пароль в адресную строку
-    <form onSubmit={submit} method="post" noValidate className="flex flex-col gap-4">
+    <form data-tour="login-form" onSubmit={submit} method="post" noValidate className="flex flex-col gap-4">
       {notice?.kind === 'info' && (
         <p role="status" className="rounded-lg border border-info-border bg-info-bg px-3 py-2 text-sm text-info">
           {notice.text}
@@ -97,7 +97,7 @@ export function LoginForm({ expired }: { expired: boolean }) {
       <p id="login-error" role="alert" className="min-h-5 text-sm text-destructive">
         {notice?.kind === 'error' ? notice.text : ''}
       </p>
-      <Button type="submit" size="lg" disabled={pending}>
+      <Button type="submit" size="lg" disabled={pending} data-tour="login-submit">
         {pending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
         {pending ? 'Вход…' : 'Войти'}
       </Button>

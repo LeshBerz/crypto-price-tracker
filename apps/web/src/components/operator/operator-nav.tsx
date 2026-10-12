@@ -9,6 +9,7 @@ export function OperatorNav() {
   return (
     <NavTabs
       label="Разделы оператора"
+      tourTarget="operator-nav"
       items={OPERATOR_SECTIONS}
       className="[scrollbar-width:none] overflow-x-auto border-b"
       itemClassName="h-10"

@@ -145,7 +145,11 @@ export function SyncPanel() {
   const busy = trigger.isPending || running;
   return (
     <div className="flex flex-col gap-4">
-      <Panel aria-labelledby="now-title" className="flex flex-wrap items-start gap-x-6 gap-y-3 p-4 text-sm">
+      <Panel
+        data-tour="sync-now"
+        aria-labelledby="now-title"
+        className="flex flex-wrap items-start gap-x-6 gap-y-3 p-4 text-sm"
+      >
         <div className="flex min-w-56 flex-1 flex-col gap-2">
           <h2 id="now-title" className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             Сейчас
@@ -180,6 +184,7 @@ export function SyncPanel() {
 
       <Panel aria-labelledby="runs-title">
         <PanelHeader
+          tourTarget="sync-runs"
           title="История запусков"
           titleId="runs-title"
           meta={<span className="text-xs text-muted-foreground">от новых к старым</span>}

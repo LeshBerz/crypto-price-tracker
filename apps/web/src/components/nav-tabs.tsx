@@ -22,12 +22,15 @@ export function NavTabs({
   items,
   className,
   itemClassName,
+  tourTarget,
 }: {
   /** Имя навигации для скринридера: на странице их две */
   label: string;
   items: readonly { href: string; label: string }[];
   className?: string;
   itemClassName?: string;
+  /** Имя цели гида (`data-tour`), если на навигацию указывает шаг тура */
+  tourTarget?: string;
 }) {
   const pathname = usePathname();
   const container = useRef<HTMLElement>(null);
@@ -61,6 +64,7 @@ export function NavTabs({
     <nav
       ref={container}
       aria-label={label}
+      data-tour={tourTarget}
       className={cn('relative flex items-stretch gap-1', className)}
       onPointerLeave={() => setHovered(null)}
       onBlur={() => setHovered(null)}
