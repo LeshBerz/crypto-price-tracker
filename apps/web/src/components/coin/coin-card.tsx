@@ -55,7 +55,7 @@ function CoinHeader({ coin, flash, now }: { coin: Cryptocurrency; flash: Flash |
       <div className="flex flex-col gap-1 sm:items-end">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="text-2xl font-semibold">
-            <PriceValue latest={latest} flash={flash} />
+            <PriceValue latest={latest} flash={flash} symbol={coin.symbol} />
           </span>
           {latest && (
             <span className="inline-flex items-baseline gap-1 text-sm">

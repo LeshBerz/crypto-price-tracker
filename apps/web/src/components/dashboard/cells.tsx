@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Minus, Pause, TriangleAlert } from 'lucide-react';
 import { cn } from 'cn';
+import { PriceLens } from '@/components/price-lens';
 import { Hint } from '@/components/ui/tooltip';
 import type { components } from '@/generated/api-types';
 import type { Flash } from '@/lib/dashboard/use-price-stream';
@@ -11,26 +12,26 @@ type SparklinePoint = components['schemas']['SparklinePoint'];
 
 const FLASH_CLASS: Record<Flash, string> = { up: 'bg-up-bg', down: 'bg-down-bg' };
 
-/** Цена. Округлённое значение — на экране, строка из api целиком — в подсказке (ui-flows §3.2) */
-export function PriceValue({ latest, flash }: { latest: LatestPrice | null; flash?: Flash }) {
+/** Цена. Округлённое значение — на экране, строка из api целиком — в «линзе точности» по нажатию (ui-flows §3.2) */
+export function PriceValue({ latest, flash, symbol }: { latest: LatestPrice | null; flash?: Flash; symbol?: string }) {
   if (!latest) return <span className="text-muted-foreground">ожидает первой синхронизации</span>;
   const formatted = formatPrice(latest.price);
   const { head, zeros, tail } = splitPrice(formatted);
   return (
-    <Hint text={`${latest.price} ${latest.currency}`}>
-      <span
-        className={cn(
-          '-mx-1 rounded px-1 font-mono tabular-nums transition-colors duration-700',
-          latest.isStale && 'text-stale',
-          flash && FLASH_CLASS[flash],
-        )}
-      >
-        {head}
-        {/* Ведущие нули приглушены, но остаются в тексте: число копируется и читается целиком */}
-        {zeros && <span className="opacity-45">{zeros}</span>}
-        {tail}
-      </span>
-    </Hint>
+    <PriceLens
+      price={latest.price}
+      currency={latest.currency}
+      symbol={symbol}
+      sourceUpdatedAt={latest.sourceUpdatedAt}
+      fetchedAt={latest.fetchedAt}
+      isStale={latest.isStale}
+      className={cn('transition-colors duration-700', latest.isStale && 'text-stale', flash && FLASH_CLASS[flash])}
+    >
+      {head}
+      {/* Ведущие нули приглушены, но остаются в тексте: число копируется и читается целиком */}
+      {zeros && <span className="opacity-45">{zeros}</span>}
+      {tail}
+    </PriceLens>
   );
 }
 

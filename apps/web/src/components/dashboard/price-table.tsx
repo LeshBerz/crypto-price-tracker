@@ -84,7 +84,7 @@ export function PriceTable({ items, sparklines, pausedIds, flashes, window, now 
                   </div>
                 </td>
                 <td className={`${TD} text-right`}>
-                  <PriceValue latest={item.latest} flash={flash} />
+                  <PriceValue latest={item.latest} flash={flash} symbol={item.symbol} />
                 </td>
                 <td className={`${TD} text-right`}>
                   {item.latest && <ChangeValue change={item.latest.change24hPercent} />}
@@ -115,7 +115,7 @@ export function PriceTable({ items, sparklines, pausedIds, flashes, window, now 
               </span>
             </Link>
             <div className="flex flex-col items-end gap-0.5">
-              <PriceValue latest={item.latest} flash={flash} />
+              <PriceValue latest={item.latest} flash={flash} symbol={item.symbol} />
               {item.latest && <ChangeValue change={item.latest.change24hPercent} />}
             </div>
             <Sparkline points={points} label={sparkLabel} />
