@@ -1,4 +1,4 @@
-# CI (бриф §4, ADR 0009). Job api — сдаваемая версия, job docker — образ и compose, job web — клиент;
+# CI (бриф §4, ADR 0009). Job api — базовая версия, job docker — образ и compose, job web — клиент;
 # platform и e2e добавятся в фазе E2.
 name: CI
 
