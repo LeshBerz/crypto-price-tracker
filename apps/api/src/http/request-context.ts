@@ -1,4 +1,4 @@
-// Первый middleware каждого запроса: X-Request-Id, логгер запроса и access-лог (ADR 0014, урок «Контроль качества»).
+// Первый middleware каждого запроса: X-Request-Id, логгер запроса и access-лог (ADR 0014).
 // Аналог в Nest — глобальный interceptor/middleware с ClsService; здесь хватает res.locals.
 import { randomUUID } from 'node:crypto';
 import type { RequestHandler } from 'express';

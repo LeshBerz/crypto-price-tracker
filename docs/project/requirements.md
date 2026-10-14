@@ -1,6 +1,6 @@
-# Требования задания → чек-лист
+# Требования ТЗ → чек-лист
 
-Источник: урок «Задание» курса Fast Track. Каждое требование имеет ID — на него ссылаемся в коде, тестах и заметках.
+Источник: техническое задание проекта. Каждое требование имеет ID — на него ссылаемся в коде, тестах и заметках.
 
 ## Функциональные
 
@@ -66,5 +66,5 @@
 | D6 | **Логгер** | pino/winston не в списке | Свой JSON-логгер поверх `console` с уровнями и requestId |
 | D7 | **Swagger UI** | Нужен `swagger-ui-express` — считаем частью «Swagger» из стека | ✅ [ADR 0004](../adr/0004-c7-interpretation-and-dev-tooling.md), [0008](../adr/0008-validation-and-openapi.md): `swagger-ui-express` на `/docs`, спека — `/openapi.json` |
 | D8 | **Retry и rate limit** | Библиотек ретраев нет; у CMC лимиты на запросы и кредиты | Свой retry с exponential backoff + jitter; batch-запрос всех символов одним вызовом |
-| D9 | **БД в тестах** | Курс: внешние API мокаем, БД — нет | ✅ [ADR 0009](../adr/0009-testing-strategy.md): настоящая SQLite `:memory:` на каждый тест, CMC — HTTP-стаб на `node:http` |
+| D9 | **БД в тестах** | Внешние API мокаем, БД — нет | ✅ [ADR 0009](../adr/0009-testing-strategy.md): настоящая SQLite `:memory:` на каждый тест, CMC — HTTP-стаб на `node:http` |
 | D10 | **Планировщик** | `setInterval` может накладывать запуски при долгом запросе | Цепочка `setTimeout` после завершения + флаг `isRunning` |

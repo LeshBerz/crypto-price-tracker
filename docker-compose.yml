@@ -1,4 +1,4 @@
-# Запуск сдаваемой версии (C3): docker compose up --build → http://localhost:3000/docs
+# Запуск базовой версии (C3): docker compose up --build → http://localhost:3000/docs
 # По умолчанию api ходит в стаб CoinMarketCap — сервис работает без ключа CMC и без интернета.
 # Настоящий CMC: задать в .env рядом с этим файлом CMC_API_KEY и CMC_BASE_URL=https://pro-api.coinmarketcap.com
 # Секретов в файле нет: ключи API берутся из окружения или выпускаются командой
