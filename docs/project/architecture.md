@@ -7,14 +7,14 @@
 ```mermaid
 flowchart LR
   U([Viewer / Operator]) -->|браузер, cookie-сессия| WEB["apps/web<br/>Next.js: UI + BFF"]
-  WEB -->|Bearer API key со scope| API["apps/api<br/>Express + SQLite<br/>(сдаваемая версия)"]
-  R([Проверяющий, скрипты]) -->|Bearer API key| API
+  WEB -->|Bearer API key со scope| API["apps/api<br/>Express + SQLite<br/>(базовая версия)"]
+  R([Swagger UI, curl, скрипты]) -->|Bearer API key| API
   API -->|axios: таймаут, retry| CMC([CoinMarketCap Pro API])
   API --> DB[(SQLite<br/>node:sqlite)]
   WEB --> WDB[(web.db<br/>пользователи, сессии)]
 ```
 
-- **`apps/api`** — сдаваемая версия, строго по ТЗ. Самодостаточна: ни от кого в репозитории не зависит ([ADR 0005](../adr/0005-monorepo-structure.md)).
+- **`apps/api`** — базовая версия, строго по ТЗ. Самодостаточна: ни от кого в репозитории не зависит ([ADR 0005](../adr/0005-monorepo-structure.md)).
 - **`apps/web`** — бонус: дашборд и панель оператора. Ключи api в браузер не попадают — между ними BFF ([ADR 0002](../adr/0002-access-model.md), [0016](../adr/0016-web-auth-and-bff-routes.md)).
 - **Профиль `platform`** — то же ядро api с адаптерами Postgres / Redis / RabbitMQ и отдельным воркером ([ADR 0011](../adr/0011-platform-composition.md)).
 

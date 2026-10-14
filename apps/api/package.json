@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Сдаваемая версия по ТЗ: Express + TypeScript + SQLite (raw SQL)",
+  "description": "Базовая версия по ТЗ: Express + TypeScript + SQLite (raw SQL)",
   "engines": {
     "node": ">=24.15.0"
   },
