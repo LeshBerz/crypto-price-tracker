@@ -6,7 +6,7 @@
 
 | Задача | Что нужно на машине | Источник цен | Гайд |
 |---|---|---|---|
-| Проверить реализацию строго по ТЗ | Docker | стаб | [Сданная версия](submission.md) |
+| Запустить версию 1.0 строго по ТЗ | Docker | стаб | [Версия 1.0](v1.0.md) |
 | Запустить api без ключа CoinMarketCap и без интернета | Docker | стаб | [Docker → api на стабе](docker.md#api-на-стабе) |
 | Запустить api с настоящими ценами | Docker, ключ CMC | CoinMarketCap | [Docker → api с настоящим CoinMarketCap](docker.md#api-с-настоящим-coinmarketcap) |
 | Запустить api вместе с веб-клиентом | Docker | стаб или CoinMarketCap | [Docker → api и веб-клиент](docker.md#api-и-веб-клиент) |

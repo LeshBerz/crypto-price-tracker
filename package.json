@@ -2,7 +2,7 @@
   "name": "crypto-price-tracker",
   "private": true,
   "type": "module",
-  "description": "Отслеживание и агрегация цен криптовалют (CoinMarketCap). Монорепо: apps/api — сдаваемая версия по ТЗ",
+  "description": "Отслеживание и агрегация цен криптовалют (CoinMarketCap). Монорепо: apps/api — базовая версия по ТЗ",
   "engines": {
     "node": ">=24.15.0"
   },
